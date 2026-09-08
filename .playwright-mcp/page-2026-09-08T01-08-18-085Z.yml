@@ -1,0 +1,59 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f1e4]:
+    - generic [ref=f1e6]:
+      - form "Journey planner" [ref=f1e7]:
+        - generic [ref=f1e8]: Find your journey
+        - generic [ref=f1e10]:
+          - generic [ref=f1e11]:
+            - generic [ref=f1e12]: Origin
+            - combobox "Origin" [invalid] [ref=f1e19]: Mar Girgis
+            - generic [ref=f1e135]: Please choose an origin.
+          - button "Swap origin and destination" [disabled] [ref=f1e20]
+          - generic [ref=f1e25]:
+            - generic [ref=f1e26]: Destination
+            - combobox "Destination" [invalid] [ref=f1e32]: Saad Zaghloul
+            - generic [ref=f1e136]: Please choose a destination.
+        - generic [ref=f1e33]:
+          - generic [ref=f1e34]: Departure
+          - generic [ref=f1e35]:
+            - textbox "Departure time" [ref=f1e37]: 2026-09-08T00:59
+            - button "Now" [ref=f1e38]
+        - button "Preferences & constraints" [ref=f1e39] [cursor=pointer]
+        - button "Find journeys" [ref=f1e42] [cursor=pointer]
+      - generic "Selected locations map" [ref=f1e43]:
+        - generic "Map" [ref=f1e44]:
+          - generic [ref=f1e45]:
+            - region "Map" [ref=f1e46]
+            - group [ref=f1e47]:
+              - generic "Toggle attribution" [ref=f1e48] [cursor=pointer]
+              - generic [ref=f1e49]:
+                - text: ©
+                - link "Stadia Maps" [ref=f1e50] [cursor=pointer]:
+                  - /url: https://stadiamaps.com/
+                - text: ©
+                - link "OpenMapTiles" [ref=f1e51] [cursor=pointer]:
+                  - /url: https://openmaptiles.org/
+                - text: ©
+                - link "OpenStreetMap" [ref=f1e52] [cursor=pointer]:
+                  - /url: https://openstreetmap.org
+                - text: contributors
+          - generic [ref=f1e53]:
+            - button "Recenter map" [ref=f1e54] [cursor=pointer]
+            - button "Zoom in" [ref=f1e58] [cursor=pointer]: +
+            - button "Zoom out" [ref=f1e59] [cursor=pointer]: −
+        - generic [ref=f1e60]: Planner · Admin User
+    - navigation "Primary" [ref=f1e61]:
+      - link "Home" [ref=f1e62] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f1e67] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f1e72] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f1e77] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=f1e82]: "12"
+        - text: Alerts
+      - link "Profile" [ref=f1e83] [cursor=pointer]:
+        - /url: /profile

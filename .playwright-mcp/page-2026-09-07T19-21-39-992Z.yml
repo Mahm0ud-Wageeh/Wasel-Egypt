@@ -1,0 +1,39 @@
+- generic [ref=f19e2]:
+  - link "Skip to main content" [ref=f19e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f19e4]:
+    - complementary "Admin sections" [ref=f19e5]:
+      - generic [ref=f19e6]: Wasel Admin
+      - navigation [ref=f19e11]:
+        - link "Dashboard" [ref=f19e12] [cursor=pointer]:
+          - /url: /admin
+        - link "Analytics" [ref=f19e16] [cursor=pointer]:
+          - /url: /admin/analytics
+        - link "Moderation" [ref=f19e21] [cursor=pointer]:
+          - /url: /admin/moderation
+        - link "Users" [ref=f19e26] [cursor=pointer]:
+          - /url: /admin/users
+      - link "Back to app" [ref=f19e33] [cursor=pointer]:
+        - /url: /home
+    - main [ref=f19e37]:
+      - generic [ref=f19e38]:
+        - generic [ref=f19e39]:
+          - generic [ref=f19e40]:
+            - generic [ref=f19e41]:
+              - link "Dashboard" [ref=f19e42] [cursor=pointer]:
+                - /url: /admin
+              - generic [ref=f19e45]: /
+              - heading "System Analytics Explorer" [level=1] [ref=f19e46]
+            - paragraph [ref=f19e47]: Deep-dive operational metrics, failure patterns, mode distribution, and user engagement
+          - generic [ref=f19e48]:
+            - textbox [ref=f19e49]
+            - generic [ref=f19e50]: to
+            - textbox [ref=f19e51]
+        - generic [ref=f19e52]:
+          - button "Trips & Journeys" [ref=f19e53] [cursor=pointer]
+          - button "Deviations & Recovery" [ref=f19e56] [cursor=pointer]
+          - button "Usage & Traffic" [ref=f19e59] [cursor=pointer]
+          - button "Community Reports" [ref=f19e62] [cursor=pointer]
+          - button "Trust & Reputation" [ref=f19e66] [cursor=pointer]
+          - button "Notifications" [ref=f19e70] [cursor=pointer]
+          - button "Transit Modes" [ref=f19e74] [cursor=pointer]

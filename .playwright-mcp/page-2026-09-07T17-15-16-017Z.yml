@@ -1,0 +1,37 @@
+- generic [ref=f11e2]:
+  - link "Skip to main content" [ref=f11e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f11e4]:
+    - generic [ref=f11e6]:
+      - form "Journey planner" [ref=f11e7]:
+        - generic [ref=f11e8]: Find your journey
+        - generic [ref=f11e10]:
+          - generic [ref=f11e11]:
+            - generic [ref=f11e12]: Origin
+            - combobox "Origin" [ref=f11e19]
+          - button "Swap origin and destination" [disabled] [ref=f11e20]
+          - generic [ref=f11e25]:
+            - generic [ref=f11e26]: Destination
+            - combobox "Destination" [ref=f11e32]
+        - generic [ref=f11e33]:
+          - generic [ref=f11e34]: Departure
+          - generic [ref=f11e35]:
+            - textbox "Departure time" [ref=f11e37]: 2026-09-07T17:15
+            - button "Now" [ref=f11e38]
+        - button "Preferences & constraints" [ref=f11e39] [cursor=pointer]
+        - button "Find journeys" [ref=f11e42] [cursor=pointer]
+      - generic "Selected locations map" [ref=f11e43]:
+        - generic "Map" [ref=f11e44]:
+          - generic "Map (loading)" [ref=f11e46]
+        - generic [ref=f11e48]: Planner · Audit Tester
+    - navigation "Primary" [ref=f11e49]:
+      - link "Home" [ref=f11e50] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f11e55] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f11e60] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f11e65] [cursor=pointer]:
+        - /url: /notifications
+      - link "Profile" [ref=f11e70] [cursor=pointer]:
+        - /url: /profile

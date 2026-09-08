@@ -1,0 +1,16 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - navigation "Primary" [ref=f2e177]:
+    - link "Home" [ref=f2e178] [cursor=pointer]:
+      - /url: /home
+    - link "Search" [ref=f2e183] [cursor=pointer]:
+      - /url: /search
+    - link "Reports" [ref=f2e188] [cursor=pointer]:
+      - /url: /reports
+    - link "Alerts" [ref=f2e193] [cursor=pointer]:
+      - /url: /notifications
+      - generic [ref=f2e204]: "12"
+      - text: Alerts
+    - link "Profile" [ref=f2e198] [cursor=pointer]:
+      - /url: /profile

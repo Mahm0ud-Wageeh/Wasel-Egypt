@@ -1,0 +1,94 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f1e4]:
+    - generic [ref=f1e6]:
+      - form "Journey planner" [ref=f1e7]:
+        - generic [ref=f1e8]:
+          - generic [ref=f1e9]: Find your journey
+          - button "Clear" [ref=f1e215]
+        - generic [ref=f1e10]:
+          - generic [ref=f1e11]:
+            - generic [ref=f1e12]: Origin
+            - generic [ref=f1e13]:
+              - combobox "Origin" [expanded] [active] [invalid] [ref=f1e19]: Mar Girgis
+              - listbox "Origin suggestions" [ref=f1e231]:
+                - text: Transit stops
+                - option "Mar Girgis Greater Cairo" [ref=f1e232] [cursor=pointer]:
+                  - generic [ref=f1e236]:
+                    - generic [ref=f1e237]: Mar Girgis
+                    - generic [ref=f1e238]: Greater Cairo
+                - text: Places on the map
+                - option "مار جرجس شارع مارجرجس · مصر القديمة · القاهرة · القاهرة" [ref=f1e239] [cursor=pointer]:
+                  - generic [ref=f1e243]:
+                    - generic [ref=f1e244]: مار جرجس
+                    - generic [ref=f1e245]: شارع مارجرجس · مصر القديمة · القاهرة · القاهرة
+                - option "مار جرجس شارع مارجرجس · مصر القديمة · القاهرة · القاهرة" [ref=f1e246] [cursor=pointer]:
+                  - generic [ref=f1e250]:
+                    - generic [ref=f1e251]: مار جرجس
+                    - generic [ref=f1e252]: شارع مارجرجس · مصر القديمة · القاهرة · القاهرة
+                - option "مار جرجس شارع مارجرجس · مصر القديمة · القاهرة · القاهرة" [ref=f1e253] [cursor=pointer]:
+                  - generic [ref=f1e257]:
+                    - generic [ref=f1e258]: مار جرجس
+                    - generic [ref=f1e259]: شارع مارجرجس · مصر القديمة · القاهرة · القاهرة
+                - option "كنيسة ماري جرجس قليوب البلد شارع يحيي · قليوب · القليوبية" [ref=f1e260] [cursor=pointer]:
+                  - generic [ref=f1e264]:
+                    - generic [ref=f1e265]: كنيسة ماري جرجس قليوب البلد
+                    - generic [ref=f1e266]: شارع يحيي · قليوب · القليوبية
+                - option "مار جرجس Rue Edmond Gharios · الضاحية الجنوبية · شياح · محافظة جبل لبنان" [ref=f1e267] [cursor=pointer]:
+                  - generic [ref=f1e271]:
+                    - generic [ref=f1e272]: مار جرجس
+                    - generic [ref=f1e273]: Rue Edmond Gharios · الضاحية الجنوبية · شياح · محافظة جبل لبنان
+            - generic [ref=f1e135]: Please choose an origin.
+          - button "Swap origin and destination" [ref=f1e20] [cursor=pointer]
+          - generic [ref=f1e25]:
+            - generic [ref=f1e26]: Destination
+            - generic [ref=f1e27]:
+              - generic [ref=f1e28]:
+                - combobox "Destination" [invalid] [ref=f1e32]: Saad Zaghloul Metro
+                - button "Clear Destination" [ref=f1e222] [cursor=pointer]
+              - status [ref=f1e226]: "Selected: Saad Zaghloul Metro · 30.0365, 31.2404"
+            - generic [ref=f1e136]: Please choose a destination.
+        - generic [ref=f1e33]:
+          - generic [ref=f1e34]: Departure
+          - generic [ref=f1e35]:
+            - textbox "Departure time" [ref=f1e37]: 2026-09-08T00:59
+            - button "Now" [ref=f1e38]
+        - button "Preferences & constraints" [ref=f1e39] [cursor=pointer]
+        - button "Find journeys" [ref=f1e42] [cursor=pointer]
+      - generic "Selected locations map" [ref=f1e43]:
+        - generic "Map" [ref=f1e44]:
+          - generic [ref=f1e45]:
+            - region "Map" [ref=f1e46]
+            - group [ref=f1e47]:
+              - generic "Toggle attribution" [ref=f1e48] [cursor=pointer]
+              - generic [ref=f1e49]:
+                - text: ©
+                - link "Stadia Maps" [ref=f1e50] [cursor=pointer]:
+                  - /url: https://stadiamaps.com/
+                - text: ©
+                - link "OpenMapTiles" [ref=f1e51] [cursor=pointer]:
+                  - /url: https://openmaptiles.org/
+                - text: ©
+                - link "OpenStreetMap" [ref=f1e52] [cursor=pointer]:
+                  - /url: https://openstreetmap.org
+                - text: contributors
+          - generic [ref=f1e53]:
+            - button "Recenter map" [ref=f1e54] [cursor=pointer]
+            - button "Zoom in" [ref=f1e58] [cursor=pointer]: +
+            - button "Zoom out" [ref=f1e59] [cursor=pointer]: −
+            - generic [aria-hidden] [ref=f1e230]: "17"
+        - generic [ref=f1e60]: Planner · Admin User
+    - navigation "Primary" [ref=f1e61]:
+      - link "Home" [ref=f1e62] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f1e67] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f1e72] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f1e77] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=f1e82]: "12"
+        - text: Alerts
+      - link "Profile" [ref=f1e83] [cursor=pointer]:
+        - /url: /profile

@@ -1,0 +1,22 @@
+- generic [ref=f14e2]:
+  - link "Skip to main content" [ref=f14e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f14e4]:
+    - generic [ref=f14e6]:
+      - generic [ref=f14e8]:
+        - heading "Notifications" [level=1] [ref=f14e10]
+        - paragraph [ref=f14e11]: Real-time updates on your journeys, transit alerts, and reports
+      - generic [ref=f14e12]:
+        - button "All (0)" [ref=f14e13] [cursor=pointer]
+        - button "Unread only (0)" [ref=f14e14] [cursor=pointer]
+    - navigation "Primary" [ref=f14e19]:
+      - link "Home" [ref=f14e20] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f14e25] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f14e30] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f14e35] [cursor=pointer]:
+        - /url: /notifications
+      - link "Profile" [ref=f14e40] [cursor=pointer]:
+        - /url: /profile

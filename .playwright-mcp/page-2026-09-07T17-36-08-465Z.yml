@@ -1,0 +1,49 @@
+- generic [ref=f12e2]:
+  - link "Skip to main content" [ref=f12e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f12e4]:
+    - generic [ref=f12e6]:
+      - generic [ref=f12e37]:
+        - generic [ref=f12e38]:
+          - text: Deviation Incident Management
+          - heading "Route Deviation" [level=1] [ref=f12e39]
+        - button "Back to Map" [ref=f12e42] [cursor=pointer]
+      - alert [ref=f12e84]:
+        - generic [ref=f12e89]:
+          - generic [ref=f12e90]: Notice
+          - generic [ref=f12e91]: No deviation event exists for this journey.
+      - generic [ref=f12e45]:
+        - generic [ref=f12e46]:
+          - generic [ref=f12e47]: Off-Route Deviation
+          - generic [ref=f12e48]: medium
+        - paragraph [ref=f12e49]: Your current vehicle or walking path has deviated from the planned transit schedule.
+        - generic [ref=f12e50]:
+          - generic [ref=f12e51]: Just now
+          - generic [ref=f12e52]: Safe to resume without reroute
+      - generic [ref=f12e53]:
+        - generic [ref=f12e54]: "Option 1: Resume Original Route"
+        - paragraph [ref=f12e55]: If you have returned to your designated path or made a minor detour, you can resume tracking without recalculating.
+        - button "Resume Original Plan" [ref=f12e56] [cursor=pointer]
+      - generic [ref=f12e57]:
+        - generic [ref=f12e58]:
+          - generic [ref=f12e59]:
+            - text: "Option 2: Recovery Rerouting"
+            - generic [ref=f12e60]: Find alternative paths from your current position
+          - button "Find New Routes" [ref=f12e61] [cursor=pointer]
+        - generic [ref=f12e70]:
+          - generic [ref=f12e79]: No recovery routes loaded
+          - generic [ref=f12e80]: Tap 'Find New Routes' to calculate alternative transit connections from your current location.
+      - button "Cancel Entire Journey" [ref=f12e82] [cursor=pointer]
+    - navigation "Primary" [ref=f12e10]:
+      - link "Home" [ref=f12e11] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f12e16] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f12e21] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f12e26] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=f12e83]: "1"
+        - text: Alerts
+      - link "Profile" [ref=f12e31] [cursor=pointer]:
+        - /url: /profile

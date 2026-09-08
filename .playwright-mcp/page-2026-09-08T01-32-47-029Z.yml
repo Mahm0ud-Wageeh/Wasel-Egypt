@@ -1,0 +1,165 @@
+- generic [ref=f2e2]:
+  - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - generic [ref=f2e7]:
+        - button "Back to search" [ref=f2e8] [cursor=pointer]
+        - generic [ref=f2e11]:
+          - text: Search results
+          - generic [ref=f2e12]: 3 options available
+      - generic [ref=f2e13]:
+        - generic "Map" [ref=f2e15]:
+          - generic [ref=f2e16]:
+            - region "Map" [ref=f2e17]
+            - group [ref=f2e18]:
+              - generic "Toggle attribution" [ref=f2e19] [cursor=pointer]
+              - generic [ref=f2e20]:
+                - text: ©
+                - link "Stadia Maps" [ref=f2e21] [cursor=pointer]:
+                  - /url: https://stadiamaps.com/
+                - text: ©
+                - link "OpenMapTiles" [ref=f2e22] [cursor=pointer]:
+                  - /url: https://openmaptiles.org/
+                - text: ©
+                - link "OpenStreetMap" [ref=f2e23] [cursor=pointer]:
+                  - /url: https://openstreetmap.org
+                - text: contributors
+          - generic [ref=f2e24]:
+            - button "Recenter map" [ref=f2e25] [cursor=pointer]
+            - button "Zoom in" [ref=f2e29] [cursor=pointer]: +
+            - button "Zoom out" [ref=f2e30] [cursor=pointer]: −
+            - generic [aria-hidden] [ref=f2e31]: "8"
+        - generic [ref=f2e32]:
+          - button "View on map" [ref=f2e33]
+          - list [ref=f2e36]:
+            - listitem [ref=f2e37]:
+              - 'button "Recommended 4h 39m Direct 03:59 AM → 08:41 AM 95% reliability Route: Origin → Walk 0 m → Metro · Line 1 → Walk 267 m → Destination 267 m walking · 3 EGP · score 0.01" [active] [pressed] [ref=f2e38] [cursor=pointer]':
+                - generic [ref=f2e39]:
+                  - generic [ref=f2e40]:
+                    - generic [ref=f2e41]: Recommended
+                    - generic [ref=f2e45]: 4h 39m
+                  - generic [ref=f2e46]: Direct
+                - generic [ref=f2e47]:
+                  - generic [ref=f2e48]: 03:59 AM → 08:41 AM
+                  - generic [ref=f2e49]: 95% reliability
+                - 'img "Route: Origin → Walk 0 m → Metro · Line 1 → Walk 267 m → Destination" [ref=f2e53]':
+                  - generic "Origin" [ref=f2e54]
+                  - generic "Walk 0 m" [ref=f2e60]
+                  - generic "Metro · Line 1" [ref=f2e66]
+                  - generic "Walk 267 m" [ref=f2e76]
+                  - generic "Destination" [ref=f2e81]
+                - generic [ref=f2e84]:
+                  - generic [ref=f2e85]: 267 m walking
+                  - generic [ref=f2e86]: · 3 EGP
+                  - generic [ref=f2e87]: · score 0.01
+            - listitem [ref=f2e88]:
+              - 'button "5h 11m Direct 03:59 AM → 09:20 AM 100% reliability Route: Origin → Walk 307 m → Microbus · Microbus → Walk 878 m → Destination 1.2 km walking · score 0.51" [ref=f2e89] [cursor=pointer]':
+                - generic [ref=f2e90]:
+                  - generic [ref=f2e91]: 5h 11m
+                  - generic [ref=f2e93]: Direct
+                - generic [ref=f2e94]:
+                  - generic [ref=f2e95]: 03:59 AM → 09:20 AM
+                  - generic [ref=f2e96]: 100% reliability
+                - 'img "Route: Origin → Walk 307 m → Microbus · Microbus → Walk 878 m → Destination" [ref=f2e100]':
+                  - generic "Origin" [ref=f2e101]
+                  - generic "Walk 307 m" [ref=f2e107]
+                  - generic "Microbus · Microbus" [ref=f2e113]
+                  - generic "Walk 878 m" [ref=f2e121]
+                  - generic "Destination" [ref=f2e126]
+                - generic [ref=f2e129]:
+                  - generic [ref=f2e130]: 1.2 km walking
+                  - generic [ref=f2e131]: · score 0.51
+            - listitem [ref=f2e132]:
+              - 'button "5h 13m Direct 03:59 AM → 09:20 AM 100% reliability Route: Origin → Walk 307 m → Minibus · Minibus 107 → Walk 778 m → Destination 1.1 km walking · score 0.52" [ref=f2e133] [cursor=pointer]':
+                - generic [ref=f2e134]:
+                  - generic [ref=f2e135]: 5h 13m
+                  - generic [ref=f2e137]: Direct
+                - generic [ref=f2e138]:
+                  - generic [ref=f2e139]: 03:59 AM → 09:20 AM
+                  - generic [ref=f2e140]: 100% reliability
+                - 'img "Route: Origin → Walk 307 m → Minibus · Minibus 107 → Walk 778 m → Destination" [ref=f2e144]':
+                  - generic "Origin" [ref=f2e145]
+                  - generic "Walk 307 m" [ref=f2e151]
+                  - generic "Minibus · Minibus 107" [ref=f2e157]
+                  - generic "Walk 778 m" [ref=f2e165]
+                  - generic "Destination" [ref=f2e170]
+                - generic [ref=f2e173]:
+                  - generic [ref=f2e174]: 1.1 km walking
+                  - generic [ref=f2e175]: · score 0.52
+          - paragraph [ref=f2e176]: Select an option to view the full itinerary, save it, or start tracking.
+      - dialog "Journey details" [ref=f2e205]:
+        - generic [ref=f2e207]:
+          - generic [ref=f2e208]:
+            - generic [ref=f2e209]:
+              - text: Journey details
+              - generic [ref=f2e210]:
+                - generic [ref=f2e211]: 4h 39m
+                - generic [ref=f2e212]: 03:59 AM → 08:41 AM
+            - button "Close journey details" [ref=f2e213] [cursor=pointer]
+          - generic [ref=f2e217]:
+            - generic [ref=f2e223]:
+              - text: Origin
+              - generic [ref=f2e224]: Depart 03:59 AM
+            - generic [ref=f2e230]:
+              - generic [ref=f2e231]:
+                - generic [ref=f2e232]: Walk
+                - generic [ref=f2e233]: 03:59 AM → 03:59 AM · 0 min
+              - generic [ref=f2e234]: Origin → Destination
+              - generic [ref=f2e235]: Walking distance estimated (routing engine unavailable)
+            - generic [ref=f2e245]:
+              - generic [ref=f2e246]:
+                - generic [ref=f2e247]: Metro · Line 1
+                - generic [ref=f2e248]: 08:30 AM → 08:38 AM · 8 min
+              - generic [ref=f2e249]: Mar Girgis → Saad Zaghloul · 3.5 km
+              - generic [ref=f2e250]: Cairo Metro Line 1
+            - generic [ref=f2e256]:
+              - generic [ref=f2e257]:
+                - generic [ref=f2e258]: Walk
+                - generic [ref=f2e259]: 08:38 AM → 08:41 AM · 3 min
+              - generic [ref=f2e260]: Origin → Destination · 267 m
+            - generic [ref=f2e265]:
+              - text: Destination
+              - generic [ref=f2e266]: Arrive 08:41 AM
+          - generic [ref=f2e267]:
+            - generic [ref=f2e268]: 3 EGP
+            - generic [ref=f2e269]: 95% reliability
+            - generic [ref=f2e270]: score 0.01
+          - generic [ref=f2e271]:
+            - generic [ref=f2e272]:
+              - generic [ref=f2e273]: Why this ranking
+              - generic [ref=f2e274]: score 0.01
+            - generic [ref=f2e275]:
+              - generic [ref=f2e276]:
+                - generic [ref=f2e277]: Time
+                - generic [ref=f2e279]: 4h 39m
+              - generic [ref=f2e280]:
+                - generic [ref=f2e281]: Walking
+                - generic [ref=f2e283]: 267 m
+              - generic [ref=f2e284]:
+                - generic [ref=f2e285]: Transfers
+                - generic [ref=f2e287]: "0"
+              - generic [ref=f2e288]:
+                - generic [ref=f2e289]: Fare
+                - generic [ref=f2e291]: 3 EGP
+              - generic [ref=f2e292]:
+                - generic [ref=f2e293]: Reliability
+                - generic [ref=f2e295]: 95%
+            - paragraph [ref=f2e296]: "Lower is better: time 40% · walking 20% · transfers 20% · fare 10% · reliability 10%."
+          - generic [ref=f2e297]:
+            - button "Save journey" [ref=f2e298] [cursor=pointer]
+            - button "Start journey" [disabled] [ref=f2e299]
+          - paragraph [ref=f2e300]: Save the journey first — then start it to begin live tracking.
+    - navigation "Primary" [ref=f2e177]:
+      - link "Home" [ref=f2e178] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f2e183] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f2e188] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f2e193] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=f2e204]: "12"
+        - text: Alerts
+      - link "Profile" [ref=f2e198] [cursor=pointer]:
+        - /url: /profile

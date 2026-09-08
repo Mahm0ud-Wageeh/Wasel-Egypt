@@ -1,0 +1,120 @@
+- generic [ref=f13e2]:
+  - link "Skip to main content" [ref=f13e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f13e4]:
+    - generic [ref=f13e125]:
+      - generic [ref=f13e129]:
+        - generic [ref=f13e130]:
+          - text: Deviation Incident Management
+          - heading "Route Deviation" [level=1] [ref=f13e131]
+        - button "Back to Map" [ref=f13e134] [cursor=pointer]
+      - status [ref=f13e241]:
+        - generic [ref=f13e246]:
+          - generic [ref=f13e247]: Resolved
+          - generic [ref=f13e248]: New route plan accepted! Rerouting trip now...
+      - generic [ref=f13e137]:
+        - generic [ref=f13e138]:
+          - generic [ref=f13e139]: Off-Route Deviation
+          - generic [ref=f13e140]: high
+        - paragraph [ref=f13e141]: "Off route: 7322 m from the corridor of the current metro leg towards Tahrir Square."
+        - generic [ref=f13e142]:
+          - generic [ref=f13e143]: "Expected stop:"
+          - generic [ref=f13e144]: Tahrir Square
+        - generic [ref=f13e145]: Detected at 30.0900, 31.2900 — reroute recommended
+        - generic [ref=f13e146]:
+          - generic [ref=f13e147]: 09:10 PM
+          - generic [ref=f13e148]: Rerouting required
+      - generic [ref=f13e149]:
+        - generic [ref=f13e150]: "Option 1: Resume Original Route"
+        - paragraph [ref=f13e151]: If you have returned to your designated path or made a minor detour, you can resume tracking without recalculating.
+        - button "Resume Disabled (Severity High)" [disabled] [ref=f13e152]
+      - generic [ref=f13e153]:
+        - generic [ref=f13e154]:
+          - generic [ref=f13e155]:
+            - text: "Option 2: Recovery Rerouting"
+            - generic [ref=f13e156]: Find alternative paths from your current position
+          - button "Find New Routes" [ref=f13e157] [cursor=pointer]
+        - generic [ref=f13e186]:
+          - generic [ref=f13e187]:
+            - generic [ref=f13e189]:
+              - generic [ref=f13e190]: "Recovery Option #1"
+              - generic [ref=f13e191]: +53 min delay
+            - generic [ref=f13e192]:
+              - generic [ref=f13e193]: 0 legs · 54 min total · +53 min vs original
+              - button "Use this route" [ref=f13e194] [cursor=pointer]
+            - generic "Map" [ref=f13e196]:
+              - generic [ref=f13e197]:
+                - region "Map" [ref=f13e198]
+                - group [ref=f13e199]:
+                  - generic "Toggle attribution" [ref=f13e200] [cursor=pointer]
+                  - generic [ref=f13e201]:
+                    - text: ©
+                    - link "Stadia Maps" [ref=f13e202] [cursor=pointer]:
+                      - /url: https://stadiamaps.com/
+                    - text: ©
+                    - link "OpenMapTiles" [ref=f13e203] [cursor=pointer]:
+                      - /url: https://openmaptiles.org/
+                    - text: ©
+                    - link "OpenStreetMap" [ref=f13e204] [cursor=pointer]:
+                      - /url: https://openstreetmap.org
+                    - text: contributors
+          - generic [ref=f13e205]:
+            - generic [ref=f13e207]:
+              - generic [ref=f13e208]: "Recovery Option #2"
+              - generic [ref=f13e209]: +55 min delay
+            - generic [ref=f13e210]:
+              - generic [ref=f13e211]: 0 legs · 56 min total · +55 min vs original
+              - button "Use this route" [ref=f13e212] [cursor=pointer]
+            - generic "Map" [ref=f13e214]:
+              - generic [ref=f13e215]:
+                - region "Map" [ref=f13e216]
+                - group [ref=f13e217]:
+                  - generic "Toggle attribution" [ref=f13e218] [cursor=pointer]
+                  - generic [ref=f13e219]:
+                    - text: ©
+                    - link "Stadia Maps" [ref=f13e220] [cursor=pointer]:
+                      - /url: https://stadiamaps.com/
+                    - text: ©
+                    - link "OpenMapTiles" [ref=f13e221] [cursor=pointer]:
+                      - /url: https://openmaptiles.org/
+                    - text: ©
+                    - link "OpenStreetMap" [ref=f13e222] [cursor=pointer]:
+                      - /url: https://openstreetmap.org
+                    - text: contributors
+          - generic [ref=f13e223]:
+            - generic [ref=f13e225]:
+              - generic [ref=f13e226]: "Recovery Option #3"
+              - generic [ref=f13e227]: +63 min delay
+            - generic [ref=f13e228]:
+              - generic [ref=f13e229]: 0 legs · 64 min total · +63 min vs original
+              - button "Use this route" [ref=f13e230] [cursor=pointer]
+            - generic "Map" [ref=f13e232]:
+              - generic [ref=f13e233]:
+                - region "Map" [ref=f13e234]
+                - group [ref=f13e235]:
+                  - generic "Toggle attribution" [ref=f13e236] [cursor=pointer]
+                  - generic [ref=f13e237]:
+                    - text: ©
+                    - link "Stadia Maps" [ref=f13e238] [cursor=pointer]:
+                      - /url: https://stadiamaps.com/
+                    - text: ©
+                    - link "OpenMapTiles" [ref=f13e239] [cursor=pointer]:
+                      - /url: https://openmaptiles.org/
+                    - text: ©
+                    - link "OpenStreetMap" [ref=f13e240] [cursor=pointer]:
+                      - /url: https://openstreetmap.org
+                    - text: contributors
+      - button "Cancel Entire Journey" [ref=f13e178] [cursor=pointer]
+    - navigation "Primary" [ref=f13e10]:
+      - link "Home" [ref=f13e11] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f13e16] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f13e21] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f13e26] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=f13e124]: "1"
+        - text: Alerts
+      - link "Profile" [ref=f13e31] [cursor=pointer]:
+        - /url: /profile

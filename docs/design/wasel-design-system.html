@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wasel Egypt — UI/UX Design System &amp; Screens</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --p900:#0E3A5F;--p700:#14558B;--p600:#1A6BB0;--p500:#2280CC;--p100:#D8E9F7;--p50:#EFF6FC;
+  --a600:#B98A2F;--a100:#F6ECD4;--nile:#0E7C7B;
+  --s700:#2E7D32;--s50:#E6F2E7;--w700:#B26A00;--w50:#FFF3E0;--e700:#C62828;--e50:#FDE9E9;
+  --ink900:#16222E;--ink700:#3D4C5C;--ink500:#64748B;--ink300:#B8C2CE;--line:#E3E8EE;
+  --surface:#FFFFFF;--bg:#F7F9FB;--sand:#FAF6EF;
+  --m-metro:#C62828;--m-rail:#6A3FA0;--m-bus:#1565C0;--m-mini:#E07C00;--m-micro:#00897B;--m-walk:#6B7280;
+  --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:24px;
+  --sh-sm:0 1px 2px rgba(22,34,46,.06);--sh-md:0 4px 12px rgba(22,34,46,.08);--sh-lg:0 12px 32px rgba(22,34,46,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',Inter,system-ui,sans-serif;background:#E9EDF2;color:var(--ink900);padding:40px 32px 80px}
+.doc-header{max-width:1520px;margin:0 auto 32px}
+.doc-header h1{font-size:30px;font-weight:700;color:var(--p900)}
+.doc-header p{color:var(--ink500);font-size:14px;margin-top:4px}
+.sec{max-width:1520px;margin:0 auto 56px}
+.sec>h2{font-size:20px;font-weight:700;color:var(--p900);border-left:4px solid var(--a600);padding-left:12px;margin-bottom:6px}
+.sec>.sub{font-size:13px;color:var(--ink500);margin-bottom:20px;padding-left:16px}
+.grid{display:flex;flex-wrap:wrap;gap:32px}
+.frame{display:flex;flex-direction:column;gap:8px}
+.frame .cap{width:390px}
+.frame.wide .cap{width:1120px}
+.cap b{font-size:14px;color:var(--ink900)}
+.cap span{display:block;font-size:11.5px;color:var(--ink500);line-height:1.5;margin-top:2px}
+.cap .api{color:var(--p600);font-weight:600}
+/* phone */
+.phone{width:390px;height:844px;background:var(--bg);border:8px solid #1C2733;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:var(--sh-lg);flex:none}
+.phone .status{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:600;color:var(--ink900);background:transparent;position:relative;z-index:5}
+.appbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;background:var(--surface)}
+.appbar .back{width:32px;height:32px;border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--ink700)}
+.appbar h3{font-size:17px;font-weight:700;flex:1}
+.content{flex:1;overflow:hidden;padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+.tabbar{height:66px;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:flex-start;padding:8px 8px 0}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--ink500);position:relative}
+.tab.on{color:var(--p700)}
+.tab .ic{font-size:19px;line-height:1}
+.tab .dot{position:absolute;top:-2px;right:22px;width:8px;height:8px;background:var(--e700);border-radius:50%;border:2px solid var(--surface)}
+/* components */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-md);font-family:inherit;font-weight:600;border:none;cursor:pointer}
+.btn.md{height:44px;padding:0 18px;font-size:14px;width:100%}
+.btn.sm{height:32px;padding:0 12px;font-size:12.5px}
+.btn.p{background:var(--p600);color:#fff}.btn.p:hover{background:var(--p700)}
+.btn.s{background:var(--surface);border:1px solid var(--line);color:var(--ink900)}
+.btn.g{background:transparent;color:var(--p600)}
+.btn.d{background:var(--e700);color:#fff}
+.btn.dis{background:var(--ink300);color:#fff}
+.btn .sp{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:16px}
+.card.int{box-shadow:var(--sh-md)}
+.card.flat{border:1px solid var(--line);box-shadow:none}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.b-pending{background:var(--w50);color:var(--w700)}.b-verified{background:var(--s50);color:var(--s700)}
+.b-rejected{background:var(--e50);color:var(--e700)}.b-resolved{background:#E0F0F0;color:var(--nile)}
+.b-active{background:var(--p50);color:var(--p700)}.b-deviated{background:var(--e50);color:var(--e700)}
+.b-rerouted{background:var(--a100);color:var(--a600)}.b-completed{background:var(--s50);color:var(--s700)}
+.b-cancelled{background:#EDF0F3;color:var(--ink500)}
+.b-high{background:var(--e50);color:var(--e700)}.b-medium{background:var(--w50);color:var(--w700)}.b-low{background:var(--s50);color:var(--s700)}
+.b-normal{background:#EDF0F3;color:var(--ink500)}.b-urgent{background:var(--e700);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line);color:var(--ink700);background:var(--surface)}
+.chip.on{background:var(--p50);border-color:var(--p600);color:var(--p700)}
+.mdot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.alert{display:flex;gap:10px;border-radius:var(--r-md);padding:12px 14px;align-items:flex-start}
+.alert .t{font-size:13px;font-weight:700}.alert .m{font-size:12px;color:var(--ink700);line-height:1.5}
+.a-info{background:var(--p50)}.a-info .t{color:var(--p700)}
+.a-ok{background:var(--s50)}.a-ok .t{color:var(--s700)}
+.a-warn{background:var(--w50)}.a-warn .t{color:var(--w700)}
+.a-err{background:var(--e50)}.a-err .t{color:var(--e700)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:500;color:var(--ink700)}
+.input{height:44px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);padding:0 14px;font-size:14px;font-family:inherit;color:var(--ink900);display:flex;align-items:center;color:var(--ink300)}
+.input.err{border:1.5px solid var(--e700)}
+.help{font-size:12px;color:var(--e700)}
+.skel{height:72px;border-radius:var(--r-lg);background:linear-gradient(100deg,#EDF0F3 40%,#F6F8FA 50%,#EDF0F3 60%);background-size:200% 100%;animation:sk 1.4s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.hero{background:linear-gradient(135deg,var(--p900),var(--p600));color:#fff;border-radius:0 0 var(--r-xl) var(--r-xl);padding:20px 16px 24px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero .hi{font-size:12px;opacity:.8}.hero h2{font-size:22px;font-weight:700;margin:2px 0 12px}
+.searchbar{height:52px;background:var(--surface);border-radius:var(--r-lg);display:flex;align-items:center;gap:10px;padding:0 16px;box-shadow:var(--sh-md);font-size:14px;color:var(--ink300)}
+.searchbar .pin{width:34px;height:34px;border-radius:12px;background:var(--a100);color:var(--a600);display:flex;align-items:center;justify-content:center;font-size:16px}
+/* map mock */
+.map{position:relative;background:linear-gradient(160deg,#E8ECEF 0%,#E2E8EA 60%,#D5ECEC 100%);overflow:hidden}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.mctrl{position:absolute;width:38px;height:38px;background:var(--surface);border-radius:12px;box-shadow:var(--sh-md);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink700)}
+.me{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--p600);border:3px solid #fff;box-shadow:var(--sh-md)}
+.me:after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid rgba(26,107,176,.35);animation:pu 2s infinite}
+@keyframes pu{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.4);opacity:0}}
+.stopm{position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--p600);box-shadow:var(--sh-sm)}
+.sheet{background:var(--surface);border-radius:var(--r-xl) var(--r-xl) 0 0;box-shadow:var(--sh-lg);padding:10px 16px 16px;position:relative}
+.sheet .handle{width:40px;height:4px;border-radius:2px;background:var(--ink300);margin:0 auto 12px}
+.leg{display:flex;gap:12px}
+.leg .rail{display:flex;flex-direction:column;align-items:center}
+.leg .rail .ln{width:2px;flex:1;background:var(--line)}
+.leg .rail .nd{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+.timex{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.mut{font-size:12px;color:var(--ink500)}.mut2{font-size:11.5px;color:var(--ink500)}
+.notif{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.notif.unread{background:var(--p50);margin:0 -8px;padding:12px 8px;border-radius:var(--r-md);border-bottom:none;margin-bottom:4px}
+.notif .ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.kpi{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:16px;min-width:170px}
+.kpi .v{font-size:24px;font-weight:700;color:var(--p900);font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;color:var(--ink500);font-weight:600}
+.kpi .d{font-size:11px;font-weight:600;margin-top:4px}
+/* desktop */
+.desk{width:1120px;height:760px;background:var(--bg);border:8px solid #1C2733;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--sh-lg);flex:none}
+.desk .dtop{height:56px;background:var(--p900);display:flex;align-items:center;padding:0 24px;gap:20px;color:#fff}
+.desk .dtop .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
+.desk .dtop .lk{font-size:13px;opacity:.75}
+.desk .dtop .lk.on{opacity:1;font-weight:600;border-bottom:2px solid var(--a600);padding:16px 0 15px}
+.desk .dtop .sp{flex:1}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--a600);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.desk .dbody{flex:1;display:flex;overflow:hidden}
+.desk .drail{width:190px;background:var(--surface);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.desk .drail a{padding:9px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink700);text-decoration:none}
+.desk .drail a.on{background:var(--p50);color:var(--p700)}
+.desk .dmain{flex:1;padding:20px 24px;overflow:hidden;display:flex;flex-direction:column;gap:16px}
+.table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-sm);font-size:12.5px}
+.table th{text-align:left;padding:10px 14px;background:var(--bg);font-size:11px;color:var(--ink500);text-transform:uppercase;letter-spacing:.04em}
+.table td{padding:10px 14px;border-top:1px solid var(--line)}
+.sw{width:100%;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.sw .c{height:64px;border-radius:12px;padding:8px;font-size:10px;font-weight:600;color:#fff;display:flex;flex-direction:column;justify-content:space-between}
+.type-row{display:flex;align-items:baseline;gap:14px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.comp-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+h4.ct{font-size:13px;font-weight:700;color:var(--p700);margin:18px 0 6px;text-transform:uppercase;letter-spacing:.05em}
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1>🚌 Wasel Egypt — UI/UX Design System &amp; Screens</h1>
+  <p>Modern · Clean · Trustworthy · Egypt-focused public transit · Mobile-first. Grounded in the audited Laravel API (v1). Companion spec: <b>docs/design/UIUX_DESIGN_SPEC.md</b></p>
+</div>
+
+<!-- ================= FOUNDATIONS ================= -->
+<div class="sec">
+  <h2>01 · Foundations</h2>
+  <p class="sub">Figma variables: color/*, color/mode/*, radius/*, spacing (4-pt grid). Typeface: Cairo (Latin + Arabic).</p>
+
+  <h4 class="ct">Brand &amp; semantic colors</h4>
+  <div class="sw">
+    <div class="c" style="background:var(--p900)">primary/900</div>
+    <div class="c" style="background:var(--p700)">primary/700</div>
+    <div class="c" style="background:var(--p600)">primary/600</div>
+    <div class="c" style="background:var(--p500)">primary/500</div>
+    <div class="c" style="background:var(--a600)">accent/600</div>
+    <div class="c" style="background:var(--nile)">nile/600</div>
+    <div class="c" style="background:var(--s700)">success/700</div>
+    <div class="c" style="background:var(--w700)">warning/700</div>
+    <div class="c" style="background:var(--e700)">error/700</div>
+    <div class="c" style="background:var(--ink900);color:#fff">ink/900</div>
+    <div class="c" style="background:var(--ink500);color:#fff">ink/500</div>
+    <div class="c" style="background:var(--line);color:var(--ink700)">line</div>
+    <div class="c" style="background:var(--sand);color:var(--ink700);border:1px solid var(--line)">bg/sand</div>
+    <div class="c" style="background:var(--a100);color:var(--a600)">accent/100</div>
+    <div class="c" style="background:var(--p100);color:var(--p700)">primary/100</div>
+    <div class="c" style="background:var(--p50);color:var(--p700)">primary/50</div>
+  </div>
+
+  <h4 class="ct">Transit mode colors</h4>
+  <div class="comp-row">
+    <span class="chip"><span class="mdot" style="background:var(--m-metro)"></span>metro</span>
+    <span class="chip"><span class="mdot" style="background:var(--m-rail)"></span>rail</span>
+    <span class="chip"><span class="mdot" style="background:var(--m-bus)"></span>bus</span>
+    <span class="chip"><span class="mdot" style="background:var(--m-mini)"></span>minibus</span>
+    <span class="chip"><span class="mdot" style="background:var(--m-micro)"></span>microbus</span>
+    <span class="chip"><span class="mdot" style="background:var(--m-walk)"></span>walking</span>
+  </div>
+
+  <h4 class="ct">Type scale — Cairo</h4>
+  <div style="background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:16px 20px;max-width:760px">
+    <div class="type-row"><span style="font-size:36px;font-weight:700">Display 36/700</span><span class="mut">Landing hero</span></div>
+    <div class="type-row"><span style="font-size:24px;font-weight:700">H1 24/700</span><span class="mut">Screen titles</span></div>
+    <div class="type-row"><span style="font-size:20px;font-weight:600">H2 20/600</span><span class="mut">Sections &amp; cards</span></div>
+    <div class="type-row"><span style="font-size:16px">Body 16/400</span><span class="mut">Primary body</span></div>
+    <div class="type-row"><span style="font-size:14px">Body 14/400</span><span class="mut">Default</span></div>
+    <div class="type-row"><span style="font-size:13px;font-weight:500">Label 13/500</span><span class="mut">Inputs, nav</span></div>
+    <div class="type-row"><span style="font-size:12px;font-weight:500;color:var(--ink500)">Caption 12/500</span><span class="mut">Meta, timestamps</span></div>
+    <div class="type-row"><span style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums">Mono-num 14/600 — 08:10 · 2.4 km · EGP 8</span><span class="mut">Times &amp; fares</span></div>
+  </div>
+
+  <h4 class="ct">Buttons</h4>
+  <div class="comp-row" style="background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:16px;max-width:760px">
+    <span class="btn p md" style="width:auto">Primary</span>
+    <span class="btn s md" style="width:auto">Secondary</span>
+    <span class="btn g md" style="width:auto">Ghost</span>
+    <span class="btn d md" style="width:auto">Danger</span>
+    <span class="btn dis md" style="width:auto">Disabled</span>
+    <span class="btn p md" style="width:auto"><span class="sp"></span>Loading…</span>
+    <span class="btn p sm" style="width:auto">Small</span>
+  </div>
+
+  <h4 class="ct">Inputs · states</h4>
+  <div style="display:flex;gap:24px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:16px;max-width:900px;flex-wrap:wrap">
+    <div class="field" style="flex:1;min-width:180px"><label>Email</label><div class="input" style="color:var(--ink900)">sara@example.com</div></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Focus</label><div class="input" style="border:1.5px solid var(--p600);color:var(--ink900)">typing…</div></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Password</label><div class="input err">•••</div><span class="help">Password must be at least 8 characters.</span></div>
+    <div class="field" style="flex:1;min-width:180px"><label>Disabled</label><div class="input">Locked field</div></div>
+  </div>
+
+  <h4 class="ct">Badges · alerts</h4>
+  <div class="comp-row" style="background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:14px 16px;max-width:900px">
+    <span class="badge b-pending">pending</span><span class="badge b-verified">verified</span>
+    <span class="badge b-rejected">rejected</span><span class="badge b-resolved">resolved</span>
+    <span class="badge b-active">active</span><span class="badge b-deviated">deviated</span>
+    <span class="badge b-rerouted">rerouted</span><span class="badge b-completed">completed</span>
+    <span class="badge b-high">high</span><span class="badge b-medium">medium</span>
+    <span class="badge b-urgent">urgent</span>
+  </div>
+  <div class="comp-row" style="max-width:900px">
+    <div class="alert a-info" style="flex:1;min-width:260px"><b>ℹ</b><div><div class="t">Service alert</div><div class="m">Line M1 is running with 5-minute delays.</div></div></div>
+    <div class="alert a-ok" style="flex:1;min-width:260px"><b>✓</b><div><div class="t">Report verified</div><div class="m">Your report is now publicly visible.</div></div></div>
+    <div class="alert a-warn" style="flex:1;min-width:260px"><b>⚠</b><div><div class="t">Duplicate report</div><div class="m">An identical report was already submitted in the last 24 hours.</div></div></div>
+    <div class="alert a-err" style="flex:1;min-width:260px"><b>✕</b><div><div class="t">Deviation detected</div><div class="m">You appear to be off your planned route.</div></div></div>
+  </div>
+
+  <h4 class="ct">Map UI kit</h4>
+  <div class="map" style="width:390px;height:200px;border-radius:var(--r-lg)">
+    <svg viewBox="0 0 390 200" preserveAspectRatio="none">
+      <path d="M0 60 L390 40" stroke="#fff" stroke-width="8"/><path d="M60 0 L90 200" stroke="#fff" stroke-width="6"/>
+      <path d="M-10 170 C 100 150, 250 120, 400 30" stroke="var(--m-metro)" stroke-width="5" fill="none"/>
+      <path d="M200 200 L260 90" stroke="var(--m-walk)" stroke-width="4" stroke-dasharray="6 6" fill="none"/>
+    </svg>
+    <div class="stopm" style="left:52px;top:112px"></div>
+    <div class="stopm" style="left:355px;top:32px;border-color:var(--a600)"></div>
+    <div class="me" style="left:250px;top:60px"></div>
+    <div class="mctrl" style="right:10px;top:10px">⌖</div>
+    <div class="mctrl" style="right:10px;top:56px">▦</div>
+    <div class="badge b-high" style="position:absolute;left:150px;top:78px">⚠ deviation</div>
+    <div style="position:absolute;left:12px;top:12px;background:var(--surface);border-radius:999px;box-shadow:var(--sh-md);padding:6px 14px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums">Next stop · 2 min</div>
+  </div>
+</div>
+
+<!-- ================= PASSENGER SCREENS ================= -->
+<div class="sec">
+  <h2>02 · Passenger Screens — Mobile 390×844</h2>
+  <p class="sub">Auth → Journey → Tracking → Deviation/Recovery → Reports → Notifications → Profile</p>
+  <div class="grid">
+
+  <!-- Landing guest -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="hero" style="margin-top:-34px">
+      <div class="hi">WASEL EGYPT</div>
+      <h2>Cairo transit,<br>without the guesswork.</h2>
+      <div style="display:flex;gap:8px"><span class="badge" style="background:rgba(255,255,255,.15);color:#fff">Live tracking</span><span class="badge" style="background:rgba(255,255,255,.15);color:#fff">Crowd reports</span><span class="badge" style="background:rgba(255,255,255,.15);color:#fff">Recovery rerouting</span></div>
+    </div>
+    <div class="content" style="margin-top:12px">
+      <div class="btn p md">Create account</div>
+      <div class="btn s md">Log in</div>
+      <div class="btn g md">Continue as guest</div>
+      <div class="card int" style="margin-top:8px"><div class="between"><b style="font-size:14px">🚇 240+ stops</b><b style="font-size:14px">🚌 6 transport modes</b><b style="font-size:14px">✓ verified reports</b></div></div>
+      <div class="mut2" style="text-align:center;margin-top:auto;padding-bottom:8px">Cairo · Giza · Alexandria — built for Egypt</div>
+    </div>
+  </div><div class="cap"><b>Landing — guest</b><span>Purpose: value proposition + entry to auth or guest browsing.<br>API: public reads only. Nav → Login / Register / Home.</span></div></div>
+
+  <!-- Home logged in -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="hero" style="margin-top:-34px;padding-bottom:16px">
+      <div class="between"><div><div class="hi">Good morning,</div><h2 style="margin:2px 0 0">Sara 👋</h2></div><div class="avatar" style="width:40px;height:40px;font-size:14px">S</div></div>
+    </div>
+    <div class="content" style="margin-top:-26px">
+      <div class="searchbar" onclick=""><span class="pin">◎</span> Where to today? <span style="flex:1"></span><b style="color:var(--p600)">Search</b></div>
+      <div class="card int" style="border-left:4px solid var(--p600)">
+        <div class="between"><span class="badge b-active">active</span><span class="mut">started 07:30</span></div>
+        <b style="font-size:14px;display:block;margin:6px 0">Tahrir Square → Garden City</b>
+        <div class="row" style="gap:6px"><span class="mdot" style="background:var(--m-metro)"></span><span class="mut2">Metro M1</span><span class="mut2">·</span><span class="mut2">next stop: Opera Sq · 2 min</span></div>
+        <div style="height:6px;background:var(--p100);border-radius:3px;margin-top:10px"><div style="width:38%;height:100%;background:var(--p600);border-radius:3px"></div></div>
+        <div class="between" style="margin-top:6px"><span class="mut2">38% · on route</span><span class="btn p sm" style="width:auto">Track</span></div>
+      </div>
+      <div class="alert a-warn"><b>⚠</b><div><div class="t">Service alert</div><div class="m">M1 running with 5-min delays near Ramses.</div></div></div>
+      <div class="between" style="margin-top:2px"><b style="font-size:14px">Popular routes</b><span class="mut2">from public feed</span></div>
+      <div class="card flat row"><span class="mdot" style="background:var(--m-metro)"></span><div style="flex:1"><b style="font-size:13px">Tahrir → Giza</b><div class="mut2">Metro M1 · 40 min</div></div><span class="btn g sm" style="width:auto">Try</span></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><span class="ic">⌂</span>Home</div>
+      <div class="tab"><span class="ic">🔍</span>Search</div>
+      <div class="tab"><span class="ic">📣</span>Reports</div>
+      <div class="tab"><span class="ic">🔔</span>Alerts<span class="dot"></span></div>
+      <div class="tab"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div><div class="cap"><b>Home — logged in</b><span>Purpose: launchpad + resume active journey + alerts.<br>API: <span class="api">GET /service-alerts/active · GET /active-journeys · GET /notifications/unread-count</span><br>Nav: → Search, → Active Journey, tabs. States: guest variant, empty (no active journey → plan-first card), alert hidden when none.</span></div></div>
+
+  <!-- Login -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="content" style="justify-content:center;gap:14px;padding:0 24px">
+      <div style="text-align:center;margin-bottom:6px"><div style="font-size:34px">🚌</div><h1 style="font-size:22px;color:var(--p900)">Welcome back</h1><p class="mut">Log in to track your journeys</p></div>
+      <div class="field"><label>Email</label><div class="input" style="color:var(--ink900)">sara@example.com</div></div>
+      <div class="field"><label>Password</label><div class="input" style="color:var(--ink900)">••••••••••</div><span class="help" style="color:var(--e700)">Invalid credentials. Try again.</span></div>
+      <div class="btn p md"><span class="sp"></span>Logging in…</div>
+      <div class="btn g md">Forgot password?</div>
+      <div class="mut2" style="text-align:center">New to Wasel? <b style="color:var(--p600)">Create account</b></div>
+    </div>
+  </div><div class="cap"><b>Login</b><span>API: <span class="api">POST /auth/login</span> → store token, hydrate via /auth/user.<br>States: field validation, submitting, 401 error shown, success → Home. Desktop: split brand panel.</span></div></div>
+
+  <!-- Register -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Create account</h3></div>
+    <div class="content" style="gap:12px">
+      <div class="field"><label>Full name</label><div class="input" style="color:var(--ink900)">Sara Hassan</div></div>
+      <div class="field"><label>Email</label><div class="input err">sara@example</div><span class="help">Enter a valid email address.</span></div>
+      <div class="field"><label>Phone (optional)</label><div class="input">+20 10 1234 5678</div></div>
+      <div class="field"><label>Password</label><div class="input">••••••••</div><span class="mut2">Min 8 characters</span></div>
+      <div class="field"><label>Confirm password</label><div class="input err">•••</div><span class="help">Passwords do not match.</span></div>
+      <div class="btn p md" style="margin-top:auto">Create account</div>
+      <div class="mut2" style="text-align:center">Already registered? <b style="color:var(--p600)">Log in</b></div>
+    </div>
+  </div><div class="cap"><b>Register</b><span>API: <span class="api">POST /auth/register</span> (password confirmed, unique email; auto-assigns <i>user</i> role).<br>States: inline validation, 422 mapping, submitting, success → Home.</span></div></div>
+
+  <!-- Forgot / Reset -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Reset password</h3></div>
+    <div class="content" style="gap:14px">
+      <div class="alert a-ok"><b>✓</b><div><div class="t">Link sent</div><div class="m">We emailed a reset link to sara@example.com. It expires soon.</div></div></div>
+      <div class="field"><label>New password</label><div class="input" style="color:var(--ink900)">••••••••••</div></div>
+      <div class="field"><label>Confirm new password</label><div class="input" style="color:var(--ink900)">••••••••••</div></div>
+      <div class="btn p md">Reset password</div>
+      <div class="mut2" style="text-align:center;margin-top:auto">Didn't get the email? <b style="color:var(--p600)">Resend</b></div>
+    </div>
+  </div><div class="cap"><b>Forgot / Reset password</b><span>API: <span class="api">POST /auth/forgot-password · POST /auth/reset-password</span><br>States: request form → success confirmation → reset form; expired-token error state.</span></div></div>
+
+  <!-- Journey Search -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Plan a journey</h3><span class="btn g sm" style="width:auto">Reset</span></div>
+    <div class="content" style="gap:12px">
+      <div class="map" style="height:180px;border-radius:var(--r-lg)">
+        <svg viewBox="0 0 390 180" preserveAspectRatio="none"><path d="M-10 150 C 120 130, 260 90, 400 20" stroke="var(--m-metro)" stroke-width="5" fill="none"/></svg>
+        <div class="stopm" style="left:44px;top:118px"></div><div class="stopm" style="left:352px;top:26px"></div>
+        <div class="badge" style="position:absolute;left:44px;top:90px;background:var(--surface);color:var(--ink900);box-shadow:var(--sh-sm">◎ Origin · Tahrir Square</div>
+        <div class="badge" style="position:absolute;left:250px;top:6px;background:var(--surface);color:var(--ink900);box-shadow:var(--sh-sm)">◎ Destination</div>
+      </div>
+      <div class="card flat" style="display:flex;flex-direction:column;gap:10px;padding:14px">
+        <div class="row"><span class="mdot" style="width:12px;height:12px;border:3px solid var(--p600);background:#fff"></span><b style="font-size:13px;flex:1">Tahrir Square</b><span class="mut2">change</span></div>
+        <div style="height:1px;background:var(--line);margin-left:5px"></div>
+        <div class="row"><span class="mdot" style="width:12px;height:12px;background:var(--a600)"></span><b style="font-size:13px;flex:1">Garden City</b><span class="mut2">change</span></div>
+      </div>
+      <div class="between"><span class="mut">Departure</span><span class="chip on">Now ▾</span></div>
+      <div class="between"><span class="mut">Max transfers</span><div class="row" style="gap:6px"><span class="chip on">0</span><span class="chip on">1</span><span class="chip">2+</span></div></div>
+      <div class="between"><span class="mut">Max walking</span><span class="chip on">1000 m ▾</span></div>
+      <div class="between"><span class="mut">Modes</span><div class="row" style="gap:6px"><span class="chip on"><span class="mdot" style="background:var(--m-metro)"></span>Metro</span><span class="chip">🚌</span><span class="chip">🚶</span></div></div>
+      <div class="btn p md" style="margin-top:auto">Find journeys</div>
+    </div>
+  </div><div class="cap"><b>Journey Search</b><span>API: <span class="api">POST /journeys/search</span> (coords, requested_at, max_transfers, max_walk_distance_per_leg, preferred/avoided_modes, alternatives).<br>States: locating, validation, searching. Empty results state → separate frame.</span></div></div>
+
+  <!-- Search loading + empty -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Results</h3></div>
+    <div class="content" style="gap:12px">
+      <div class="skel"></div><div class="skel"></div><div class="skel" style="height:56px"></div>
+      <div class="mut2" style="text-align:center;margin-top:8px">Finding the best routes for you…</div>
+      <div style="margin-top:auto">
+        <div class="card flat" style="border-style:dashed;text-align:center;padding:28px 16px">
+          <div style="font-size:30px">🗺️</div><b style="display:block;margin:8px 0 4px">No journeys found</b>
+          <p class="mut2" style="line-height:1.6">Nothing connects these points with your current settings.<br>Try allowing transfers, widening the walk radius, or changing modes.</p>
+          <span class="btn s sm" style="width:auto;margin-top:10px">Adjust search</span>
+        </div>
+      </div>
+    </div>
+  </div><div class="cap"><b>Search — loading &amp; empty states</b><span>Loading: skeletons (never blank). Empty: reason + corrective action.</span></div></div>
+
+  <!-- Search Results -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>3 options found</h3><div class="row" style="gap:6px"><span class="chip on" style="padding:4px 8px">☰</span><span class="chip" style="padding:4px 8px">🗺</span></div></div>
+    <div class="content" style="gap:10px">
+      <div class="card int" style="border-left:4px solid var(--s700)">
+        <div class="between"><span class="badge" style="background:var(--s50);color:var(--s700)">★ Best</span><span class="timex">40 min</span></div>
+        <div class="row" style="margin:8px 0"><span class="mdot" style="background:var(--m-metro)"></span><span class="mut2">Metro M1 direct</span></div>
+        <div class="between"><span class="mut2">08:00 → 08:40 · Tahrir → Garden City</span><span class="mut2">0 transfers</span></div>
+        <div class="between" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)"><span class="mut2">score 0.42 · fare EGP 8 · 1.2 km walk</span><span class="btn p sm" style="width:auto">Details</span></div>
+      </div>
+      <div class="card int">
+        <div class="between"><span class="badge b-rerouted">1 transfer</span><span class="timex">55 min</span></div>
+        <div class="row" style="margin:8px 0"><span class="mdot" style="background:var(--m-bus)"></span><span class="mut2">Bus →</span><span class="mdot" style="background:var(--m-metro)"></span><span class="mut2">Metro</span></div>
+        <div class="between"><span class="mut2">08:05 → 09:00 · via Opera Square</span><span class="mut2">score 0.58</span></div>
+        <div class="between" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)"><span class="mut2">fare EGP 11 · 0.9 km walk</span><span class="btn s sm" style="width:auto">Details</span></div>
+      </div>
+      <div class="card int" style="opacity:.85">
+        <div class="between"><span class="badge b-cancelled">walk only</span><span class="timex">1h 35m</span></div>
+        <div class="row" style="margin:8px 0"><span class="mdot" style="background:var(--m-walk)"></span><span class="mut2">Entirely on foot</span></div>
+        <div class="between"><span class="mut2">7.4 km · score 0.91</span><span class="btn s sm" style="width:auto">Details</span></div>
+      </div>
+      <div class="mut2" style="text-align:center">Options ranked by your preferences</div>
+    </div>
+  </div><div class="cap"><b>Search Results</b><span>API: <span class="api">POST /journeys/search</span> options; save = <span class="api">POST /journeys</span> (same params + option_index).<br>Cards show duration, transfers, walk, fare (when present), score, mode strip. Map toggle on the app bar.</span></div></div>
+
+  <!-- Journey Details -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Journey details</h3><span class="badge b-active">score 0.42</span></div>
+    <div class="content" style="gap:10px">
+      <div class="map" style="height:140px;border-radius:var(--r-lg)">
+        <svg viewBox="0 0 390 140" preserveAspectRatio="none"><path d="M-10 120 C 120 100, 260 60, 400 10" stroke="var(--m-metro)" stroke-width="5" fill="none"/><path d="M-10 128 C 60 124, 100 122, 150 118" stroke="var(--m-walk)" stroke-width="4" stroke-dasharray="6 6" fill="none"/><path d="M310 22 L400 8" stroke="var(--m-walk)" stroke-width="4" stroke-dasharray="6 6" fill="none"/></svg>
+      </div>
+      <div class="between"><div><div class="mut2">Depart 08:00 · Arrive 08:40</div><b style="font-size:15px">Tahrir Square → Garden City</b></div><span class="badge b-completed">40 min</span></div>
+      <div class="card flat" style="display:flex;flex-direction:column;gap:12px;padding:14px">
+        <div class="leg"><div class="rail"><div class="nd" style="background:var(--m-walk)">🚶</div><div class="ln"></div></div><div><b style="font-size:13px">Walk 550 m</b><div class="mut2">07:53 → 08:00 · to Tahrir Square</div></div></div>
+        <div class="leg"><div class="rail"><div class="nd" style="background:var(--m-metro)">M</div><div class="ln"></div></div><div><b style="font-size:13px">Metro M1 · 3 stops</b><div class="mut2">08:00 → 08:40 · Tahrir → Garden City</div><div class="mut2">every 5 min · fare EGP 8</div></div></div>
+        <div class="leg"><div class="rail"><div class="nd" style="background:var(--m-walk)">🚶</div></div><div><b style="font-size:13px">Walk 650 m</b><div class="mut2">08:40 → 08:52 · to destination</div></div></div>
+      </div>
+      <div class="alert a-info"><b>⇄</b><div><div class="t">No transfers needed</div><div class="m">Single direct service with walking access/egress.</div></div></div>
+      <div class="btn p md" style="margin-top:auto">Start journey</div>
+      <div class="btn s md">Save for later</div>
+    </div>
+  </div><div class="cap"><b>Journey Details</b><span>API: <span class="api">POST /journeys</span> (save) · <span class="api">POST /journeys/{id}/start</span> · <span class="api">GET /journeys/{id}/alternatives</span>.<br>States: legs timeline, map preview, 409 already-active alert → link to Active Journey.</span></div></div>
+
+  <!-- Active Journey -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="map" style="flex:1;position:relative">
+      <svg viewBox="0 0 390 700" preserveAspectRatio="none">
+        <path d="M-10 600 C 120 540, 260 380, 400 120" stroke="var(--m-metro)" stroke-width="6" fill="none"/>
+        <path d="M-10 612 C 80 560, 150 520, 205 470" stroke="var(--m-walk)" stroke-width="5" stroke-dasharray="7 7" fill="none"/>
+        <path d="M330 190 L400 100" stroke="var(--m-walk)" stroke-width="5" stroke-dasharray="7 7" fill="none"/>
+      </svg>
+      <div class="stopm" style="left:200px;top:458px;border-color:var(--m-metro)"></div>
+      <div class="stopm" style="left:324px;top:178px;border-color:var(--m-metro)"></div>
+      <div class="me" style="left:250px;top:330px"></div>
+      <div class="mctrl" style="right:12px;bottom:210px">⌖</div>
+      <div style="position:absolute;top:44px;left:16px;right:16px;display:flex;gap:8px">
+        <span class="badge b-active" style="background:var(--p600);color:#fff">● LIVE</span>
+        <span class="badge" style="background:var(--surface);color:var(--ink900)">Next: Opera Sq · 2 min</span>
+      </div>
+      <div class="sheet" style="position:absolute;left:0;right:0;bottom:0">
+        <div class="handle"></div>
+        <div class="between"><div><div class="mut2">On route · Metro M1</div><b style="font-size:16px">Tahrir Square → Garden City</b></div><div style="text-align:right"><div class="timex" style="font-size:20px;color:var(--p600)">38%</div><div class="mut2">progress</div></div></div>
+        <div style="height:8px;background:var(--p100);border-radius:4px;margin:10px 0"><div style="width:38%;height:100%;background:var(--p600);border-radius:4px"></div></div>
+        <div class="row" style="justify-content:space-between">
+          <div><div class="mut2">Next stop</div><b style="font-size:13px">Opera Square · 2 min</b></div>
+          <div><div class="mut2">Arrive</div><b style="font-size:13px">08:40</b></div>
+          <div><div class="mut2">Walk total</div><b style="font-size:13px">1.2 km</b></div>
+        </div>
+        <div class="row" style="gap:8px;margin-top:12px">
+          <div class="btn d md" style="flex:1">Cancel</div>
+          <div class="btn p md" style="flex:1">Complete ✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="status" style="position:absolute;top:0;left:0;right:0"><span>9:41</span><span>▮▮ 🔋</span></div>
+  </div><div class="cap"><b>Active Journey — tracking</b><span>API: <span class="api">GET /active-journeys/{id}</span> (tracking block) · auto <span class="api">POST …/location</span> (GPS) · <span class="api">POST …/complete · …/cancel</span>.<br>Map: user pulse, mode polyline, stop rings, ETA pill, bottom sheet (drag). GPS denied → manual note.</span></div></div>
+
+  <!-- Deviation -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar" style="background:var(--e50)"><div class="back">←</div><h3 style="color:var(--e700)">Deviation detected</h3><span class="badge b-high">high</span></div>
+    <div class="content" style="gap:12px">
+      <div class="alert a-err"><b>⚠</b><div><div class="t">Off route — 1.6 km from your corridor</div><div class="m">Detected at 07:40. Expected stop: Garden City. This deviation is too severe to simply continue — pick a recovery route below.</div></div></div>
+      <div class="card flat"><div class="between"><span class="mut">Resume without rerouting</span><span class="btn dis sm" style="width:auto">Locked</span></div><div class="mut2" style="margin-top:4px">Resume is only available for low/medium deviations.</div></div>
+      <div class="between"><b style="font-size:14px">Recovery options</b><span class="mut2">sorted by delay</span></div>
+      <div class="card int" style="border-left:4px solid var(--s700)">
+        <div class="between"><span class="badge b-completed">+18 min</span><span class="timex">58 min</span></div>
+        <div class="row" style="margin:6px 0"><span class="mdot" style="background:var(--m-walk)"></span><span class="mdot" style="background:var(--m-metro)"></span><span class="mut2">Walk to Tahrir → Metro M1 → Garden City</span></div>
+        <div class="mut2">score 0.51 · departs 08:00</div>
+        <div class="btn p md" style="margin-top:10px">Use this route</div>
+      </div>
+      <div class="card int">
+        <div class="between"><span class="badge b-medium">+41 min</span><span class="timex">1h 21m</span></div>
+        <div class="row" style="margin:6px 0"><span class="mdot" style="background:var(--m-bus)"></span><span class="mdot" style="background:var(--m-metro)"></span><span class="mut2">Walk → Bus → Metro</span></div>
+        <div class="mut2">score 0.74 · 1 transfer</div>
+        <div class="btn s md" style="margin-top:10px">Use this route</div>
+      </div>
+      <div class="btn g md" style="margin-top:auto;color:var(--e700)">Cancel journey</div>
+    </div>
+  </div><div class="cap"><b>Deviation / Recovery — high severity</b><span>API: <span class="api">POST …/resume</span> (409 when high) · <span class="api">POST …/recovery-options</span> · <span class="api">POST …/recovery-options/{id}/accept</span>.<br>Medium variant: Resume enabled. States: generating skeleton, empty options ("no recovery route from this point"), 409 already-accepted.</span></div></div>
+
+  <!-- Rerouted + completed -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar" style="background:var(--a100)"><div class="back">←</div><h3 style="color:var(--a600)">New plan active</h3><span class="badge b-rerouted">rerouted</span></div>
+    <div class="content" style="gap:12px">
+      <div class="alert a-warn"><b>⇄</b><div><div class="t">Rerouted successfully</div><div class="m">You are now following the recovery plan. Tracking restarted from your current position.</div></div></div>
+      <div class="card flat"><b style="font-size:14px">Revised plan</b><div class="row" style="margin:8px 0"><span class="mdot" style="background:var(--m-walk)"></span><span class="mdot" style="background:var(--m-metro)"></span><span class="mut2">Walk 890 m → Metro M1 → Garden City</span></div><div class="between"><span class="mut2">Est. arrival 08:58 (+18 min)</span><span class="badge b-active">leg 1 of 3</span></div></div>
+      <div class="card flat row"><span style="font-size:22px">✅</span><div style="flex:1"><b style="font-size:13px">Previous trip kept</b><div class="mut2">Original plan archived in your history.</div></div></div>
+      <div class="btn p md" style="margin-top:auto">Back to tracking</div>
+    </div>
+    <div class="tabbar"><div class="tab on"><span class="ic">⌂</span>Home</div><div class="tab"><span class="ic">🔍</span></div><div class="tab"><span class="ic">📣</span></div><div class="tab"><span class="ic">🔔</span></div><div class="tab"><span class="ic">👤</span></div></div>
+  </div>
+  <div class="phone" style="margin-top:8px">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="content" style="justify-content:center;gap:14px;padding:0 24px">
+      <div style="width:76px;height:76px;border-radius:50%;background:var(--s50);display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto">✓</div>
+      <h1 style="font-size:22px;text-align:center;color:var(--p900)">Journey completed</h1>
+      <p class="mut" style="text-align:center">Tahrir Square → Garden City<br>Duration 42 min · 1 deviation recovered</p>
+      <div class="card flat between"><span class="mut2">Total time</span><b class="timex">42 min</b></div>
+      <div class="card flat between"><span class="mut2">Walking distance</span><b class="timex">1.2 km</b></div>
+      <div class="card flat between"><span class="mut2">Fare</span><b class="timex">EGP 8</b></div>
+      <div class="btn p md">Submit a report</div>
+      <div class="btn s md">Back to home</div>
+    </div>
+  </div>
+  <div class="cap"><b>Rerouted &amp; Completed</b><span>API: accept → status <i>rerouted</i> (leg index reset); complete → summary.<br>Cancelled variant: same summary with warning tone.</span></div></div>
+
+  <!-- Reports -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Community reports</h3><span class="btn p sm" style="width:auto">+ New</span></div>
+    <div class="content" style="gap:10px">
+      <div class="row"><span class="chip on">My reports</span><span class="chip">Public feed</span><span class="chip">All types ▾</span></div>
+      <div class="card flat" style="border-left:4px solid var(--w700)">
+        <div class="between"><span class="badge" style="background:var(--w50);color:var(--w700)">⏱ delay</span><span class="badge b-pending">pending</span></div>
+        <b style="font-size:13px;display:block;margin:6px 0">The 08:00 metro departed ten minutes late.</b>
+        <div class="mut2">Tahrir Square · today 08:10 · Under review</div>
+      </div>
+      <div class="card flat" style="border-left:4px solid var(--s700)">
+        <div class="between"><span class="badge" style="background:var(--e50);color:var(--e700)">⚠ safety</span><span class="badge b-verified">verified</span></div>
+        <b style="font-size:13px;display:block;margin:6px 0">Broken lighting on the south platform.</b>
+        <div class="mut2">Garden City · yesterday · publicly visible ✓</div>
+      </div>
+      <div class="card flat" style="border-left:4px solid var(--nile)">
+        <div class="between"><span class="badge" style="background:var(--s50);color:var(--s700)">🧹 cleanliness</span><span class="badge b-resolved">resolved</span></div>
+        <b style="font-size:13px;display:block;margin:6px 0">Seat area was dirty this morning.</b>
+        <div class="mut2">Ramses · 2 days ago · moderator: "Cleaning crew dispatched."</div>
+      </div>
+      <div class="btn s md" style="margin-top:auto">View moderation history</div>
+    </div>
+  </div>
+  <div class="phone" style="margin-top:8px">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>New report</h3></div>
+    <div class="content" style="gap:10px">
+      <div class="between"><b style="font-size:13px">What happened?</b><span class="mut2">step 1/3</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="chip on" style="justify-content:center">⏱ Delay</div><div class="chip" style="justify-content:center">🧹 Clean</div><div class="chip" style="justify-content:center">⚠ Safety</div>
+        <div class="chip" style="justify-content:center">👥 Crowd</div><div class="chip" style="justify-content:center">🛠 Damage</div><div class="chip" style="justify-content:center">♿ Access</div>
+        <div class="chip" style="justify-content:center">🪧 Signage</div><div class="chip" style="justify-content:center">💬 Suggest</div><div class="chip" style="justify-content:center">⋯ Other</div>
+      </div>
+      <div class="field" style="margin-top:6px"><label>Description</label><div class="input" style="height:auto;padding:10px 14px;color:var(--ink900)">Metro departed 10 minutes late from Tahrir.</div></div>
+      <div class="card flat between"><span class="mut2">📍 Location attached</span><b style="font-size:12px">Tahrir Square</b></div>
+      <div class="row"><span class="chip">📎 Add photo (max 3)</span><span class="chip">🔗 Link</span></div>
+      <div class="btn p md" style="margin-top:auto">Submit report</div>
+    </div>
+  </div>
+  <div class="cap"><b>Community Reports</b><span>API: <span class="api">POST /reports</span> · <span class="api">GET /reports</span> · <span class="api">GET /reports/{id}/moderations</span> · <span class="api">DELETE /reports/{id}</span> (pending only) · public feed <span class="api">GET /community-reports</span>.<br>States: 409 duplicate + 409 spam-limit alerts, type grid (11 backend types), status badges, empty list.</span></div></div>
+
+  <!-- Notifications -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="appbar"><div class="back">←</div><h3>Notifications</h3><span class="btn g sm" style="width:auto">Mark all read</span></div>
+    <div class="content" style="gap:0;padding-top:8px">
+      <div class="row" style="margin-bottom:8px"><span class="chip on">All</span><span class="chip">Unread</span><span class="chip">Journey ▾</span><span class="chip">Priority ▾</span></div>
+      <div class="notif unread"><div class="ic" style="background:var(--e50);color:var(--e700)">⚠</div><div style="flex:1"><div class="between"><b style="font-size:13px">Deviation detected</b><span class="badge b-high">high</span></div><div class="mut2">A off_route deviation (severity: high) was detected on your active journey.</div><div class="mut2" style="margin-top:2px">2 min ago · tap to view recovery</div></div></div>
+      <div class="notif unread"><div class="ic" style="background:var(--w50);color:var(--w700)">⇄</div><div style="flex:1"><div class="between"><b style="font-size:13px">Recovery options ready</b><span class="badge b-high">high</span></div><div class="mut2">2 recovery option(s) are available for your deviated journey.</div><div class="mut2" style="margin-top:2px">2 min ago</div></div></div>
+      <div class="notif"><div class="ic" style="background:var(--s50);color:var(--s700)">✓</div><div style="flex:1"><div class="between"><b style="font-size:13px;color:var(--ink700)">Report verified</b></div><div class="mut2">Your community report was verified by a moderator and is now publicly visible.</div><div class="mut2" style="margin-top:2px">1 h ago</div></div></div>
+      <div class="notif"><div class="ic" style="background:var(--p50);color:var(--p700)">🏁</div><div style="flex:1"><div class="between"><b style="font-size:13px;color:var(--ink700)">Journey completed</b></div><div class="mut2">Your journey is complete. Planned duration: 40 minutes.</div><div class="mut2" style="margin-top:2px">yesterday</div></div></div>
+      <div class="mut2" style="text-align:center;margin-top:auto;padding:10px">Showing 4 of 12</div>
+    </div>
+  </div><div class="cap"><b>Notifications</b><span>API: <span class="api">GET /notifications</span> (filters unread/type/priority; meta.unread_count) · <span class="api">POST …/{id}/read · read-all · DELETE …/{id}</span>.<br>Deep links: journey → Active Journey, report → Reports. States: unread tint, empty inbox.</span></div></div>
+
+  <!-- Profile -->
+  <div class="frame"><div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮ 🔋</span></div>
+    <div class="hero" style="margin-top:-34px;padding-bottom:16px;text-align:center">
+      <div class="avatar" style="width:64px;height:64px;font-size:24px;margin:6px auto">S</div>
+      <h2 style="margin:6px 0 0">Sara Hassan</h2>
+      <div class="hi">sara@example.com · member since 2026</div>
+    </div>
+    <div class="content" style="margin-top:-22px">
+      <div class="card int" style="text-align:center">
+        <div class="mut2">Trust score</div>
+        <div style="font-size:32px;font-weight:700;color:var(--s700)">80<span style="font-size:14px;color:var(--ink500)">/100</span></div>
+        <span class="badge b-verified">trusted</span>
+        <div class="between" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)"><span class="mut2">✓ 3 verified</span><span class="mut2">✕ 0 rejected</span><span class="mut2">3 total</span></div>
+      </div>
+      <div class="card flat" style="display:flex;flex-direction:column;gap:10px">
+        <b style="font-size:13px">Journey preferences</b>
+        <div class="between"><span class="mut">Max walking per leg</span><span class="chip on">1000 m ▾</span></div>
+        <div class="between"><span class="mut">Max transfers</span><span class="chip on">1 ▾</span></div>
+        <div class="between"><span class="mut">Walking speed</span><div class="row" style="gap:4px"><span class="chip">Slow</span><span class="chip on">Avg</span><span class="chip">Fast</span></div></div>
+        <div class="between"><span class="mut">Prefer</span><span class="chip on">🚇 Metro</span></div>
+        <div class="between"><span class="mut">Avoid</span><span class="chip">🚐 Microbus</span></div>
+      </div>
+      <div class="btn s md">My reports</div>
+      <div class="btn s md">Change password</div>
+      <div class="btn g md" style="margin-top:auto;color:var(--e700)">Log out</div>
+    </div>
+    <div class="tabbar"><div class="tab"><span class="ic">⌂</span></div><div class="tab"><span class="ic">🔍</span></div><div class="tab"><span class="ic">📣</span></div><div class="tab"><span class="ic">🔔</span></div><div class="tab on"><span class="ic">👤</span>Profile</div></div>
+  </div><div class="cap"><b>Profile &amp; Preferences</b><span>API: <span class="api">GET /auth/user · GET /users/{id}/trust · PUT /users/{id}/preferences · POST /auth/logout</span>.<br>States: saved toast, validation, 403 on foreign trust, logout confirm. Preferences mirror backend fields exactly.</span></div></div>
+
+  </div>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div class="sec">
+  <h2>03 · Admin Screens — Desktop 1120×760 (design 1440×900)</h2>
+  <p class="sub">Desktop-first; role:admin (moderation: role:moderator,admin). Unauthorized deep links → 403 state.</p>
+  <div class="grid">
+
+  <!-- Dashboard -->
+  <div class="frame wide"><div class="desk">
+    <div class="dtop"><span class="logo">🚌 Wasel Egypt · Admin</span><span class="lk on">Dashboard</span><span class="lk">Analytics</span><span class="lk">Reports</span><span class="lk">Users</span><span class="lk">Roles</span><span class="sp"></span><span class="lk">🔔</span><div class="avatar">A</div></div>
+    <div class="dbody">
+      <div class="drail"><a class="on">📊 Overview</a><a>📈 Analytics</a><a>📣 Moderation <span class="badge b-pending" style="margin-left:4px">48</span></a><a>👥 Users</a><a>🔐 Roles</a></div>
+      <div class="dmain">
+        <div class="between"><h2 style="font-size:19px">Operations overview</h2><div class="row"><span class="chip">From ▾</span><span class="chip">To ▾</span><span class="btn s sm" style="width:auto">Last 30 days</span></div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+          <div class="kpi"><div class="v">12,480</div><div class="l">Users</div><div class="d" style="color:var(--s700)">▲ 3.2%</div></div>
+          <div class="kpi"><div class="v">3,204</div><div class="l">Journeys created</div><div class="d" style="color:var(--s700)">▲ 8.1%</div></div>
+          <div class="kpi"><div class="v">78.2%</div><div class="l">Completion rate</div><div class="d" style="color:var(--s700)">▲ 1.4 pts</div></div>
+          <div class="kpi"><div class="v">412</div><div class="l">Deviations</div><div class="d" style="color:var(--e700)">▼ 2.0%</div></div>
+          <div class="kpi"><div class="v">15,930</div><div class="l">Journey searches</div><div class="d" style="color:var(--s700)">▲ 5.6%</div></div>
+          <div class="kpi"><div class="v">312</div><div class="l">Reports</div><div class="d" style="color:var(--w700)">48 pending</div></div>
+          <div class="kpi"><div class="v">8,940</div><div class="l">Notifications</div><div class="d" style="color:var(--ink500)">64% read</div></div>
+          <div class="kpi"><div class="v">62.4</div><div class="l">Avg trust score</div><div class="d" style="color:var(--s700)">▲ 0.8</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;flex:1;min-height:0">
+          <div class="card" style="display:flex;flex-direction:column"><div class="between"><b style="font-size:13px">Journeys per day</b><span class="mut2">created vs completed</span></div>
+            <svg viewBox="0 0 400 120" style="flex:1;margin-top:8px"><polyline points="0,100 40,88 80,92 120,70 160,74 200,50 240,58 280,40 320,44 360,30 400,36" stroke="var(--p600)" stroke-width="2.5" fill="none"/><polyline points="0,110 40,104 80,106 120,94 160,98 200,84 240,90 280,76 320,80 360,70 400,74" stroke="var(--s700)" stroke-width="2" fill="none" stroke-dasharray="4 4"/><rect x="0" y="118" width="400" height="1" fill="var(--line)"/></svg>
+            <div class="row" style="gap:16px"><span class="mut2">— created</span><span class="mut2">-- completed</span></div></div>
+          <div class="card"><b style="font-size:13px">Reports by status</b>
+            <div style="margin-top:10px"><div class="between"><span class="mut2">pending</span><b>48</b></div><div style="height:8px;background:var(--w50);border-radius:4px;margin:4px 0 8px"><div style="width:15%;height:100%;background:var(--w700);border-radius:4px"></div></div></div>
+            <div class="between"><span class="mut2">verified</span><b>161</b></div><div style="height:8px;background:var(--s50);border-radius:4px;margin:4px 0 8px"><div style="width:52%;height:100%;background:var(--s700);border-radius:4px"></div></div></div>
+            <div class="between"><span class="mut2">rejected</span><b>41</b></div><div style="height:8px;background:var(--e50);border-radius:4px;margin:4px 0 8px"><div style="width:13%;height:100%;background:var(--e700);border-radius:4px"></div></div></div>
+            <div class="between"><span class="mut2">resolved</span><b>62</b></div><div style="height:8px;background:#E0F0F0;border-radius:4px;margin:4px 0"><div style="width:20%;height:100%;background:var(--nile);border-radius:4px"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><div class="cap wide"><b>Admin Dashboard</b><span>API: <span class="api">GET /admin/analytics/dashboard</span> (+ ?from/&to). KPI grid, rates, per-day chart. States: loading skeletons, zero data, 403.</span></div></div>
+
+  <!-- Analytics -->
+  <div class="frame wide"><div class="desk">
+    <div class="dtop"><span class="logo">🚌 Wasel Egypt · Admin</span><span class="lk">Dashboard</span><span class="lk on">Analytics</span><span class="lk">Reports</span><span class="lk">Users</span><span class="sp"></span><div class="avatar">A</div></div>
+    <div class="dbody">
+      <div class="drail"><a>📊 Overview</a><a class="on">📈 Analytics</a><a>📣 Moderation</a><a>👥 Users</a></div>
+      <div class="dmain">
+        <div class="between"><h2 style="font-size:19px">Analytics — journeys</h2><div class="row"><span class="chip">2026-08-05 →</span><span class="chip">2026-09-04</span><span class="btn p sm" style="width:auto">Apply</span></div></div>
+        <div class="row" style="gap:6px"><span class="chip on">Journeys</span><span class="chip">Deviations</span><span class="chip">Usage</span><span class="chip">Reports</span><span class="chip">Trust</span><span class="chip">Notifications</span><span class="chip">Modes</span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+          <div class="kpi"><div class="v">3,204</div><div class="l">Created</div></div>
+          <div class="kpi"><div class="v">66.7%</div><div class="l">Completion</div></div>
+          <div class="kpi"><div class="v">33.3%</div><div class="l">Cancellation</div></div>
+          <div class="kpi"><div class="v">38:24</div><div class="l">Avg planned duration</div></div>
+        </div>
+        <table class="table">
+          <tr><th>Status</th><th>Count</th><th>Share</th><th></th></tr>
+          <tr><td><span class="badge b-completed">completed</span></td><td>1,902</td><td>59.4%</td><td><div style="height:6px;background:var(--s50);border-radius:3px"><div style="width:59%;height:100%;background:var(--s700);border-radius:3px"></div></div></td></tr>
+          <tr><td><span class="badge b-cancelled">cancelled</span></td><td>412</td><td>12.9%</td><td><div style="height:6px;background:#EDF0F3;border-radius:3px"><div style="width:13%;height:100%;background:var(--ink500);border-radius:3px"></div></div></td></tr>
+          <tr><td><span class="badge b-active">active</span></td><td>618</td><td>19.3%</td><td><div style="height:6px;background:var(--p50);border-radius:3px"><div style="width:19%;height:100%;background:var(--p600);border-radius:3px"></div></div></td></tr>
+          <tr><td><span class="badge b-deviated">deviated</span></td><td>201</td><td>6.3%</td><td><div style="height:6px;background:var(--e50);border-radius:3px"><div style="width:6%;height:100%;background:var(--e700);border-radius:3px"></div></div></td></tr>
+          <tr><td><span class="badge b-rerouted">rerouted</span></td><td>71</td><td>2.2%</td><td><div style="height:6px;background:var(--a100);border-radius:3px"><div style="width:3%;height:100%;background:var(--a600);border-radius:3px"></div></div></td></tr>
+        </table>
+        <div class="mut2">Per-day series and avg score render alongside (from /admin/analytics/journeys)</div>
+      </div>
+    </div>
+  </div><div class="cap wide"><b>Admin Analytics (8 tabs)</b><span>API: <span class="api">GET /admin/analytics/{journeys,deviations,usage,reports,trust,notifications,modes}</span>.<br>States: tab loading, empty range ("No data in range"), 422 invalid range inline.</span></div></div>
+
+  <!-- Moderation queue + detail -->
+  <div class="frame wide"><div class="desk">
+    <div class="dtop"><span class="logo">🚌 Wasel Egypt · Admin</span><span class="lk">Dashboard</span><span class="lk">Analytics</span><span class="lk on">Reports</span><span class="lk">Users</span><span class="sp"></span><div class="avatar">A</div></div>
+    <div class="dbody">
+      <div class="drail"><a>📊 Overview</a><a>📈 Analytics</a><a class="on">📣 Moderation</a><a>👥 Users</a><a>🔐 Roles</a></div>
+      <div class="dmain" style="flex-direction:row;gap:16px">
+        <div style="width:400px;display:flex;flex-direction:column;gap:10px">
+          <div class="row"><span class="chip on">Pending (3)</span><span class="chip">All</span><span class="chip">Type ▾</span></div>
+          <div class="card int" style="border-left:4px solid var(--w700)">
+            <div class="between"><span class="badge" style="background:var(--w50);color:var(--w700)">⏱ delay</span><span class="badge b-pending">pending</span></div>
+            <b style="font-size:13px;display:block;margin:6px 0">The 08:00 metro departed ten minutes late.</b>
+            <div class="between"><div class="row"><div class="avatar" style="width:22px;height:22px;font-size:10px">S</div><span class="mut2">Sara · trust 60 standard</span></div><span class="mut2">Tahrir Sq · 08:10</span></div>
+          </div>
+          <div class="card flat" style="border-left:4px solid var(--e700)"><div class="between"><span class="badge" style="background:var(--e50);color:var(--e700)">⚠ safety</span><span class="badge b-pending">pending</span></div><b style="font-size:13px;display:block;margin:6px 0">Exposed wiring near the gate.</b><div class="mut2">Omar · trust 45 low · yesterday</div></div>
+          <div class="card flat" style="border-left:4px solid var(--w700)"><div class="between"><span class="badge" style="background:var(--w50);color:var(--w700)">🧹 cleanliness</span><span class="badge b-pending">pending</span></div><b style="font-size:13px;display:block;margin:6px 0">Seats need cleaning on line 2.</b><div class="mut2">Mona · trust 70 trusted · 2 h ago</div></div>
+        </div>
+        <div class="card" style="flex:1;display:flex;flex-direction:column;gap:12px">
+          <div class="between"><b style="font-size:15px">⏱ delay — Tahrir Square</b><span class="badge b-pending">pending</span></div>
+          <div class="row"><div class="avatar" style="width:34px;height:34px">S</div><div><b style="font-size:13px">Sara Hassan</b><div class="mut2">trust 60 · standard · 3 reports (2 verified)</div></div><span style="flex:1"></span><span class="badge b-verified">author trusted</span></div>
+          <p style="font-size:14px;line-height:1.6;background:var(--bg);border-radius:var(--r-md);padding:12px">The 08:00 metro departed ten minutes late from Tahrir Square this morning. Two other passengers mentioned the same delay.</p>
+          <div class="row"><span class="mut2">📍 Tahrir Square (30.0444, 31.2357)</span><span class="chip">📎 1 photo</span></div>
+          <div class="field"><label>Moderation notes</label><div class="input" style="height:auto;padding:10px 14px;color:var(--ink900)">Cross-checked against operator feed — delay confirmed.</div></div>
+          <div class="row" style="gap:8px">
+            <div class="btn p md" style="flex:1">✓ Verify</div><div class="btn s md" style="flex:1">✕ Reject</div><div class="btn s md" style="flex:1">⚑ Resolve</div>
+          </div>
+          <div class="mut2">Verify: pending → verified (public) · Resolve: requires verified · Actions locked on terminal states</div>
+          <div class="card flat"><b style="font-size:12px">History</b><div class="mut2" style="margin-top:4px">— no actions yet —</div></div>
+        </div>
+      </div>
+    </div>
+  </div><div class="cap wide"><b>Admin Reports Moderation</b><span>API: <span class="api">GET /reports</span> (staff view) · <span class="api">POST /reports/{id}/moderate</span> (verify/reject/resolve + notes) · <span class="api">GET /reports/{id}/moderations</span>.<br>States: empty queue, 409 (terminal/self), 403 non-moderator, author trust card.</span></div></div>
+
+  <!-- Users + 403 -->
+  <div class="frame wide"><div class="desk">
+    <div class="dtop"><span class="logo">🚌 Wasel Egypt · Admin</span><span class="lk">Dashboard</span><span class="lk">Analytics</span><span class="lk">Reports</span><span class="lk on">Users</span><span class="sp"></span><div class="avatar">A</div></div>
+    <div class="dbody">
+      <div class="drail"><a>📊 Overview</a><a>📈 Analytics</a><a>📣 Moderation</a><a class="on">👥 Users</a><a>🔐 Roles</a></div>
+      <div class="dmain">
+        <div class="between"><h2 style="font-size:19px">Users</h2><div class="input" style="width:260px">🔍 Search name or email…</div></div>
+        <table class="table">
+          <tr><th>User</th><th>Status</th><th>Trust</th><th>Reports</th><th>Joined</th><th></th></tr>
+          <tr><td><div class="row"><div class="avatar" style="width:26px;height:26px;font-size:11px">S</div><b>Sara Hassan</b><span class="mut2">sara@example.com</span></div></td><td><span class="badge b-verified">active</span></td><td><span class="badge b-verified">80 trusted</span></td><td>3</td><td>2026-01-12</td><td><span class="btn d sm" style="width:auto">Delete</span></td></tr>
+          <tr><td><div class="row"><div class="avatar" style="width:26px;height:26px;font-size:11px;background:var(--p500)">O</div><b>Omar Khaled</b><span class="mut2">omar@example.com</span></div></td><td><span class="badge b-verified">active</span></td><td><span class="badge b-medium">45 standard</span></td><td>2</td><td>2026-02-03</td><td><span class="btn d sm" style="width:auto">Delete</span></td></tr>
+          <tr style="opacity:.55"><td><div class="row"><div class="avatar" style="width:26px;height:26px;font-size:11px;background:var(--ink500)">M</div><b>Mona Adel</b> <span class="badge b-cancelled">suspended</span></div></td><td><span class="badge b-cancelled">suspended</span></td><td><span class="badge b-verified">70 trusted</span></td><td>9</td><td>2025-11-20</td><td><span class="btn s sm" style="width:auto">Restore</span></td></tr>
+        </table>
+        <div class="mut2">Delete requires confirmation · admins cannot delete themselves (403)</div>
+      </div>
+    </div>
+  </div><div class="cap wide"><b>Admin Users &amp; Roles</b><span>API: <span class="api">GET /admin/users · DELETE /admin/users/{id}</span>; Roles/permissions CRUD + assign/remove.<br>States: empty, confirm dialog, self-delete 403, validation. 403 page for non-admin deep links (shown in States Gallery).</span></div></div>
+
+  </div>
+</div>
+
+<!-- ================= STATES GALLERY ================= -->
+<div class="sec">
+  <h2>04 · States Gallery</h2>
+  <p class="sub">Applied uniformly across all screens.</p>
+  <div class="grid">
+    <div class="frame"><div class="phone"><div class="status"><span>9:41</span><span>▮▮</span></div>
+      <div class="content" style="justify-content:center;gap:12px">
+        <div style="width:70px;height:70px;border-radius:50%;background:var(--e50);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto">🔒</div>
+        <h1 style="font-size:19px;text-align:center;color:var(--p900)">No access</h1>
+        <p class="mut" style="text-align:center;line-height:1.6">This area is limited to administrators.<br>If you believe this is a mistake, contact support.</p>
+        <div class="btn p md">Back to home</div>
+      </div>
+    </div><div class="cap"><b>403 / Permission state</b><span>Shown for role-gated areas and unauthorized deep links (admin, moderation).</span></div></div>
+
+    <div class="frame"><div class="phone"><div class="status"><span>9:41</span><span>▮▮</span></div>
+      <div class="appbar"><div class="back">←</div><h3>Notifications</h3></div>
+      <div class="content" style="justify-content:center;gap:10px">
+        <div style="width:70px;height:70px;border-radius:50%;background:var(--p50);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto">🔔</div>
+        <h1 style="font-size:18px;text-align:center;color:var(--p900)">You're all caught up</h1>
+        <p class="mut" style="text-align:center">Journey updates and moderation results will appear here.</p>
+        <div class="btn s md" style="margin:0 auto;width:auto">Plan a journey</div>
+      </div>
+    </div><div class="cap"><b>Empty state</b><span>Illustration + reason + suggestion. Same pattern for reports, results, history.</span></div></div>
+
+    <div class="frame"><div class="phone"><div class="status"><span>9:41</span><span>▮▮</span></div>
+      <div class="content" style="justify-content:center;gap:12px">
+        <div class="alert a-err"><b>⚡</b><div><div class="t">Connection problem</div><div class="m">We couldn't reach the server. Check your connection and try again.</div></div></div>
+        <div class="card flat" style="text-align:center;padding:28px">
+          <div style="font-size:28px">📡</div><b style="display:block;margin:8px 0 4px">Something went wrong</b>
+          <p class="mut2">Error code 500 — our team has been notified.</p>
+          <span class="btn p sm" style="width:auto;margin-top:10px">Retry</span>
+        </div>
+      </div>
+    </div><div class="cap"><b>Error states</b><span>Inline alert with retry; 5xx never blocks navigation. 422 field errors render under inputs.</span></div></div>
+
+    <div class="frame"><div class="phone"><div class="status"><span>9:41</span><span>▮▮</span></div>
+      <div class="content" style="justify-content:center;gap:14px">
+        <div class="skel" style="height:52px"></div>
+        <div class="skel" style="height:120px"></div>
+        <div class="skel" style="height:120px"></div>
+        <div class="skel" style="height:44px;width:60%"></div>
+      </div>
+    </div><div class="cap"><b>Loading / skeleton</b><span>Layout-preserving shimmer; buttons swap to spinner while submitting.</span></div></div>
+
+    <div class="frame"><div class="phone"><div class="status"><span>9:41</span><span>▮▮</span></div>
+      <div class="content" style="justify-content:center;gap:10px">
+        <div class="alert a-ok"><b>✓</b><div><div class="t">Saved</div><div class="m">Your preferences were updated.</div></div></div>
+        <div class="alert a-warn"><b>⚠</b><div><div class="t">Already active</div><div class="m">You already have an active journey.</div><div class="btn p sm" style="width:auto;margin-top:8px">Go to active journey</div></div></div>
+      </div>
+    </div><div class="cap"><b>Success &amp; conflict (409)</b><span>Toast + inline; conflicts always offer the corrective action.</span></div></div>
+  </div>
+</div>
+
+<p style="max-width:1520px;margin:0 auto;color:var(--ink500);font-size:12px">Wasel Egypt · UI/UX v1.0 · Companion spec: docs/design/UIUX_DESIGN_SPEC.md · All data shown is illustrative; enum values and endpoints match the audited backend exactly.</p>
+</body>
+</html>

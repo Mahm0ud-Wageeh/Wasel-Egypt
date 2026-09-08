@@ -1,0 +1,148 @@
+- generic [ref=f1e2]:
+  - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f1e4]:
+    - navigation "Main navigation" [ref=f1e5]:
+      - generic [ref=f1e6]:
+        - link "Wasel Egypt home" [ref=f1e7] [cursor=pointer]:
+          - /url: /
+          - text: Wasel
+        - generic [ref=f1e15]:
+          - button "Switch language to English" [ref=f1e260]: English
+          - link [ref=f1e23] [cursor=pointer]:
+            - /url: /search
+            - button "Plan a journey" [ref=f1e24]
+          - button "Open menu" [ref=f1e261] [cursor=pointer]
+    - banner [ref=f1e25]:
+      - generic [ref=f1e26]:
+        - generic [ref=f1e27]: Wasel Egypt
+        - heading "Cairo transit, without the guesswork." [level=1] [ref=f1e28]
+        - paragraph [ref=f1e29]: Plan a journey, ride it with live awareness, and recover instantly when Egypt’s transit reality changes your plans.
+        - search "Journey planner" [ref=f1e30]:
+          - generic [ref=f1e31]:
+            - generic [ref=f1e36]:
+              - text: From
+              - generic [ref=f1e37]: Current location or a stop
+            - generic [ref=f1e41]:
+              - text: To
+              - generic [ref=f1e42]: Where are you heading?
+          - button "Plan your journey" [ref=f1e43] [cursor=pointer]
+        - generic [ref=f1e46]:
+          - generic [ref=f1e47]: Live tracking
+          - generic [ref=f1e51]: Crowd reports
+          - generic [ref=f1e57]: Recovery rerouting
+        - generic [ref=f1e253]:
+          - generic [ref=f1e254]:
+            - generic [ref=f1e255]: 3,025
+            - generic [ref=f1e256]: stops in the live network
+          - generic [ref=f1e257]:
+            - generic [ref=f1e258]: 1,014
+            - generic [ref=f1e259]: routes planned across
+    - region [ref=f1e65]:
+      - generic [ref=f1e66]:
+        - generic [ref=f1e67]: How it works
+        - heading "One journey, four safety nets" [level=2] [ref=f1e68]
+        - paragraph [ref=f1e69]: Wasel stays with you from the first search to the moment you arrive — and takes over when reality deviates from the plan.
+      - generic [ref=f1e70]:
+        - article [ref=f1e71]:
+          - heading "Plan" [level=3] [ref=f1e75]
+          - paragraph [ref=f1e76]: Compare metro, bus, minibus and microbus options with real schedules and fares.
+        - article [ref=f1e77]:
+          - heading "Track" [level=3] [ref=f1e82]
+          - paragraph [ref=f1e83]: Follow your journey live — next stop, ETA and progress as you move.
+        - article [ref=f1e84]:
+          - heading "Detect" [level=3] [ref=f1e88]
+          - paragraph [ref=f1e89]: Wasel notices when you drift off route or miss a stop, instantly.
+        - article [ref=f1e90]:
+          - heading "Recover" [level=3] [ref=f1e99]
+          - paragraph [ref=f1e100]: Get reroute options from where you actually are — not where you should be.
+    - region [ref=f1e101]:
+      - generic [ref=f1e102]:
+        - generic [ref=f1e103]: Transit modes
+        - heading "Every mode, one plan" [level=2] [ref=f1e104]
+        - paragraph [ref=f1e105]: From the metro to the microbus — Wasel plans across the network Cairenes actually ride.
+      - generic [ref=f1e106]:
+        - generic [ref=f1e117]:
+          - generic [ref=f1e118]: Metro
+          - text: Lines 1–3
+        - generic [ref=f1e126]:
+          - generic [ref=f1e127]: Bus
+          - text: CTA + private
+        - generic [ref=f1e136]:
+          - generic [ref=f1e137]: Minibus
+          - text: Licensed lines
+        - generic [ref=f1e146]:
+          - generic [ref=f1e147]: Microbus
+          - text: Paratransit
+        - generic [ref=f1e159]:
+          - generic [ref=f1e160]: Rail
+          - text: National rail
+        - generic [ref=f1e167]:
+          - generic [ref=f1e168]: Walking
+          - text: Door to door
+    - region [ref=f1e169]:
+      - generic [ref=f1e170]:
+        - generic [ref=f1e171]: Community trust
+        - heading "Ground truth from the crowd" [level=2] [ref=f1e172]
+        - paragraph [ref=f1e173]: Moderated rider reports keep the network honest — and trust grows with every verified report.
+      - generic [ref=f1e174]:
+        - article [ref=f1e175]:
+          - heading "Moderated reports" [level=3] [ref=f1e180]
+          - paragraph [ref=f1e181]: Riders report delays, overcrowding and disruptions at specific stops. Moderators verify each report before it influences what other passengers see.
+        - article [ref=f1e182]:
+          - heading "Trust that compounds" [level=3] [ref=f1e189]
+          - paragraph [ref=f1e190]: Verified reporters build trust over time. Their signal weighs more — so the information you rely on gets better every day.
+    - generic [ref=f1e192]:
+      - heading "Never miss your stop again." [level=2] [ref=f1e193]
+      - paragraph [ref=f1e194]: Free to use — plan your first Cairo journey in under a minute.
+      - generic [ref=f1e195]:
+        - link [ref=f1e196] [cursor=pointer]:
+          - /url: /register
+          - button "Get started" [ref=f1e197]
+        - link [ref=f1e198] [cursor=pointer]:
+          - /url: /home
+          - button "Explore the network" [ref=f1e199]
+    - contentinfo [ref=f1e200]:
+      - generic [ref=f1e201]:
+        - generic [ref=f1e202]:
+          - generic [ref=f1e203]:
+            - generic [ref=f1e204]: Wasel Egypt
+            - paragraph [ref=f1e208]: Smarter public transit for Greater Cairo — plan, track, and recover on every journey.
+          - generic [ref=f1e209]:
+            - heading "Product" [level=3] [ref=f1e210]
+            - list [ref=f1e211]:
+              - listitem [ref=f1e212]:
+                - link "Explore" [ref=f1e213] [cursor=pointer]:
+                  - /url: /home
+              - listitem [ref=f1e214]:
+                - link "Plan a journey" [ref=f1e215] [cursor=pointer]:
+                  - /url: /search
+              - listitem [ref=f1e216]:
+                - link "Community reports" [ref=f1e217] [cursor=pointer]:
+                  - /url: /reports
+          - generic [ref=f1e218]:
+            - heading "Account" [level=3] [ref=f1e219]
+            - list [ref=f1e220]:
+              - listitem [ref=f1e221]:
+                - link "Create account" [ref=f1e222] [cursor=pointer]:
+                  - /url: /register
+              - listitem [ref=f1e223]:
+                - link "Log in" [ref=f1e224] [cursor=pointer]:
+                  - /url: /login
+              - listitem [ref=f1e225]:
+                - link "Profile" [ref=f1e226] [cursor=pointer]:
+                  - /url: /profile
+          - generic [ref=f1e227]:
+            - heading "Data & attribution" [level=3] [ref=f1e228]
+            - list [ref=f1e229]:
+              - listitem [ref=f1e230]:
+                - link "Transit data © Transport for Cairo (CC-BY-NC-SA)" [ref=f1e235] [cursor=pointer]:
+                  - /url: https://mobilitydatabase.org/feeds/gtfs/mdb-3355
+              - listitem [ref=f1e236]:
+                - link "Map data © OpenStreetMap contributors" [ref=f1e241] [cursor=pointer]:
+                  - /url: https://www.openstreetmap.org/copyright
+              - listitem [ref=f1e242]:
+                - generic [ref=f1e245]: Metro times derived from published operating patterns
+        - generic [ref=f1e246]:
+          - generic [ref=f1e247]: © 2026 Wasel Egypt — a graduation project.
+          - button "Switch language to English" [active] [ref=f1e263]: English

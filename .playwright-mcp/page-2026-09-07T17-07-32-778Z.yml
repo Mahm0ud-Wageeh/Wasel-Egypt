@@ -1,0 +1,24 @@
+- generic [ref=f8e2]:
+  - link "Skip to main content" [ref=f8e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f8e24]:
+    - generic [ref=f8e26]:
+      - generic [ref=f8e27]: Where to today?
+      - heading "Audit" [level=2] [ref=f8e28]
+      - link "Where to today? Search" [ref=f8e29] [cursor=pointer]:
+        - /url: /search
+        - generic [ref=f8e30]:
+          - generic [aria-hidden] [ref=f8e31]: ◎
+          - text: Where to today?
+          - generic [ref=f8e32]: Search
+    - navigation "Primary" [ref=f8e36]:
+      - link "Home" [ref=f8e37] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f8e42] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f8e47] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f8e52] [cursor=pointer]:
+        - /url: /notifications
+      - link "Profile" [ref=f8e57] [cursor=pointer]:
+        - /url: /profile

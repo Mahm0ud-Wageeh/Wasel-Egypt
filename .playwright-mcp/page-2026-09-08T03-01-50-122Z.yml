@@ -1,0 +1,103 @@
+- generic [ref=f4e2]:
+  - link "Skip to main content" [ref=f4e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f4e4]:
+    - generic [ref=f4e5]:
+      - generic [ref=f4e114]:
+        - button "Back to search" [ref=f4e115] [cursor=pointer]
+        - generic [ref=f4e118]:
+          - text: Search results
+          - generic [ref=f4e119]: 3 options available
+      - generic [ref=f4e120]:
+        - generic "Map" [ref=f4e122]:
+          - generic [ref=f4e123]:
+            - region "Map" [ref=f4e124]
+            - group [ref=f4e125]:
+              - generic "Toggle attribution" [ref=f4e126] [cursor=pointer]
+              - generic [ref=f4e127]:
+                - text: ©
+                - link "Stadia Maps" [ref=f4e128] [cursor=pointer]:
+                  - /url: https://stadiamaps.com/
+                - text: ©
+                - link "OpenMapTiles" [ref=f4e129] [cursor=pointer]:
+                  - /url: https://openmaptiles.org/
+                - text: ©
+                - link "OpenStreetMap" [ref=f4e130] [cursor=pointer]:
+                  - /url: https://openstreetmap.org
+                - text: contributors
+          - generic [ref=f4e131]:
+            - button "Recenter map" [ref=f4e132] [cursor=pointer]
+            - button "Zoom in" [ref=f4e136] [cursor=pointer]: +
+            - button "Zoom out" [ref=f4e137] [cursor=pointer]: −
+            - generic [aria-hidden] [ref=f4e138]: "8"
+        - generic [ref=f4e139]:
+          - button "View on map" [ref=f4e140]
+          - list [ref=f4e143]:
+            - listitem [ref=f4e144]:
+              - 'button "Recommended 4h 39m Direct 03:59 AM → 08:41 AM 95% reliability Route: Origin → Walk 0 m → Metro · Line 1 → Walk 267 m → Destination 267 m walking · 8 EGP · score 0.01" [ref=f4e145] [cursor=pointer]':
+                - generic [ref=f4e146]:
+                  - generic [ref=f4e147]:
+                    - generic [ref=f4e148]: Recommended
+                    - generic [ref=f4e152]: 4h 39m
+                  - generic [ref=f4e153]: Direct
+                - generic [ref=f4e154]:
+                  - generic [ref=f4e155]: 03:59 AM → 08:41 AM
+                  - generic [ref=f4e156]: 95% reliability
+                - 'img "Route: Origin → Walk 0 m → Metro · Line 1 → Walk 267 m → Destination" [ref=f4e160]':
+                  - generic "Origin" [ref=f4e161]
+                  - generic "Walk 0 m" [ref=f4e167]
+                  - generic "Metro · Line 1" [ref=f4e173]
+                  - generic "Walk 267 m" [ref=f4e183]
+                  - generic "Destination" [ref=f4e188]
+                - generic [ref=f4e191]:
+                  - generic [ref=f4e192]: 267 m walking
+                  - generic [ref=f4e193]: · 8 EGP
+                  - generic [ref=f4e194]: · score 0.01
+            - listitem [ref=f4e195]:
+              - 'button "5h 11m Direct 03:59 AM → 09:20 AM 100% reliability Route: Origin → Walk 307 m → Microbus · Microbus → Walk 878 m → Destination 1.2 km walking · score 0.51" [ref=f4e196] [cursor=pointer]':
+                - generic [ref=f4e197]:
+                  - generic [ref=f4e198]: 5h 11m
+                  - generic [ref=f4e200]: Direct
+                - generic [ref=f4e201]:
+                  - generic [ref=f4e202]: 03:59 AM → 09:20 AM
+                  - generic [ref=f4e203]: 100% reliability
+                - 'img "Route: Origin → Walk 307 m → Microbus · Microbus → Walk 878 m → Destination" [ref=f4e207]':
+                  - generic "Origin" [ref=f4e208]
+                  - generic "Walk 307 m" [ref=f4e214]
+                  - generic "Microbus · Microbus" [ref=f4e220]
+                  - generic "Walk 878 m" [ref=f4e228]
+                  - generic "Destination" [ref=f4e233]
+                - generic [ref=f4e236]:
+                  - generic [ref=f4e237]: 1.2 km walking
+                  - generic [ref=f4e238]: · score 0.51
+            - listitem [ref=f4e239]:
+              - 'button "5h 13m Direct 03:59 AM → 09:20 AM 100% reliability Route: Origin → Walk 307 m → Minibus · Minibus 107 → Walk 778 m → Destination 1.1 km walking · score 0.52" [ref=f4e240] [cursor=pointer]':
+                - generic [ref=f4e241]:
+                  - generic [ref=f4e242]: 5h 13m
+                  - generic [ref=f4e244]: Direct
+                - generic [ref=f4e245]:
+                  - generic [ref=f4e246]: 03:59 AM → 09:20 AM
+                  - generic [ref=f4e247]: 100% reliability
+                - 'img "Route: Origin → Walk 307 m → Minibus · Minibus 107 → Walk 778 m → Destination" [ref=f4e251]':
+                  - generic "Origin" [ref=f4e252]
+                  - generic "Walk 307 m" [ref=f4e258]
+                  - generic "Minibus · Minibus 107" [ref=f4e264]
+                  - generic "Walk 778 m" [ref=f4e272]
+                  - generic "Destination" [ref=f4e277]
+                - generic [ref=f4e280]:
+                  - generic [ref=f4e281]: 1.1 km walking
+                  - generic [ref=f4e282]: · score 0.52
+          - paragraph [ref=f4e283]: Select an option to view the full itinerary, save it, or start tracking.
+    - navigation "Primary" [ref=f4e71]:
+      - link "Home" [ref=f4e72] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f4e77] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f4e82] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f4e87] [cursor=pointer]:
+        - /url: /notifications
+        - generic [ref=f4e112]: "14"
+        - text: Alerts
+      - link "Profile" [ref=f4e92] [cursor=pointer]:
+        - /url: /profile

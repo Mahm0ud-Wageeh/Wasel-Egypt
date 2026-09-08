@@ -1,0 +1,433 @@
+<?php
+
+use App\Models\StopTime;
+use App\Models\Schedule;
+use App\Models\TransitStop;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\Permission;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+use App\Models\Governorate;
+use App\Models\Area;
+use Illuminate\Support\Facades\Log;
+
+class StopTimeTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Create a governorate and area for testing
+        $governorate = \App\Models\Governorate::factory()->create([
+            'name' => 'Cairo',
+            'code' => 'CAI'
+        ]);
+
+        $area = \App\Models\Area::factory()->create([
+            'name' => 'Nasr City',
+            'governorate_id' => $governorate->id
+        ]);
+
+        // Create a schedule and transit stop for testing
+        $schedule = \App\Models\Schedule::factory()->create([
+            'gtfs_trip_id' => 'TRIP001',
+            'service_id' => 'SERVICE001'
+        ]);
+
+        $transitStop = \App\Models\TransitStop::factory()->create([
+            'name' => 'Test Stop',
+            'area_id' => $area->id
+        ]);
+
+        $this->schedule = $schedule;
+        $this->transitStop = $transitStop;
+        $this->area = $area;
+    }
+
+    /** @test */
+    public function unauthenticated_user_cannot_access_protected_endpoints()
+    {
+        $response = $this->getJson('/api/v1/stop-times');
+        $response->assertStatus(401);
+
+        $response = $this->postJson('/api/v1/stop-times', []);
+        $response->assertStatus(401);
+
+        $stopTime = StopTime::factory()->create();
+        $response = $this->getJson("/api/v1/stop-times/{$stopTime->id}");
+        $response->assertStatus(401);
+
+        $response = $this->putJson("/api/v1/stop-times/{$stopTime->id}", []);
+        $response->assertStatus(401);
+
+        $response = $this->deleteJson("/api/v1/stop-times/{$stopTime->id}");
+        $response->assertStatus(401);
+    }
+
+    /** @test */
+    public function authenticated_user_without_permission_cannot_access_protected_endpoints()
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson('/api/v1/stop-times');
+        $response->assertStatus(403);
+
+        $response = $this->postJson('/api/v1/stop-times', []);
+        $response->assertStatus(403);
+
+        $stopTime = StopTime::factory()->create();
+        $response = $this->getJson("/api/v1/stop-times/{$stopTime->id}");
+        $response->assertStatus(403);
+
+        $response = $this->putJson("/api/v1/stop-times/{$stopTime->id}", []);
+        $response->assertStatus(403);
+
+        $response = $this->deleteJson("/api/v1/stop-times/{$stopTime->id}");
+        $response->assertStatus(403);
+    }
+
+    /** @test */
+    public function authenticated_user_with_permission_can_access_protected_endpoints()
+    {
+        // Create permission and role for transit-data-edit
+        $permission = Permission::factory()->create(['name' => 'transit-data-edit']);
+        $role = Role::factory()->create(['name' => 'transit-editor']);
+        $role->permissions()->attach($permission);
+
+        // Create user and assign role
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+        Sanctum::actingAs($user);
+
+        // Test index
+        $response = $this->getJson('/api/v1/stop-times');
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'schedule',
+                    'transit_stop',
+                    'sequence',
+                    'arrival_time',
+                    'departure_time',
+                    'pickup_type',
+                    'drop_off_type',
+                    'timepoint',
+                    'created_at',
+                    'updated_at'
+                ]
+            ]
+        ]);
+
+        // Test store
+        $stopTimeData = [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00',
+            'pickup_type' => 0,
+            'drop_off_type' => 0,
+            'timepoint' => true,
+        ];
+
+        $response = $this->postJson('/api/v1/stop-times', $stopTimeData);
+        $response->assertStatus(201);
+        $response->assertJsonFragment([
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00'
+        ]);
+
+        $createdStopTime = $response->json('data');
+
+        // Test show
+        $response = $this->getJson("/api/v1/stop-times/{$createdStopTime['id']}");
+        $response->assertStatus(200);
+        $response->assertJsonFragment([
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00'
+        ]);
+
+        // Test update
+        $updateData = [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 2,
+            'arrival_time' => '08:05:00',
+            'departure_time' => '08:06:00'
+        ];
+
+        $response = $this->putJson("/api/v1/stop-times/{$createdStopTime['id']}", $updateData);
+        $response->assertStatus(200);
+        $response->assertJsonFragment([
+            'sequence' => 2,
+            'arrival_time' => '08:05:00',
+            'departure_time' => '08:06:00'
+        ]);
+
+        // Test destroy
+        $response = $this->deleteJson("/api/v1/stop-times/{$createdStopTime['id']}");
+        $response->assertStatus(200);
+        $response->assertJsonFragment([
+            'success' => true,
+            'message' => 'Stop time deleted successfully'
+        ]);
+
+        $this->assertSoftDeleted('stop_times', ['id' => $createdStopTime['id']]);
+    }
+
+    /** @test */
+    public function validation_rules_work_correctly()
+    {
+        // Create permission and role for transit-data-edit
+        $permission = Permission::factory()->create(['name' => 'transit-data-edit']);
+        $role = Role::factory()->create(['name' => 'transit-editor']);
+        $role->permissions()->attach($permission);
+
+        // Create user and assign role
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+        Sanctum::actingAs($user);
+
+        // Create a schedule and transit stop for duplicate testing
+        $schedule1 = Schedule::factory()->create();
+        $transitStop1 = TransitStop::factory()->create();
+
+        // Test duplicate sequence for same schedule
+        StopTime::factory()->create([
+            'schedule_id' => $schedule1->id,
+            'transit_stop_id' => $transitStop1->id,
+            'sequence' => 5
+        ]);
+
+        $response = $this->postJson('/api/v1/stop-times', [
+            'schedule_id' => $schedule1->id,
+            'transit_stop_id' => $transitStop1->id,
+            'sequence' => 5, // Duplicate sequence for same schedule
+            'arrival_time' => '09:00:00',
+            'departure_time' => '09:01:00',
+            'pickup_type' => 0,
+            'drop_off_type' => 0,
+            'timepoint' => true,
+        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['sequence']);
+
+        // Test invalid sequence (negative)
+        $response = $this->postJson('/api/v1/stop-times', [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => -1, // Invalid: < 0
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00',
+            'pickup_type' => 0,
+            'drop_off_type' => 0,
+            'timepoint' => true,
+        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['sequence']);
+
+        // Test invalid arrival_time format
+        $response = $this->postJson('/api/v1/stop-times', [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '25:00:00', // Invalid: hour > 23
+            'departure_time' => '08:01:00',
+            'pickup_type' => 0,
+            'drop_off_type' => 0,
+            'timepoint' => true,
+        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['arrival_time']);
+
+        // Test invalid departure_time format
+        $response = $this->postJson('/api/v1/stop-times', [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '25:00:00', // Invalid: hour > 23
+            'pickup_type' => 0,
+            'drop_off_type' => 0,
+            'timepoint' => true,
+        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['departure_time']);
+
+        // Test invalid pickup_type
+        $response = $this->postJson('/api/v1/stop-times', [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00',
+            'pickup_type' => 5, // Invalid: not in [0,1,2,3]
+            'drop_off_type' => 0,
+            'timepoint' => true,
+        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['pickup_type']);
+
+        // Test invalid drop_off_type
+        $response = $this->postJson('/api/v1/stop-times', [
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00',
+            'pickup_type' => 0,
+            'drop_off_type' => 5, // Invalid: not in [0,1,2,3]
+            'timepoint' => true,
+        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['drop_off_type']);
+
+        // Test missing required fields
+        $response = $this->postJson('/api/v1/stop-times', []);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors([
+            'schedule_id',
+            'transit_stop_id',
+            'sequence'
+        ]);
+    }
+
+    /** @test */
+    public function filtering_and_search_functionality_works()
+    {
+        // Create permission and role for transit-data-edit
+        $permission = Permission::factory()->create(['name' => 'transit-data-edit']);
+        $role = Role::factory()->create(['name' => 'transit-editor']);
+        $role->permissions()->attach($permission);
+
+        // Create user and assign role
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+        Sanctum::actingAs($user);
+// Create test data
+        Log::debug('Creating stopTime1 with data: [' . json_encode([
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'depart_time' => '08:01:00'
+        ]) . ']');
+        $stopTime1 = StopTime::factory()->create([
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 1,
+            'arrival_time' => '08:00:00',
+            'departure_time' => '08:01:00'
+        ]);
+        Log::debug('Created stopTime1 with ID: ' . ($stopTime1 ? $stopTime1->id : 'null'));
+
+        Log::debug('Creating stopTime2 with data: [' . json_encode([
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 2,
+            'arrival_time' => '08:05:00',
+            'departure_time' => '08:06:00'
+        ]) . ']');
+        $stopTime2 = StopTime::factory()->create([
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id,
+            'sequence' => 2,
+            'arrival_time' => '08:05:00',
+            'departure_time' => '08:06:00'
+        ]);
+        Log::debug('Created stopTime2 with ID: ' . ($stopTime2 ? $stopTime2->id : 'null'));
+
+        // Debug: Check that both stop times were created
+        $stopTimeCount = StopTime::count();
+        $stopTimeIds = StopTime::pluck('id')->toArray();
+        if ($stopTimeCount !== 2) {
+            $this->fail('Expected 2 stop times to be created, but found ' . $stopTimeCount . '. IDs: ' . implode(', ', $stopTimeIds));
+        }
+
+        // Additional debugging: let's see what's actually in the database
+        $allStopTimes = StopTime::all();
+        if ($allStopTimes->count() !== 2) {
+            $this->fail('Expected 2 stop times in allStopTimes collection, but found ' . $allStopTimes->count() . '. Data: ' . json_encode($allStopTimes->toArray()));
+        }
+
+        // Test filtering by schedule_id
+        $response = $this->getJson('/api/v1/stop-times?schedule_id=' . $this->schedule->id);
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+
+        // Test filtering by transit_stop_id
+        $response = $this->getJson('/api/v1/stop-times?transit_stop_id=' . $this->transitStop->id);
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+
+        // Test sorting
+        $response = $this->getJson('/api/v1/stop-times?sort_by=sequence&sort_order=asc');
+        $response->assertStatus(200);
+        $firstStopTime = $response->json('data')[0];
+        $this->assertEquals(1, $firstStopTime['sequence']);
+
+        $response = $this->getJson('/api/v1/stop-times?sort_by=sequence&sort_order=desc');
+        $response->assertStatus(200);
+        $firstStopTime = $response->json('data')[0];
+        $this->assertEquals(2, $firstStopTime['sequence']);
+
+        // Test pagination
+        $allBeforePagination = StopTime::all();
+        $response = $this->getJson('/api/v1/stop-times?per_page=1');
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $this->assertEquals(2, (int) $response->json('meta')['total']);
+        $this->assertEquals(2, (int) $response->json('meta')['last_page']);
+    }
+
+    /** @test */
+    public function schedule_and_transit_stop_relationships_are_loaded_correctly()
+    {
+        // Create permission and role for transit-data-edit
+        $permission = Permission::factory()->create(['name' => 'transit-data-edit']);
+        $role = Role::factory()->create(['name' => 'transit-editor']);
+        $role->permissions()->attach($permission);
+
+        // Create user and assign role
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+        Sanctum::actingAs($user);
+
+        $stopTime = StopTime::factory()->create([
+            'schedule_id' => $this->schedule->id,
+            'transit_stop_id' => $this->transitStop->id
+        ]);
+
+        $response = $this->getJson("/api/v1/stop-times/{$stopTime->id}");
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data' => [
+                'schedule' => [
+                    'id',
+                    'gtfs_trip_id',
+                    'service_id'
+                ],
+                'transit_stop' => [
+                    'id',
+                    'name'
+                ]
+            ]
+        ]);
+
+        $response->assertJsonPath('data.schedule.id', $this->schedule->id);
+        $response->assertJsonPath('data.schedule.gtfs_trip_id', $this->schedule->gtfs_trip_id);
+        $response->assertJsonPath('data.schedule.service_id', $this->schedule->service_id);
+        $response->assertJsonPath('data.transit_stop.id', $this->transitStop->id);
+        $response->assertJsonPath('data.transit_stop.name', $this->transitStop->name);
+
+    }
+}

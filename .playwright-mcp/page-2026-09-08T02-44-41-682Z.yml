@@ -1,0 +1,48 @@
+- generic [ref=f3e2]:
+  - link "Skip to main content" [ref=f3e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f3e4]:
+    - generic [ref=f3e6]:
+      - form "Journey planner" [ref=f3e7]:
+        - generic [ref=f3e8]:
+          - generic [ref=f3e9]: Find your journey
+          - button "Clear" [ref=f3e10]
+        - generic [ref=f3e14]:
+          - generic [ref=f3e15]:
+            - generic [ref=f3e16]: Origin
+            - generic [ref=f3e17]:
+              - generic [ref=f3e18]:
+                - combobox "Origin" [ref=f3e23]: Mar Girgis
+                - button "Clear Origin" [ref=f3e24] [cursor=pointer]
+              - status [ref=f3e28]: "Selected: Mar Girgis · 30.0059, 31.2295"
+          - button "Swap origin and destination" [ref=f3e32] [cursor=pointer]
+          - generic [ref=f3e37]:
+            - generic [ref=f3e38]: Destination
+            - generic [ref=f3e39]:
+              - generic [ref=f3e40]:
+                - combobox "Destination" [ref=f3e45]: Saad Zaghloul Metro
+                - button "Clear Destination" [ref=f3e46] [cursor=pointer]
+              - status [ref=f3e50]: "Selected: Saad Zaghloul Metro · 30.0365, 31.2404"
+        - generic [ref=f3e54]:
+          - generic [ref=f3e55]: Departure
+          - generic [ref=f3e56]:
+            - textbox "Departure time" [ref=f3e58]: 2026-09-08T00:59
+            - button "Now" [ref=f3e59]
+        - button "Preferences & constraints" [ref=f3e60] [cursor=pointer]
+        - button "Find journeys" [ref=f3e63] [cursor=pointer]
+      - generic "Selected locations map" [ref=f3e64]:
+        - generic "Map" [ref=f3e65]:
+          - region "Map" [ref=f3e67]
+          - generic "Map (loading)" [ref=f3e68]
+        - generic [ref=f3e70]: Planner · Admin User
+    - navigation "Primary" [ref=f3e71]:
+      - link "Home" [ref=f3e72] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=f3e77] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=f3e82] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=f3e87] [cursor=pointer]:
+        - /url: /notifications
+      - link "Profile" [ref=f3e92] [cursor=pointer]:
+        - /url: /profile

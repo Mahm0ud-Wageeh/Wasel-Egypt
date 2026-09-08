@@ -1,0 +1,24 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: Where to today?
+      - heading "Admin" [level=2] [ref=e8]
+      - link "Where to today? Search" [ref=e9] [cursor=pointer]:
+        - /url: /search
+        - generic [ref=e10]:
+          - generic [aria-hidden] [ref=e11]: ◎
+          - text: Where to today?
+          - generic [ref=e12]: Search
+    - navigation "Primary" [ref=e16]:
+      - link "Home" [ref=e17] [cursor=pointer]:
+        - /url: /home
+      - link "Search" [ref=e22] [cursor=pointer]:
+        - /url: /search
+      - link "Reports" [ref=e27] [cursor=pointer]:
+        - /url: /reports
+      - link "Alerts" [ref=e32] [cursor=pointer]:
+        - /url: /notifications
+      - link "Profile" [ref=e37] [cursor=pointer]:
+        - /url: /profile

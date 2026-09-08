@@ -1,0 +1,71 @@
+/* ============================================================
+   Wasel Egypt — Design Tokens
+   Source of truth: docs/design/UIUX_DESIGN_SPEC.md §2
+   (approved design system — do not redefine locally)
+   ============================================================ */
+:root {
+  /* Brand */
+  --p900: #0e3a5f;
+  --p700: #14558b;
+  --p600: #1a6bb0;
+  --p500: #2280cc;
+  --p100: #d8e9f7;
+  --p50: #eff6fc;
+
+  /* Accents */
+  --a600: #b98a2f;
+  --a100: #f6ecd4;
+  --nile: #0e7c7b;
+
+  /* Semantic */
+  --s700: #2e7d32;
+  --s50: #e6f2e7;
+  --w700: #b26a00;
+  --w50: #fff3e0;
+  --e700: #c62828;
+  --e50: #fde9e9;
+
+  /* Neutrals */
+  --ink900: #16222e;
+  --ink700: #3d4c5c;
+  --ink500: #64748b;
+  --ink300: #b8c2ce;
+  --line: #e3e8ee;
+  --surface: #ffffff;
+  --bg: #f7f9fb;
+  --sand: #faf6ef;
+
+  /* Transit mode colors */
+  --mode-metro: #c62828;
+  --mode-rail: #6a3fa0;
+  --mode-bus: #1565c0;
+  --mode-minibus: #e07c00;
+  --mode-microbus: #00897b;
+  --mode-walking: #6b7280;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* Shadows */
+  --sh-sm: 0 1px 2px rgba(22, 34, 46, 0.06);
+  --sh-md: 0 4px 12px rgba(22, 34, 46, 0.08);
+  --sh-lg: 0 12px 32px rgba(22, 34, 46, 0.14);
+
+  /* Spacing (4-pt scale) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Typography */
+  --font: 'Cairo', Inter, system-ui, -apple-system, sans-serif;
+}
