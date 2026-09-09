@@ -50,11 +50,15 @@ and the attribution we display in the product.
 ## 4. Map tile provider
 
 Default tile URL is configurable through `VITE_MAP_TILES_URL`. The demo
-default uses a Stamen Toner Lite style endpoint; **production deployment
-must either register a provider API key via env (never hardcode) or
-self-host tiles** (e.g. tileserver-gl with OSM data). MapLibre GL JS itself
-is BSD-3-Clause and imposes no tile obligations; the tile provider's terms
-apply.
+default is **OpenStreetMap standard raster tiles** (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`,
+ODbL — attribution shown in the map's compact attribution control). A
+previous Stamen Toner Lite endpoint was retired because it now requires a
+provider API key (401 without one). Production deployment with heavy
+traffic must either register a provider API key via env (never hardcode)
+or self-host tiles (e.g. tileserver-gl with OSM data). MapLibre GL JS
+itself is BSD-3-Clause and imposes no tile obligations; the tile
+provider's terms apply. NOTE: MapLibre raster sources do not expand
+Leaflet's `{r}` retina token — tile URLs must use plain `{z}/{x}/{y}`.
 
 ## 5. Fonts
 

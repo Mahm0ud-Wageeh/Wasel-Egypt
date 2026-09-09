@@ -6,8 +6,8 @@ use App\Models\SystemConfig;
 
 /**
  * Estimates journey fare for metro journeys from the imported Transport
- * for Cairo fare matrix (system_config key 'tfc_metro_fares_2018',
- * historical June-2018 zonal fares: 3/5/7 EGP).
+ * for Cairo fare matrix (system_config key 'tfc_metro_fares').
+ * Fare dates and source years come from the imported config metadata.
  *
  * Honesty contract: a fare is ONLY emitted when every transit leg of the
  * plan is a metro leg AND both boarding and alighting stops exist in the
@@ -31,10 +31,11 @@ class FareEstimator
      */
     public function estimate(array $plan): ?array
     {
-        $matrix = $this->loadMetroFareMatrix();
-        if ($matrix === null) {
+        $fareData = $this->loadMetroFareMatrix();
+        if ($fareData === null) {
             return null;
         }
+        $matrix = $fareData['matrix'];
 
         $transitLegs = array_values(array_filter(
             $plan['legs'] ?? [],
@@ -71,7 +72,8 @@ class FareEstimator
         return [
             'amount' => round($amount, 2),
             'currency' => 'EGP',
-            'source' => 'tfc_metro_fares',
+            'source' => self::TFC_FARES_KEY . ($fareData['as_of'] !== null ? '_' . substr($fareData['as_of'], 0, 4) : ''),
+            'as_of' => $fareData['as_of'],
         ];
     }
 
@@ -79,7 +81,7 @@ class FareEstimator
      * Load and normalize the TfC metro fare matrix from system_config,
      * null when the row is absent or malformed.
      *
-     * @return array<string,array<string,float>>|null
+     * @return array{matrix: array<string,array<string,float>>, as_of: ?string}|null
      */
     private function loadMetroFareMatrix(): ?array
     {
@@ -107,6 +109,13 @@ class FareEstimator
             }
         }
 
-        return $normalized;
+        // Preserve the importer's recorded date alongside its matrix. Missing or
+        // malformed metadata stays unknown; the estimator never invents a date.
+        $asOf = $payload['as_of'] ?? null;
+        if (!is_string($asOf) || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D', $asOf)) {
+            $asOf = null;
+        }
+
+        return ['matrix' => $normalized, 'as_of' => $asOf];
     }
 }

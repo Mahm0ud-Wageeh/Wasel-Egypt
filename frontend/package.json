@@ -4,9 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "sync:map-worker": "node scripts/sync-maplibre-worker.mjs",
+    "predev": "npm run sync:map-worker",
     "dev": "vite",
+    "prebuild": "npm run sync:map-worker",
     "build": "vite build",
     "preview": "vite preview",
+    "pretest": "npm run sync:map-worker",
     "test": "vitest run"
   },
   "dependencies": {

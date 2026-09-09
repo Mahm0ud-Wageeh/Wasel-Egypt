@@ -6,16 +6,19 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Alert } from '../components/ui/Alert'
 import { Icon } from '../components/ui/Icon'
+import { Logo } from '../components/ui/Logo'
+import { OriginDestinationFields, useJourneyPlanner } from '../components/journey/JourneyPlannerForm'
 import { getData, apiRequest } from '../api/client'
 import { endpoints } from '../api/endpoints'
 
 /**
  * Public landing — Wasel Egypt.
  *
- * Design: docs/frontend/REDESIGN_DECISION.md (editorial sections, SVG
- * iconography, planner CTA pattern adopted from 21st.dev #19080 and
- * rebuilt in Wasel token CSS). All figures come from live public API
- * data; sections that would need unavailable data render nothing.
+ * The hero contains a REAL journey search: origin/destination pickers
+ * with geolocation, executing the actual /journeys/search flow. Guests
+ * get routed to log-in (protected endpoint); authenticated users land
+ * directly in results. All figures come from live public API data;
+ * sections that would need unavailable data render nothing.
  */
 const NAV_LINKS = [
   { href: '#how-it-works', key: 'landing.nav_how' },
@@ -31,12 +34,12 @@ const STEPS = [
 ]
 
 const MODES = [
-  { icon: 'modeMetro', label: 'Metro', note: 'Lines 1–3', color: 'var(--mode-metro)' },
-  { icon: 'modeBus', label: 'Bus', note: 'CTA + private', color: 'var(--mode-bus)' },
-  { icon: 'modeMinibus', label: 'Minibus', note: 'Licensed lines', color: 'var(--mode-minibus)' },
-  { icon: 'modeMicrobus', label: 'Microbus', note: 'Paratransit', color: 'var(--mode-microbus)' },
-  { icon: 'modeRail', label: 'Rail', note: 'National rail', color: 'var(--mode-rail)' },
-  { icon: 'modeWalking', label: 'Walking', note: 'Door to door', color: 'var(--mode-walking)' },
+  { icon: 'modeMetro', label: "landing.metro", note: "landing.metro_note", color: 'var(--mode-metro)' },
+  { icon: 'modeBus', label: "landing.bus", note: "landing.bus_note", color: 'var(--mode-bus)' },
+  { icon: 'modeMinibus', label: "landing.minibus", note: "landing.minibus_note", color: 'var(--mode-minibus)' },
+  { icon: 'modeMicrobus', label: "landing.microbus", note: "landing.microbus_note", color: 'var(--mode-microbus)' },
+  { icon: 'modeRail', label: "landing.rail", note: "landing.rail_note", color: 'var(--mode-rail)' },
+  { icon: 'modeWalking', label: "landing.walking", note: "landing.walking_note", color: 'var(--mode-walking)' },
 ]
 
 export default function Landing() {
@@ -48,21 +51,14 @@ export default function Landing() {
   const [coverage, setCoverage] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
+  const planner = useJourneyPlanner()
+
   useEffect(() => {
     let active = true
 
     getData(endpoints.public.activeServiceAlerts)
       .then((res) => {
         if (active) setAlerts(Array.isArray(res?.data) ? res.data : [])
-      })
-      .catch(() => {})
-
-    apiRequest(`${endpoints.public.stops}?per_page=1`)
-      .then((res) => {
-        const total = res?.meta?.total
-        if (active && Number.isFinite(total)) {
-          setCoverage((prev) => ({ ...prev, stops: total }))
-        }
       })
       .catch(() => {})
 
@@ -75,23 +71,49 @@ export default function Landing() {
       })
       .catch(() => {})
 
+    apiRequest(`${endpoints.public.stops}?per_page=1`)
+      .then((res) => {
+        const total = res?.meta?.total
+        if (active && Number.isFinite(total)) {
+          setCoverage((prev) => ({ ...prev, stops: total }))
+        }
+      })
+      .catch(() => {})
+
     return () => {
       active = false
     }
   }, [])
 
-  const goSearch = () => navigate('/search')
+  // Execute the real search. Authenticated users run the protected
+  // search API and land in results; guests store a validated draft and
+  // continue on the pre-filled /search page after login.
+  const startSearch = async (e) => {
+    e?.preventDefault?.()
+    if (isAuthenticated) {
+      const result = await planner.submit()
+      if (result) navigate('/journeys/results')
+      return
+    }
+    const draft = planner.storeDraft()
+    if (draft) navigate('/login', { state: { from: '/search' } })
+  }
+
+  const geoNotice = planner.geoStatus === 'denied'
+    ? { tone: 'warning', text: t('landing.geo_status_denied') }
+    : planner.geoStatus === 'timeout'
+      ? { tone: 'warning', text: t('landing.geo_status_timeout'), retry: true }
+      : planner.geoStatus === 'unavailable'
+        ? { tone: 'info', text: t('landing.geo_status_unavailable') }
+        : null
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* ---- Navbar ---- */}
       <nav className="site-nav" aria-label="Main navigation">
         <div className="site-nav__inner">
-          <Link to="/" className="site-nav__brand" aria-label="Wasel Egypt home">
-            <span className="site-nav__brand-icon" aria-hidden="true">
-              <Icon name="navigate" size={17} />
-            </span>
-            Wasel
+          <Link to="/" aria-label="Wasel Egypt home">
+            <Logo size={30} subtitle="Egypt" />
           </Link>
 
           <div className="site-nav__links">
@@ -117,9 +139,15 @@ export default function Landing() {
                 <Button size="sm" variant="secondary">{t('auth.login')}</Button>
               </Link>
             )}
-            <Link to="/search" style={{ textDecoration: 'none' }}>
-              <Button size="sm">Plan a journey</Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/home" style={{ textDecoration: 'none' }}>
+                <Button size="sm">{t('nav.home')}</Button>
+              </Link>
+            ) : (
+              <Link to="/register" className="site-nav__hide-sm" style={{ textDecoration: 'none' }}>
+                <Button size="sm">{t('landing.get_started')}</Button>
+              </Link>
+            )}
             <button
               type="button"
               className="site-nav__toggle"
@@ -140,43 +168,86 @@ export default function Landing() {
             </a>
           ))}
           {!isAuthenticated && (
-            <Link to="/login" className="site-nav__link" style={{ textDecoration: 'none' }} onClick={() => setMenuOpen(false)}>
-              {t('auth.login')}
+            <>
+              <Link to="/login" className="site-nav__link" style={{ textDecoration: 'none' }} onClick={() => setMenuOpen(false)}>
+                {t('auth.login')}
+              </Link>
+              <Link to="/register" className="site-nav__link" style={{ textDecoration: 'none' }} onClick={() => setMenuOpen(false)}>
+                {t('auth.register')}
+              </Link>
+            </>
+          )}
+          {isAuthenticated && (
+            <Link to="/home" className="site-nav__link" style={{ textDecoration: 'none' }} onClick={() => setMenuOpen(false)}>
+              {t('nav.home')}
             </Link>
           )}
         </div>
       </nav>
 
-      {/* ---- Hero ---- */}
+      {/* ---- Hero: functional journey search ---- */}
       <header id="main-content" className="hero-redesign">
         <div className="hero-inner">
-          <span className="eyebrow">Wasel Egypt</span>
+          <span className="eyebrow">{t('app.name')}</span>
           <h1>{t('landing.tagline')}</h1>
           <p className="hero-lede">{t('landing.lede')}</p>
 
-          {/* Journey planner CTA — deep-links into the existing search flow */}
-          <div className="planner-cta" role="search" aria-label="Journey planner">
-            <div className="planner-cta__fields">
-              <div className="planner-cta__field">
-                <Icon name="pin" size={17} aria-hidden="true" />
-                <div>
-                  <b>{t('landing.from')}</b>
-                  <span style={{ display: 'block' }}>{t('landing.from_hint')}</span>
-                </div>
+          {/* Real planner — origin/destination/search, live from the API */}
+          <form className="hero-planner" onSubmit={startSearch} role="search" aria-label="Journey planner">
+            <OriginDestinationFields
+              planner={planner}
+              tone="hero"
+            />
+
+            {geoNotice && (
+              <div className={`hero-planner__geo hero-planner__geo--${geoNotice.tone}`} role="status">
+                <Icon name="warning" size={14} aria-hidden="true" />
+                <span>{geoNotice.text}</span>
+                {geoNotice.retry && (
+                  <button type="button" className="chip" onClick={planner.currentLocationContext.locate}>
+                    {t('landing.geo_retry')}
+                  </button>
+                )}
               </div>
-              <div className="planner-cta__field">
-                <Icon name="navigate" size={17} aria-hidden="true" />
-                <div>
-                  <b>{t('landing.to')}</b>
-                  <span style={{ display: 'block' }}>{t('landing.to_hint')}</span>
-                </div>
+            )}
+
+            {planner.searchError && (
+              <div className="hero-planner__geo hero-planner__geo--warning" role="status">
+                <Icon name="warning" size={14} aria-hidden="true" />
+                <span>{planner.searchError}</span>
               </div>
+            )}
+
+            {planner.submitError && (
+              <div className="hero-planner__geo hero-planner__geo--warning" role="alert">
+                <Icon name="warning" size={14} aria-hidden="true" />
+                <span>{planner.submitError}</span>
+              </div>
+            )}
+
+            <div className="hero-planner__actions">
+              <button type="submit" className="hero-planner__submit" disabled={planner.submitting}>
+                {planner.submitting ? (
+                  <>
+                    <span className="spinner" aria-hidden="true" />
+                    {t('planner.searching')}
+                  </>
+                ) : (
+                  <>
+                    {t('landing.plan_cta')}
+                    <Icon name="arrowRight" size={17} aria-hidden="true" />
+                  </>
+                )}
+              </button>
+              {!isAuthenticated && (
+                <p className="hero-planner__hint">{t('landing.signin_prompt')}</p>
+              )}
             </div>
-            <button type="button" className="planner-cta__submit" onClick={goSearch}>
-              {t('landing.plan_cta')}
-              <Icon name="arrowRight" size={17} aria-hidden="true" />
-            </button>
-          </div>
+          </form>
+
+          <p className="hero-search-hint">
+            <Icon name="search" size={13} aria-hidden="true" /> {t('landing.search_hint')}
+          </p>
 
           <div className="row" style={{ marginTop: 'var(--sp-5)', flexWrap: 'wrap' }}>
             {[
@@ -184,7 +255,7 @@ export default function Landing() {
               { icon: 'community', label: t('landing.feature_reports') },
               { icon: 'recover', label: t('landing.feature_recover') },
             ].map((f) => (
-              <span key={f.label} className="badge" style={{ background: 'rgba(255,255,255,.14)', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px' }}>
+              <span key={f.label} className="hero-feature-chip">
                 <Icon name={f.icon} size={14} aria-hidden="true" />
                 {f.label}
               </span>
@@ -255,10 +326,7 @@ export default function Landing() {
         <div className="section-head">
           <span className="eyebrow">{t('landing.nav_modes')}</span>
           <h2 id="modes-title" className="section-title">{t('landing.modes_title')}</h2>
-          <p className="section-lede">
-            From the metro to the microbus — Wasel plans across the network
-            Cairenes actually ride.
-          </p>
+          <p className="section-lede"> {t('landing.modes_lede')} </p>
         </div>
         <div className="mode-grid">
           {MODES.map((mode) => (
@@ -268,8 +336,8 @@ export default function Landing() {
                 <Icon name={mode.icon} size={19} />
               </span>
               <div>
-                <b>{mode.label}</b>
-                <span>{mode.note}</span>
+                <b>{t(mode.label)}</b>
+                <span>{t(mode.note)}</span>
               </div>
             </div>
           ))}
@@ -281,39 +349,29 @@ export default function Landing() {
         <div className="section-head">
           <span className="eyebrow">{t('landing.nav_trust')}</span>
           <h2 id="trust-title" className="section-title">{t('landing.trust_title')}</h2>
-          <p className="section-lede">
-            Moderated rider reports keep the network honest — and trust grows
-            with every verified report.
-          </p>
+          <p className="section-lede"> {t('landing.trust_lede')} </p>
         </div>
-        <div className="feature-grid">
+        <div className="feature-grid feature-grid--two">
           <article className="feature-card">
             <span className="feature-card__icon" aria-hidden="true" style={{ background: 'var(--s50)', color: 'var(--s700)' }}>
               <Icon name="shield" size={21} />
             </span>
-            <h3 className="feature-card__title">Moderated reports</h3>
-            <p className="feature-card__body">
-              Riders report delays, overcrowding and disruptions at specific
-              stops. Moderators verify each report before it influences what
-              other passengers see.
-            </p>
+            <h3 className="feature-card__title">{t('landing.moderated_title')}</h3>
+            <p className="feature-card__body"> {t('landing.moderated_body')} </p>
           </article>
           <article className="feature-card">
             <span className="feature-card__icon" aria-hidden="true" style={{ background: 'var(--a100)', color: 'var(--a600)' }}>
               <Icon name="community" size={21} />
             </span>
-            <h3 className="feature-card__title">Trust that compounds</h3>
-            <p className="feature-card__body">
-              Verified reporters build trust over time. Their signal weighs
-              more — so the information you rely on gets better every day.
-            </p>
+            <h3 className="feature-card__title">{t('landing.trust_compounds')}</h3>
+            <p className="feature-card__body"> {t('landing.trust_compounds_body')} </p>
           </article>
         </div>
       </section>
 
       {/* ---- CTA ---- */}
       <section className="section section--tight">
-        <Card style={{ padding: 'var(--sp-8) var(--sp-5)', textAlign: 'center' }}>
+        <Card className="cta-band" style={{ padding: 'var(--sp-8) var(--sp-5)', textAlign: 'center' }}>
           <h2 className="section-title" style={{ marginBottom: 8 }}>{t('landing.cta_title')}</h2>
           <p className="t-caption" style={{ marginBottom: 16, fontSize: 13.5 }}>
             {t('landing.cta_body')}
@@ -334,38 +392,32 @@ export default function Landing() {
         <div className="site-footer__inner">
           <div className="site-footer__grid">
             <div>
-              <div className="site-footer__brand">
-                <span className="site-nav__brand-icon" aria-hidden="true">
-                  <Icon name="navigate" size={17} />
-                </span>
-                Wasel Egypt
-              </div>
+              <Logo size={28} subtitle="Egypt" />
               <p className="site-footer__tagline">
-                Smarter public transit for Greater Cairo — plan, track, and
-                recover on every journey.
+                {t('footer.tagline')}
               </p>
             </div>
 
             <div>
-              <h3 className="site-footer__col-title">Product</h3>
+              <h3 className="site-footer__col-title">{t('footer.product')}</h3>
               <ul className="site-footer__links">
-                <li><Link to="/home">Explore</Link></li>
-                <li><Link to="/search">Plan a journey</Link></li>
-                <li><Link to="/reports">Community reports</Link></li>
+                <li><Link to="/home">{t('footer.explore')}</Link></li>
+                <li><Link to="/search">{t('footer.plan')}</Link></li>
+                <li><Link to="/reports">{t('reports.title')}</Link></li>
               </ul>
             </div>
 
             <div>
-              <h3 className="site-footer__col-title">Account</h3>
+              <h3 className="site-footer__col-title">{t('footer.account')}</h3>
               <ul className="site-footer__links">
-                <li><Link to="/register">Create account</Link></li>
-                <li><Link to="/login">Log in</Link></li>
-                <li><Link to="/profile">Profile</Link></li>
+                <li><Link to="/register">{t('auth.register')}</Link></li>
+                <li><Link to="/login">{t('auth.login')}</Link></li>
+                <li><Link to="/profile">{t('nav.profile')}</Link></li>
               </ul>
             </div>
 
             <div>
-              <h3 className="site-footer__col-title">Data &amp; attribution</h3>
+              <h3 className="site-footer__col-title">{t('footer.data')}</h3>
               <ul className="site-footer__links">
                 <li>
                   <Icon name="external" size={13} aria-hidden="true" />

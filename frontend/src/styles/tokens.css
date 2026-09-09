@@ -1,41 +1,60 @@
 /* ============================================================
-   Wasel Egypt — Design Tokens
-   Source of truth: docs/design/UIUX_DESIGN_SPEC.md §2
-   (approved design system — do not redefine locally)
+   Wasel Egypt — Design Tokens (v2)
+   Refined production scale. Single source of truth — never
+   redefine locally; only reference these variables.
    ============================================================ */
 :root {
-  /* Brand */
+  /* ---- Brand: Nile Blue ramp ---- */
   --p900: #0e3a5f;
+  --p800: #124675;
   --p700: #14558b;
   --p600: #1a6bb0;
   --p500: #2280cc;
+  --p400: #4d9bd8;
+  --p300: #8fbfe8;
+  --p200: #bcd9f1;
   --p100: #d8e9f7;
   --p50: #eff6fc;
 
-  /* Accents */
+  /* ---- Accent: Desert Gold ---- */
+  --a700: #9a7226;
   --a600: #b98a2f;
+  --a500: #d3a044;
   --a100: #f6ecd4;
-  --nile: #0e7c7b;
+  --a50: #fbf6ea;
 
-  /* Semantic */
+  /* ---- Nile teal (secondary brand accent) ---- */
+  --nile: #0e7c7b;
+  --nile-50: #e6f4f4;
+
+  /* ---- Semantic ---- */
   --s700: #2e7d32;
+  --s600: #3a8f3f;
   --s50: #e6f2e7;
   --w700: #b26a00;
+  --w600: #c97f10;
   --w50: #fff3e0;
   --e700: #c62828;
+  --e600: #d32f2f;
   --e50: #fde9e9;
 
-  /* Neutrals */
+  /* ---- Neutrals ---- */
   --ink900: #16222e;
+  --ink800: #233240;
   --ink700: #3d4c5c;
   --ink500: #64748b;
+  --ink400: #8b98a8;
   --ink300: #b8c2ce;
+  --ink200: #dbe2ea;
+  --ink100: #eceff3;
   --line: #e3e8ee;
+  --line-strong: #cdd6e0;
   --surface: #ffffff;
+  --surface-2: #f2f5f9;
   --bg: #f7f9fb;
   --sand: #faf6ef;
 
-  /* Transit mode colors */
+  /* ---- Transit mode colors (route lines, chips, markers) ---- */
   --mode-metro: #c62828;
   --mode-rail: #6a3fa0;
   --mode-bus: #1565c0;
@@ -43,19 +62,23 @@
   --mode-microbus: #00897b;
   --mode-walking: #6b7280;
 
-  /* Radius */
+  /* ---- Radius scale (2·4·8·12·16·24) ---- */
+  --r-xs: 4px;
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
   --r-xl: 24px;
   --r-pill: 999px;
 
-  /* Shadows */
-  --sh-sm: 0 1px 2px rgba(22, 34, 46, 0.06);
-  --sh-md: 0 4px 12px rgba(22, 34, 46, 0.08);
-  --sh-lg: 0 12px 32px rgba(22, 34, 46, 0.14);
+  /* ---- Elevation (restrained, neutral shadow ramp) ---- */
+  --sh-xs: 0 1px 2px rgba(22, 34, 46, 0.05);
+  --sh-sm: 0 1px 2px rgba(22, 34, 46, 0.06), 0 1px 3px rgba(22, 34, 46, 0.04);
+  --sh-md: 0 2px 6px rgba(22, 34, 46, 0.06), 0 4px 14px rgba(22, 34, 46, 0.07);
+  --sh-lg: 0 4px 10px rgba(22, 34, 46, 0.07), 0 14px 38px rgba(22, 34, 46, 0.12);
+  --sh-map-ctl: 0 1px 4px rgba(22, 34, 46, 0.18);
 
-  /* Spacing (4-pt scale) */
+  /* ---- Spacing (4-pt scale) ---- */
+  --sp-0: 0px;
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
@@ -65,7 +88,38 @@
   --sp-8: 32px;
   --sp-10: 40px;
   --sp-12: 48px;
+  --sp-16: 64px;
 
-  /* Typography */
+  /* ---- Typography ---- */
   --font: 'Cairo', Inter, system-ui, -apple-system, sans-serif;
+
+  /* Fixed type scale (px, 1.25 major-third progression for headings) */
+  --fs-caption: 12px;
+  --fs-label: 13px;
+  --fs-body: 14px;
+  --fs-body-lg: 16px;
+  --fs-h3: 18px;
+  --fs-h2: 22px;
+  --fs-h1: 28px;
+  --fs-display: 40px;
+
+  /* Control heights — one scale for inputs, selects, comboboxes */
+  --ctl-sm: 36px;
+  --ctl-md: 44px;
+  --ctl-lg: 52px;
+
+  /* Icon sizes */
+  --icon-sm: 14px;
+  --icon-md: 17px;
+  --icon-lg: 20px;
+  --icon-xl: 24px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.6, 0.25, 1);
+  --dur-fast: 120ms;
+  --dur-med: 200ms;
+
+  /* Layout */
+  --content-max: 1120px;
+  --header-h: 60px;
 }

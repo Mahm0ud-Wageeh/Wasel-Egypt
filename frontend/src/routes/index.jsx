@@ -44,8 +44,9 @@ function JourneyArea() {
 }
 
 export const router = createBrowserRouter([
-  /* ─── Landing ─── */
-  { path: '/', element: <Landing /> },
+  /* ─── Landing (journey-aware: hero planner shares JourneyProvider
+         state with /search via sessionStorage persistence) ─── */
+  { path: '/', element: <JourneyProvider><Landing /></JourneyProvider> },
 
   /* ─── Guest-only auth screens ─── */
   {

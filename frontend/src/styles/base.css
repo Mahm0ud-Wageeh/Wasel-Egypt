@@ -13,27 +13,29 @@ html {
 
 body {
   font-family: var(--font);
-  font-size: 14px;
+  font-size: var(--fs-body);
   line-height: 1.57;
   color: var(--ink900);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Type scale */
-.t-display { font-size: 36px; line-height: 1.22; font-weight: 700; }
-.t-h1 { font-size: 24px; line-height: 1.33; font-weight: 700; }
-.t-h2 { font-size: 20px; line-height: 1.4; font-weight: 600; }
-.t-h3 { font-size: 18px; line-height: 1.44; font-weight: 600; }
-.t-body-lg { font-size: 16px; line-height: 1.5; font-weight: 400; }
-.t-body { font-size: 14px; line-height: 1.57; }
-.t-label { font-size: 13px; line-height: 1.38; font-weight: 500; }
-.t-caption { font-size: 12px; line-height: 1.33; font-weight: 500; color: var(--ink500); }
-.t-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+/* Type scale — token-driven */
+.t-display { font-size: var(--fs-display); line-height: 1.18; font-weight: 700; letter-spacing: -0.5px; }
+.t-h1 { font-size: var(--fs-h1); line-height: 1.28; font-weight: 700; letter-spacing: -0.3px; }
+.t-h2 { font-size: var(--fs-h2); line-height: 1.35; font-weight: 700; }
+.t-h3 { font-size: var(--fs-h3); line-height: 1.4; font-weight: 600; }
+.t-body-lg { font-size: var(--fs-body-lg); line-height: 1.55; font-weight: 400; }
+.t-body { font-size: var(--fs-body); line-height: 1.57; }
+.t-label { font-size: var(--fs-label); line-height: 1.38; font-weight: 600; }
+.t-caption { font-size: var(--fs-caption); line-height: 1.4; font-weight: 500; color: var(--ink500); }
+.t-num { font-variant-numeric: tabular-nums; font-weight: 700; }
 
 .muted { color: var(--ink500); }
 a { color: var(--p600); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+h1, h2, h3 { text-wrap: balance; }
 
 /* App shell — mobile-first; centered phone-like column on desktop */
 .app-shell {
@@ -100,9 +102,9 @@ a:hover { text-decoration: underline; }
   box-shadow: var(--sh-sm);
 }
 .topbar__back {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink700);
@@ -112,7 +114,9 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   font-size: 14px;
   flex: none;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
+.topbar__back:hover { background: var(--surface-2); border-color: var(--line-strong); }
 .topbar__title {
   font-size: 17px;
   font-weight: 700;
@@ -123,9 +127,9 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 
-/* Brand header (hero) */
+/* Brand header (home hero) */
 .hero {
-  background: linear-gradient(135deg, var(--p900), var(--p600));
+  background: linear-gradient(140deg, var(--p900), var(--p600));
   color: #fff;
   border-radius: 0 0 var(--r-xl) var(--r-xl);
   padding: var(--sp-5) var(--sp-4) var(--sp-6);
@@ -136,7 +140,7 @@ a:hover { text-decoration: underline; }
 .hero::after {
   content: "";
   position: absolute;
-  right: -40px;
+  inset-inline-end: -40px;
   top: -40px;
   width: 180px;
   height: 180px;
@@ -159,6 +163,7 @@ a:hover { text-decoration: underline; }
   z-index: 30;
   max-width: 480px;
   margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 @media (min-width: 1024px) {
   .tabbar {
@@ -184,12 +189,19 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
   position: relative;
   padding: 4px 0;
+  transition: color var(--dur-fast) var(--ease);
 }
+.tabbar__tab:hover { color: var(--ink700); }
 @media (min-width: 1024px) {
-  .tabbar__tab { flex-direction: row; gap: var(--sp-2); font-size: 13px; }
+  .tabbar__tab { flex-direction: row; gap: var(--sp-2); font-size: var(--fs-label); justify-content: center; }
 }
 .tabbar__tab.is-active { color: var(--p700); }
-.tabbar__tab-icon { font-size: 19px; line-height: 1; }
+.tabbar__tab:focus-visible { outline: 2px solid var(--p600); outline-offset: 2px; border-radius: var(--r-xs); }
+.tabbar__tab-icon { font-size: 19px; line-height: 1; display: inline-flex; }
+.tabbar__brand { display: none; margin-inline-end: auto; }
+@media (min-width: 1024px) {
+  .tabbar__brand { display: inline-flex; }
+}
 .tabbar__dot {
   position: absolute;
   top: 0;
@@ -219,14 +231,17 @@ a:hover { text-decoration: underline; }
   text-align: center;
   margin-bottom: var(--sp-2);
 }
-.auth-brand__logo { font-size: 34px; }
-.auth-brand h1 { font-size: 22px; color: var(--p900); }
-.auth-brand p { color: var(--ink500); font-size: 14px; }
-.auth-footer { text-align: center; font-size: 13px; color: var(--ink500); }
+.auth-brand__logo {
+  font-size: 34px;
+  display: inline-flex;
+}
+.auth-brand h1 { font-size: var(--fs-h2); color: var(--p900); }
+.auth-brand p { color: var(--ink500); font-size: var(--fs-body); }
+.auth-footer { text-align: center; font-size: var(--fs-label); color: var(--ink500); }
 
 /* Hero search bar (home) */
 .searchbar {
-  height: 52px;
+  height: var(--ctl-lg);
   background: var(--surface);
   border-radius: var(--r-lg);
   display: flex;
@@ -234,12 +249,14 @@ a:hover { text-decoration: underline; }
   gap: var(--sp-3);
   padding: 0 var(--sp-4);
   box-shadow: var(--sh-md);
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--ink300);
+  transition: box-shadow var(--dur-med) var(--ease);
 }
+.searchbar:hover { box-shadow: var(--sh-lg); }
 .searchbar__pin {
-  width: 34px;
-  height: 34px;
+  inline-size: 34px;
+  block-size: 34px;
   border-radius: var(--r-md);
   background: var(--a100);
   color: var(--a600);
@@ -262,10 +279,8 @@ a:hover { text-decoration: underline; }
 /* ---- Landing page layout utilities ---- */
 .container {
   width: 100%;
-  padding-left: var(--sp-4);
-  padding-right: var(--sp-4);
-  margin-left: auto;
-  margin-right: auto;
+  padding-inline: var(--sp-4);
+  margin-inline: auto;
   box-sizing: border-box;
 }
 
@@ -285,7 +300,7 @@ a:hover { text-decoration: underline; }
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--p600);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
 }
 
 @media (prefers-reduced-motion: reduce) {

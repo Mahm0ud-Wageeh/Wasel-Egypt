@@ -9,7 +9,7 @@ import { ModeDot, Badge } from '../components/ui/Badge'
 import { Alert } from '../components/ui/Alert'
 import { StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
-import { MapPanel } from '../components/map/MapPanel'
+import { MapPanel } from '../components/map/LazyMapPanel'
 
 function formatDuration(sec) {
   const mins = Math.round(sec / 60)
@@ -29,13 +29,13 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-const MODE_LABELS = {
-  walking: 'Walk',
-  metro: 'Metro',
-  bus: 'Bus',
-  rail: 'Train',
-  minibus: 'Minibus',
-  microbus: 'Microbus',
+const MODE_LABEL_KEYS = {
+  walking: 'journey.walk',
+  metro: 'landing.metro',
+  bus: 'landing.bus',
+  rail: 'landing.rail',
+  minibus: 'landing.minibus',
+  microbus: 'landing.microbus',
 }
 
 /** Product-meaning lucide icon per transit mode. */
@@ -55,22 +55,31 @@ const legColor = (leg) => (leg.type === 'walking' ? 'var(--mode-walking)' : `var
  * … → Destination, using semantic SVG icons (spec: no emoji iconography).
  */
 function RouteStrip({ option }) {
+  const { t } = useI18n()
+  // Resolve the mode label through i18n; fall back to the raw mode id
+  // when no dictionary entry exists (never render a raw key).
+  const modeLabel = (mode) => {
+    const key = MODE_LABEL_KEYS[mode]
+    if (!key) return mode ?? ''
+    const translated = t(key)
+    return translated === key ? (mode ?? '') : translated
+  }
   const nodes = []
 
-  nodes.push({ key: 'origin', icon: 'pin', color: 'var(--p600)', label: 'Origin' });
+  nodes.push({ key: 'origin', icon: 'pin', color: 'var(--p600)', label: t('results.origin') });
   (option.legs ?? []).forEach((leg, idx) => {
     const prev = option.legs[idx - 1]
     if (prev && prev.to_stop?.id !== leg.from_stop?.id) {
-      nodes.push({ key: `xfer-${idx}`, icon: 'recover', color: 'var(--ink500)', label: 'On-foot interchange' })
+      nodes.push({ key: `xfer-${idx}`, icon: 'recover', color: 'var(--ink500)', label: t('results.transfer_walk') })
     }
     nodes.push({
       key: `leg-${idx}`,
       icon: leg.type === 'walking' ? 'modeWalking' : (MODE_ICONS[leg.mode] ?? 'navigate'),
       color: legColor(leg),
-      label: leg.type === 'walking' ? `Walk ${formatDistance(leg.distance_meters)}` : `${MODE_LABELS[leg.mode] ?? leg.mode} · ${leg.route?.short_name ?? leg.route?.long_name ?? ''}`,
+      label: leg.type === 'walking' ? `${t('journey.walk')} ${formatDistance(leg.distance_meters)}` : `${modeLabel(leg.mode)} · ${leg.route?.short_name ?? leg.route?.long_name ?? ''}`,
     })
   })
-  nodes.push({ key: 'dest', icon: 'navigate', color: 'var(--a600)', label: 'Destination' })
+  nodes.push({ key: 'dest', icon: 'navigate', color: 'var(--a600)', label: t('results.destination') })
 
   return (
     <div className="routestrip" role="img" aria-label={`Route: ${nodes.map((n) => n.label).join(' → ')}`}>
@@ -83,6 +92,28 @@ function RouteStrip({ option }) {
         </span>
       ))}
     </div>
+  )
+}
+
+/** Use API metadata only; unknown dates never inherit a date from the source ID. */
+function FareAttribution({ fare }) {
+  const { t, language } = useI18n()
+  if (fare?.amount == null || typeof fare.source !== 'string'
+    || !/^tfc_metro_fares(?:_\d{4})?$/.test(fare.source)) return null
+
+  const hasDate = typeof fare.as_of === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(fare.as_of)
+  // Only the identified Mobility Database source receives that specific credit.
+  const key = fare.source === 'tfc_metro_fares_2024'
+    ? (hasDate ? 'journey.fare_attribution_metro' : 'journey.fare_attribution_metro_undated')
+    : (hasDate ? 'journey.fare_attribution_tfc_dated' : 'journey.fare_attribution_tfc')
+  const date = hasDate ? new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : 'en', {
+    month: 'short', year: 'numeric', timeZone: 'UTC',
+  }).format(new Date(`${fare.as_of}-01T00:00:00Z`)) : null
+
+  return (
+    <small className="t-caption" style={{ display: 'block', marginBlockStart: 4, color: 'var(--ink500)', textAlign: 'start', overflowWrap: 'anywhere' }}>
+      {hasDate ? t(key).replace('{date}', date) : t(key)}
+    </small>
   )
 }
 
@@ -113,28 +144,32 @@ function JourneyOptionCard({ option, isSelected, isBest, isFastest, isFewestTran
           <div className="row" style={{ gap: 6 }}>
             {isBest && (
               <span className="badge b-verified" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="shield" size={12} aria-hidden="true" /> Recommended
+                <Icon name="shield" size={12} aria-hidden="true" /> {t('results.recommended')}
               </span>
             )}
             {isFastest && !isBest && (
               <span className="badge b-active" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="track" size={12} aria-hidden="true" /> Fastest
+                <Icon name="track" size={12} aria-hidden="true" /> {t('results.fastest')}
               </span>
             )}
             {isFewestTransfers && !isBest && !isFastest && (
               <span className="badge b-active" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="recover" size={12} aria-hidden="true" /> Fewest transfers
+                <Icon name="recover" size={12} aria-hidden="true" /> {t('results.fewest_transfers')}
               </span>
             )}
             {isSelected && !isBest && !isFastest && !isFewestTransfers && (
-              <span className="badge b-active">Selected</span>
+              <span className="badge b-active">{t('results.selected')}</span>
             )}
             <span className="t-num" style={{ fontSize: 20, fontWeight: 700 }}>
               {formatDuration(option.total_duration_sec)}
             </span>
           </div>
           <span className={`badge ${option.total_transfers === 0 ? 'b-active' : 'b-rerouted'}`}>
-            {option.total_transfers === 0 ? 'Direct' : `${option.total_transfers} transfer${option.total_transfers !== 1 ? 's' : ''}`}
+            {option.total_transfers === 0
+              ? t('results.direct')
+              : option.total_transfers === 1
+                ? t('results.one_transfer')
+                : t('results.transfers').replace('{count}', option.total_transfers)}
           </span>
         </div>
 
@@ -145,7 +180,7 @@ function JourneyOptionCard({ option, isSelected, isBest, isFastest, isFewestTran
           {reliabilityPct != null && (
             <span className="t-caption" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <Icon name="shield" size={12} aria-hidden="true" style={{ color: reliabilityPct >= 70 ? 'var(--s700)' : 'var(--w700)' }} />
-              {reliabilityPct}% reliability
+              {t('results.reliability').replace('{pct}', reliabilityPct)}
             </span>
           )}
         </div>
@@ -153,10 +188,11 @@ function JourneyOptionCard({ option, isSelected, isBest, isFastest, isFewestTran
         <RouteStrip option={option} />
 
         <div className="t-caption" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          <span>{formatDistance(option.walk_distance_meters)} walking</span>
+          <span>{formatDistance(option.walk_distance_meters)} {t('results.metric_walking').toLowerCase()}</span>
           {option.fare && <span> · {option.fare.amount} {option.fare.currency}</span>}
           {option.score !== undefined && <span> · score {option.score.toFixed(2)}</span>}
         </div>
+        <FareAttribution fare={option.fare} />
 
         {option.disrupted && (
           <div className="alert alert--error" style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }} role="status">
@@ -188,11 +224,11 @@ function ScoreExplanation({ option }) {
   const reliability = option.reliability ?? null
 
   const rows = [
-    { label: 'Time', value: `${formatDuration(dur)}`, pct: Math.min(100, (dur / 5400) * 100) },
-    { label: 'Walking', value: formatDistance(walk), pct: Math.min(100, (walk / 2500) * 100) },
-    { label: 'Transfers', value: String(transfers), pct: Math.min(100, (transfers / 4) * 100) },
-    { label: 'Fare', value: fare != null ? `${fare} EGP` : '—', pct: fare != null ? Math.min(100, (fare / 30) * 100) : 0 },
-    { label: 'Reliability', value: reliability != null ? `${Math.round(reliability * 100)}%` : '—', pct: reliability != null ? reliability * 100 : 0 },
+    { key: 'time', label: t('results.metric_time'), value: `${formatDuration(dur)}`, pct: Math.min(100, (dur / 5400) * 100) },
+    { key: 'walking', label: t('results.metric_walking'), value: formatDistance(walk), pct: Math.min(100, (walk / 2500) * 100) },
+    { key: 'transfers', label: t('results.metric_transfers'), value: String(transfers), pct: Math.min(100, (transfers / 4) * 100) },
+    { key: 'fare', label: t('results.metric_fare'), value: fare != null ? `${fare} EGP` : '—', pct: fare != null ? Math.min(100, (fare / 30) * 100) : 0 },
+    { key: 'reliability', label: t('results.metric_reliability'), value: reliability != null ? `${Math.round(reliability * 100)}%` : '—', pct: reliability != null ? reliability * 100 : 0 },
   ]
 
   return (
@@ -203,17 +239,20 @@ function ScoreExplanation({ option }) {
       </div>
       <div className="score-bars">
         {rows.map((r) => (
-          <div key={r.label} className="score-bar">
-            <span>{r.label}</span>
-            <span className="score-bar__track" aria-hidden>
-              <span className="score-bar__fill" style={{ width: `${Math.max(4, r.pct)}%` }} />
-            </span>
-            <b className="t-num" style={{ textAlign: 'right' }}>{r.value}</b>
+          <div key={r.key}>
+            <div className="score-bar">
+              <span>{r.label}</span>
+              <span className="score-bar__track" aria-hidden>
+                <span className="score-bar__fill" style={{ width: `${Math.max(4, r.pct)}%` }} />
+              </span>
+              <b className="t-num" style={{ textAlign: 'right' }}>{r.value}</b>
+            </div>
+            {r.key === 'fare' && <FareAttribution fare={option.fare} />}
           </div>
         ))}
       </div>
       <p className="t-caption" style={{ marginTop: 8, marginBottom: 0 }}>
-        Lower is better: time 40% · walking 20% · transfers 20% · fare 10% · reliability 10%.
+        {t('results.why_note')}
       </p>
     </div>
   )
@@ -230,7 +269,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
   const lastLeg = legs[legs.length - 1]
 
   return (
-    <div className="details-drawer" role="dialog" aria-modal="true" aria-label="Journey details">
+    <div className="details-drawer" role="dialog" aria-modal="true" aria-label={t('results.details')}>
       <div className="details-drawer__scrim" onClick={onClose} aria-hidden="true" />
       <div className="details-drawer__panel">
         <div className="details-drawer__handle" aria-hidden="true" />
@@ -244,7 +283,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
               </span>
             </div>
           </div>
-          <button type="button" className="locpicker__clear" onClick={onClose} aria-label="Close journey details">
+          <button type="button" className="locpicker__clear" onClick={onClose} aria-label={t('results.close_details')}>
             <Icon name="close" size={16} />
           </button>
         </div>
@@ -255,12 +294,20 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
             <span className="jtl__dot" style={{ background: 'var(--p600)' }} aria-hidden="true"><Icon name="pin" size={12} /></span>
             <div>
               <b style={{ fontSize: 13 }}>{t('results.origin')}</b>
-              <div className="t-caption">Depart {formatTime(firstLeg?.departure_time)}</div>
+              <div className="t-caption">{t('results.depart')} {formatTime(firstLeg?.departure_time)}</div>
             </div>
           </div>
 
           {legs.map((leg, idx) => {
             const isWalk = leg.type === 'walking'
+            const legModeLabel = isWalk
+              ? t('journey.walk')
+              : (() => {
+                  const key = MODE_LABEL_KEYS[leg.mode]
+                  if (!key) return leg.mode
+                  const translated = t(key)
+                  return translated === key ? leg.mode : translated
+                })()
             return (
               <div key={idx} className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}`}>
                 <span className="jtl__dot" style={{ background: legColor(leg) }} aria-hidden="true">
@@ -269,7 +316,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
                 <div style={{ flex: 1 }}>
                   <div className="row-between">
                     <b style={{ fontSize: 13 }}>
-                      {isWalk ? 'Walk' : (MODE_LABELS[leg.mode] ?? leg.mode)}
+                      {legModeLabel}
                       {leg.route?.short_name ? ` · ${leg.route.short_name}` : ''}
                     </b>
                     <span className="t-caption t-num">
@@ -277,7 +324,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
                     </span>
                   </div>
                   <div className="t-caption" style={{ marginBlockStart: 2 }}>
-                    {leg.from_stop?.name ?? 'Origin'} → {leg.to_stop?.name ?? 'Destination'}
+                    {leg.from_stop?.name ?? t('results.origin')} → {leg.to_stop?.name ?? t('results.destination')}
                     {leg.distance_meters ? ` · ${formatDistance(leg.distance_meters)}` : ''}
                   </div>
                   {!isWalk && leg.route?.long_name && (
@@ -293,12 +340,12 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
             )
           })}
 
-          {(option.transfers ?? []).map((t, idx) => (
+          {(option.transfers ?? []).map((tr, idx) => (
             <div key={`t-${idx}`} className="jtl__row jtl__row--transfer">
               <span className="jtl__dot jtl__dot--ghost" aria-hidden="true"><Icon name="recover" size={11} /></span>
               <div className="t-caption">
-                {t.transfer_type === 'transfer_walk' ? 'On-foot interchange' : 'Wait at stop'} ·{' '}
-                {Math.round((t.transfer_duration_sec ?? 0) / 60)} min
+                {tr.transfer_type === 'transfer_walk' ? t('results.transfer_walk') : t('results.transfer_wait')} ·{' '}
+                {Math.round((tr.transfer_duration_sec ?? 0) / 60)} min
               </div>
             </div>
           ))}
@@ -307,7 +354,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
             <span className="jtl__dot" style={{ background: 'var(--a600)' }} aria-hidden="true"><Icon name="navigate" size={12} /></span>
             <div>
               <b style={{ fontSize: 13 }}>{t('results.destination')}</b>
-              <div className="t-caption">Arrive {formatTime(lastLeg?.arrival_time)}</div>
+              <div className="t-caption">{t('results.arrive')} {formatTime(lastLeg?.arrival_time)}</div>
             </div>
           </div>
         </div>
@@ -315,10 +362,12 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBlockStart: 12 }}>
           {option.fare && <span className="badge b-active">{option.fare.amount} {option.fare.currency}</span>}
           {option.reliability != null && (
-            <span className="badge b-verified">{Math.round(option.reliability * 100)}% reliability</span>
+            <span className="badge b-verified">{t('results.reliability').replace('{pct}', Math.round(option.reliability * 100))}</span>
           )}
           <span className="badge b-rerouted">score {option.score?.toFixed(2)}</span>
         </div>
+
+        <FareAttribution fare={option.fare} />
 
         <ScoreExplanation option={option} />
 
@@ -331,8 +380,8 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
             onClick={onSave}
           >
             {saveState.saved ? (
-              <><Icon name="success" size={16} aria-hidden="true" /> Saved to your trips</>
-            ) : 'Save journey'}
+              <><Icon name="success" size={16} aria-hidden="true" /> {t('results.saved')}</>
+            ) : t('results.save')}
           </Button>
           <Button
             block
@@ -341,12 +390,12 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
             loading={saveState.starting}
             onClick={onStart}
           >
-            Start journey
+            {t('results.start')}
           </Button>
         </div>
         {!saveState.saved && (
           <p className="t-caption" style={{ marginTop: 6 }}>
-            Save the journey first — then start it to begin live tracking.
+            {t('results.save_first')}
           </p>
         )}
       </div>
@@ -462,6 +511,22 @@ export function JourneyResultsPage() {
     starting,
   }
 
+  // Memoized map inputs: fresh array identities every render would tear
+  // down and rebuild all map layers on each parent render.
+  const activeOption = selected ?? options[0]
+  const alternativeOptions = useMemo(
+    () => options.filter((o) => o !== activeOption),
+    [options, activeOption]
+  )
+  const routeStops = useMemo(
+    () => activeOption?.legs?.flatMap((leg) =>
+      [leg.from_stop, leg.to_stop].filter((s) => s && s.lat != null)
+    ) ?? [],
+    [activeOption]
+  )
+  const endpointOrigin = searchParams ? { lat: searchParams.origin_lat, lng: searchParams.origin_lng } : null
+  const endpointDestination = searchParams ? { lat: searchParams.destination_lat, lng: searchParams.destination_lng } : null
+
   return (
     <>
       <div className="row-between" style={{ marginBottom: 'var(--sp-4)' }}>
@@ -470,25 +535,25 @@ export function JourneyResultsPage() {
             type="button"
             className="topbar__back"
             onClick={() => navigate('/search')}
-            aria-label="Back to search"
+            aria-label={t('results.back_to_search')}
             style={{ position: 'static', margin: 0 }}
           >
             <Icon name="arrowLeft" size={18} aria-hidden="true" />
           </button>
           <div>
             <b style={{ fontSize: 17 }}>{t('results.title')}</b>
-            <div className="t-caption">{options.length} option{options.length !== 1 ? 's' : ''} available</div>
+            <div className="t-caption">{t('results.options').replace('{count}', options.length)}</div>
           </div>
         </div>
       </div>
 
       {saveError && (
-        <Alert severity="error" title="Could not save" style={{ marginBottom: 10 }}>
+        <Alert severity="error" title={t('error.save_failed')} style={{ marginBottom: 10 }}>
           {saveError}
         </Alert>
       )}
       {startError && (
-        <Alert severity="error" title="Could not start" style={{ marginBottom: 10 }}>
+        <Alert severity="error" title={t('error.start_failed')} style={{ marginBottom: 10 }}>
           {startError}
         </Alert>
       )}
@@ -498,11 +563,11 @@ export function JourneyResultsPage() {
           <StateBlock
             icon={<Icon name="search" size={26} aria-hidden="true" />}
             tone="info"
-            title="No journeys found"
-            message="Nothing connects these two points with your current settings. Try allowing more transfers or widening the walk radius."
+            title={t('results.empty_title')}
+            message={t('results.empty_body')}
             action={
               <Button size="sm" variant="secondary" onClick={() => navigate('/search', { state: { fresh: true } })}>
-                Adjust search
+                {t('results.adjust')}
               </Button>
             }
           />
@@ -516,23 +581,21 @@ export function JourneyResultsPage() {
                 <Button size="sm" variant="ghost" onClick={() => setMobileMapOpen(false)}>{t('results.close_map')}</Button>
               </div>
               <MapPanel
-                itinerary={selected ?? options[0]}
-                alternatives={options.filter((o) => o !== (selected ?? options[0]))}
-                origin={searchParams ? { lat: searchParams.origin_lat, lng: searchParams.origin_lng } : null}
-                destination={searchParams ? { lat: searchParams.destination_lat, lng: searchParams.destination_lng } : null}
+                itinerary={activeOption}
+                alternatives={alternativeOptions}
+                origin={endpointOrigin}
+                destination={endpointDestination}
                 height="100%"
               />
             </div>
           ) : (
             <div className="results-split__map">
               <MapPanel
-                itinerary={selected ?? options[0]}
-                alternatives={options.filter((o) => o !== (selected ?? options[0]))}
-                origin={searchParams ? { lat: searchParams.origin_lat, lng: searchParams.origin_lng } : null}
-                destination={searchParams ? { lat: searchParams.destination_lat, lng: searchParams.destination_lng } : null}
-                stops={(selected ?? options[0])?.legs?.flatMap((leg) =>
-                  [leg.from_stop, leg.to_stop].filter((s) => s && s.lat != null)
-                ) ?? []}
+                itinerary={activeOption}
+                alternatives={alternativeOptions}
+                origin={endpointOrigin}
+                destination={endpointDestination}
+                stops={routeStops}
               />
             </div>
           )}
@@ -540,12 +603,12 @@ export function JourneyResultsPage() {
           <div className="results-split__list">
             <button
               type="button"
-              className="chip on"
+              className="chip on results-map-toggle"
               style={{ display: 'flex', width: '100%', justifyContent: 'center', marginBottom: 10 }}
               onClick={() => setMobileMapOpen(true)}
             >
               <Icon name="plan" size={15} aria-hidden="true" />
-              View on map
+              {t('results.view_map')}
             </button>
 
             <ul className="stack-sm" style={{ listStyle: 'none', padding: 0, margin: 0, flex: 1 }}>
@@ -563,7 +626,7 @@ export function JourneyResultsPage() {
             </ul>
 
             <p className="t-caption" style={{ marginTop: 10, textAlign: 'center' }}>
-              Select an option to view the full itinerary, save it, or start tracking.
+              {t('results.select_hint')}
             </p>
           </div>
         </div>

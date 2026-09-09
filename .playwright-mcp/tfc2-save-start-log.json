@@ -1,0 +1,17 @@
+{
+  "errors": [],
+  "network": [
+    {
+      "url": "http://127.0.0.1:8000/api/v1/journeys",
+      "status": 201
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/v1/journeys/19/start",
+      "status": 201
+    }
+  ],
+  "activeId": 6,
+  "activeUrl": "http://127.0.0.1:5173/active-journeys/6",
+  "cleanupCancelStatus": 200,
+  "passed": true
+}

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/LanguageContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
@@ -9,6 +10,7 @@ import { Icon } from '../components/ui/Icon'
 import { getAdminDashboard } from '../api/admin'
 
 export default function AdminDashboard() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -28,7 +30,7 @@ export default function AdminDashboard() {
       // { period, totals: {...}, rates at top level }.
       setData(res)
     } catch (err) {
-      setError(err.message || 'Could not load admin dashboard analytics.')
+      setError(err.message || t('admin.dashboard_error'))
     } finally {
       setLoading(false)
     }
@@ -45,31 +47,24 @@ export default function AdminDashboard() {
         <div>
           <div className="row" style={{ gap: 8 }}>
             <Icon name="userCog" size={24} aria-hidden="true" />
-            <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}>
-              Admin Operations Dashboard
-            </h1>
+            <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('admin.dashboard_title')} </h1>
           </div>
-          <p className="t-caption" style={{ marginTop: 2 }}>
-            Platform metrics, live transit operations, crowd moderation, and user governance
-          </p>
+          <p className="t-caption" style={{ marginTop: 2 }}> {t('admin.dashboard_subtitle')} </p>
         </div>
 
         {/* Quick Nav Buttons */}
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <Link to="/admin/moderation">
             <Button size="sm" variant="secondary">
-              <Icon name="reports" size={14} aria-hidden="true" /> Moderation Queue
-            </Button>
+              <Icon name="reports" size={14} aria-hidden="true" /> {t('admin.moderation_link')} </Button>
           </Link>
           <Link to="/admin/analytics">
             <Button size="sm" variant="secondary">
-              <Icon name="chart" size={14} aria-hidden="true" /> Full Analytics
-            </Button>
+              <Icon name="chart" size={14} aria-hidden="true" /> {t('admin.analytics_link')} </Button>
           </Link>
           <Link to="/admin/users">
             <Button size="sm" variant="secondary">
-              <Icon name="users" size={14} aria-hidden="true" /> Manage Users
-            </Button>
+              <Icon name="users" size={14} aria-hidden="true" /> {t('admin.users_link')} </Button>
           </Link>
         </div>
       </div>
@@ -78,7 +73,7 @@ export default function AdminDashboard() {
       <Card flat style={{ padding: '10px 14px' }}>
         <div className="row-between" style={{ flexWrap: 'wrap', gap: 10 }}>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <span className="t-label">Date Filter:</span>
+            <span className="t-label">{t('admin.date_filter')}</span>
             <input
               type="date"
               className="field__input"
@@ -86,7 +81,7 @@ export default function AdminDashboard() {
               value={from}
               onChange={(e) => setFrom(e.target.value)}
             />
-            <span className="t-caption">to</span>
+            <span className="t-caption">{t('admin.to')}</span>
             <input
               type="date"
               className="field__input"
@@ -102,19 +97,15 @@ export default function AdminDashboard() {
                   setFrom('')
                   setTo('')
                 }}
-              >
-                Reset
-              </Button>
+              > {t('admin.reset')} </Button>
             )}
           </div>
-          <Button size="sm" variant="primary" onClick={fetchDashboard}>
-            Apply Filter
-          </Button>
+          <Button size="sm" variant="primary" onClick={fetchDashboard}> {t('admin.apply_filter')} </Button>
         </div>
       </Card>
 
       {error && (
-        <Alert severity="error" title="Dashboard Notice">
+        <Alert severity="error" title={t('admin.dashboard_notice')}>
           {error}
         </Alert>
       )}
@@ -139,8 +130,8 @@ export default function AdminDashboard() {
         <Card flat>
           <StateBlock
             icon={<Icon name="chart" size={22} aria-hidden="true" />}
-            title="No Data Available"
-            message="There is no recorded activity for the selected time window."
+            title={t('admin.no_data_available')}
+            message={t('admin.no_activity')}
           />
         </Card>
       ) : (
@@ -156,37 +147,37 @@ export default function AdminDashboard() {
             {/* Total Journeys Planned */}
             <Card flat style={{ borderLeft: '4px solid var(--p600)' }}>
               <div className="row-between">
-                <span className="t-caption">Total Planned Trips</span>
+                <span className="t-caption">{t('admin.planned_trips')}</span>
                 <Icon name="plan" size={18} aria-hidden="true" />
               </div>
               <div className="t-display t-num" style={{ color: 'var(--p900)', margin: '6px 0 2px' }}>
                 {Number(data?.totals?.journeys_created ?? 0).toLocaleString()}
               </div>
-              <span className="t-caption">Searches and generated plans</span>
+              <span className="t-caption">{t('admin.planned_body')}</span>
             </Card>
 
             {/* Active Trips In-Flight */}
             <Card flat style={{ borderLeft: '4px solid var(--a600)' }}>
               <div className="row-between">
-                <span className="t-caption">In-Flight Trips</span>
+                <span className="t-caption">{t('admin.in_flight')}</span>
                 <Icon name="modeBus" size={18} aria-hidden="true" />
               </div>
               <div className="t-display t-num" style={{ color: 'var(--a600)', margin: '6px 0 2px' }}>
                 {data?.totals?.active_journeys_in_flight ?? 0}
               </div>
-              <span className="t-caption">Passengers currently on route</span>
+              <span className="t-caption">{t('admin.in_flight_body')}</span>
             </Card>
 
             {/* Deviation Incidents */}
             <Card flat style={{ borderLeft: '4px solid var(--e700)' }}>
               <div className="row-between">
-                <span className="t-caption">Deviations & Reroutes</span>
+                <span className="t-caption">{t('admin.deviations')}</span>
                 <Icon name="warning" size={18} aria-hidden="true" />
               </div>
               <div className="t-display t-num" style={{ color: 'var(--e700)', margin: '6px 0 2px' }}>
                 {data?.totals?.deviations ?? 0}
               </div>
-              <span className="t-caption">Off-route and missed stop events</span>
+              <span className="t-caption">{t('admin.deviations_body')}</span>
             </Card>
 
             {/* Pending Reports */}
@@ -196,15 +187,13 @@ export default function AdminDashboard() {
               onClick={() => navigate('/admin/moderation')}
             >
               <div className="row-between">
-                <span className="t-caption">Pending Reports</span>
+                <span className="t-caption">{t('admin.pending_reports')}</span>
                 <Icon name="reports" size={18} aria-hidden="true" />
               </div>
               <div className="t-display t-num" style={{ color: 'var(--w700)', margin: '6px 0 2px' }}>
                 {data?.totals?.pending_reports ?? 0}
               </div>
-              <span className="t-caption" style={{ color: 'var(--p600)', fontWeight: 600 }}>
-                Click to open moderation queue
-              </span>
+              <span className="t-caption" style={{ color: 'var(--p600)', fontWeight: 600 }}> {t('admin.open_queue')} </span>
             </Card>
           </div>
 
@@ -218,14 +207,12 @@ export default function AdminDashboard() {
           >
             {/* Completion & Recovery Rates */}
             <Card flat>
-              <b style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-                Operational Success Rates
-              </b>
+              <b style={{ fontSize: 14, display: 'block', marginBottom: 12 }}> {t('admin.success_rates')} </b>
 
               <div className="stack-sm">
                 <div>
                   <div className="row-between" style={{ marginBottom: 4 }}>
-                    <span className="t-caption">Journey Completion Rate</span>
+                    <span className="t-caption">{t('admin.completion_rate')}</span>
                     <b className="t-num">{data?.journey_completion_rate != null ? `${Math.round(data.journey_completion_rate)}%` : '—'}</b>
                   </div>
                   <div style={{ height: 6, background: 'var(--p100)', borderRadius: 3 }}>
@@ -242,7 +229,7 @@ export default function AdminDashboard() {
 
                 <div style={{ marginTop: 8 }}>
                   <div className="row-between" style={{ marginBottom: 4 }}>
-                    <span className="t-caption">Journey Cancellation Rate</span>
+                    <span className="t-caption">{t('admin.cancellation_rate')}</span>
                     <b className="t-num">{data?.journey_cancellation_rate != null ? `${Math.round(data.journey_cancellation_rate)}%` : '—'}</b>
                   </div>
                   <div style={{ height: 6, background: 'var(--p100)', borderRadius: 3 }}>
@@ -259,7 +246,7 @@ export default function AdminDashboard() {
 
                 <div style={{ marginTop: 8 }}>
                   <div className="row-between" style={{ marginBottom: 4 }}>
-                    <span className="t-caption">Crowd Report Verification Rate</span>
+                    <span className="t-caption">{t('admin.verification_rate')}</span>
                     <b className="t-num">{data?.report_approval_rate != null ? `${Math.round(data.report_approval_rate)}%` : '—'}</b>
                   </div>
                   <div style={{ height: 6, background: 'var(--p100)', borderRadius: 3 }}>
@@ -278,36 +265,32 @@ export default function AdminDashboard() {
 
             {/* Platform Overview */}
             <Card flat>
-              <b style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-                Platform Governance & Trust
-              </b>
+              <b style={{ fontSize: 14, display: 'block', marginBottom: 12 }}> {t('admin.governance')} </b>
 
               <div className="stack-sm">
                 <div className="row-between">
-                  <span className="t-caption">Registered Commuters:</span>
+                  <span className="t-caption">{t('admin.commuters')}</span>
                   <b className="t-num">{data?.totals?.users ?? 0}</b>
                 </div>
                 <div className="row-between">
-                  <span className="t-caption">Average User Trust Score:</span>
+                  <span className="t-caption">{t('admin.average_trust')}</span>
                   <b className="t-num" style={{ color: 'var(--s700)' }}>
                     {data?.average_user_trust_score != null ? Math.round(data.average_user_trust_score) : '—'} / 100
                   </b>
                 </div>
                 <div className="row-between">
-                  <span className="t-caption">Total Notifications Dispatched:</span>
+                  <span className="t-caption">{t('admin.notifications_sent')}</span>
                   <b className="t-num">{data?.totals?.notifications_sent ?? 0}</b>
                 </div>
                 <div className="row-between">
-                  <span className="t-caption">Verified Community Reports:</span>
+                  <span className="t-caption">{t('admin.verified_reports')}</span>
                   <b className="t-num">{data?.totals?.community_reports ?? 0}</b>
                 </div>
               </div>
 
               <div style={{ marginTop: 16 }}>
                 <Link to="/admin/analytics">
-                  <Button size="sm" variant="secondary" block>
-                    View In-Depth Breakdown Charts
-                  </Button>
+                  <Button size="sm" variant="secondary" block> {t('admin.breakdown_link')} </Button>
                 </Link>
               </div>
             </Card>

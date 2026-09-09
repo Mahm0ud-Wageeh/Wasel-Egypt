@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useI18n } from '../i18n/LanguageContext'
 import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/ui/Button'
+import { LogoMark } from '../components/ui/Logo'
 import { TextInput } from '../components/ui/Input'
 import { ApiError } from '../api/client'
 
@@ -44,7 +45,7 @@ export default function Register() {
     <div className="auth-shell">
       <div className="auth-brand">
         <div className="auth-brand__logo" aria-hidden="true">
-          <Icon name="bus" size={30} aria-hidden="true" />
+          <LogoMark size={56} />
         </div>
         <h1>Create account</h1>
         <p>Join Wasel Egypt</p>

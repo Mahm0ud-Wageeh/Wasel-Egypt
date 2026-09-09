@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { useI18n } from '../../i18n/LanguageContext'
 import { Spinner } from '../ui/Feedback'
 import { Icon } from '../ui/Icon'
+import { Logo } from '../ui/Logo'
 import { getUnreadCount } from '../../api/notifications'
 import { useState, useEffect } from 'react'
 
@@ -16,20 +17,7 @@ const TABS = [
 
 function Brand({ small = false }) {
   return (
-    <span
-      style={{
-        fontWeight: 700,
-        color: 'var(--p900)',
-        fontSize: small ? 14 : 16,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      <span aria-hidden="true" style={{ color: 'var(--p600)', display: 'inline-flex' }}>
-        <Icon name="navigate" size={small ? 16 : 18} />
-      </span> Wasel Egypt
-    </span>
+    <Logo size={small ? 24 : 28} subtitle="Egypt" />
   )
 }
 
@@ -66,6 +54,10 @@ export function PassengerLayout({ flush = false, title }) {
         <Outlet />
       </div>
       <nav className="tabbar" aria-label="Primary">
+        {/* Brand shown in the desktop top-nav row only */}
+        <span className="tabbar__brand" aria-hidden="true">
+          <Brand small />
+        </span>
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}

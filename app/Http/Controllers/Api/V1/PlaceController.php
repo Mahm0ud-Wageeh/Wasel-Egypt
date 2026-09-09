@@ -22,14 +22,36 @@ class PlaceController extends AuthController
     public function search(Request $request, PlaceGeocoderService $geocoder): JsonResponse
     {
         $validated = $request->validate([
-            'q' => ['required', 'string', 'min:2', 'max:100'],
+            'q' => ['nullable', 'string', 'min:2', 'max:100'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
-        $query = trim($validated['q']);
+        $query = trim($validated['q'] ?? '');
         $biasLat = isset($validated['lat']) ? (float) $validated['lat'] : null;
         $biasLng = isset($validated['lng']) ? (float) $validated['lng'] : null;
+
+        // Reverse mode: coordinate-only request (no q) resolves the nearest
+        // named place — used to label the user's current location. Same
+        // throttled proxy path as forward search.
+        if ($query === '' && $biasLat !== null && $biasLng !== null) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'query' => null,
+                    'reverse' => $geocoder->reverse($biasLat, $biasLng),
+                    'stops' => [],
+                    'places' => [],
+                ],
+            ]);
+        }
+
+        if ($query === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'A search query (q) or coordinates (lat, lng) are required.',
+            ], 422);
+        }
 
         // 1. Transit stops (real imported network).
         $stops = DB::table('transit_stops')

@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Alert } from '../components/ui/Alert'
 import { Skeleton, StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
-import { MapPanel } from '../components/map/MapPanel'
+import { MapPanel } from '../components/map/LazyMapPanel'
 import {
   getActiveJourneyById,
   getJourneyDeviations,

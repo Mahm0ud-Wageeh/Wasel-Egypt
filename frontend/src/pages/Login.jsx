@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/ui/Button'
 import { TextInput } from '../components/ui/Input'
 import { Alert } from '../components/ui/Alert'
-import { Icon } from '../components/ui/Icon'
+import { LogoMark } from '../components/ui/Logo'
 import { ApiError } from '../api/client'
 
 /** Login — POST /auth/login; 401 renders an inline error alert. */
@@ -47,7 +47,7 @@ export default function Login() {
     <div className="auth-shell">
       <div className="auth-brand">
         <div className="auth-brand__logo" aria-hidden="true">
-          <Icon name="bus" size={30} aria-hidden="true" />
+          <LogoMark size={56} />
         </div>
         <h1>{t('auth.welcome')}</h1>
         <p>{t('auth.subtitle')}</p>

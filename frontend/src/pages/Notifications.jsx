@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/LanguageContext'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
@@ -14,6 +15,7 @@ import {
 } from '../api/notifications'
 
 export default function Notifications() {
+  const { t, language } = useI18n()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -33,7 +35,7 @@ export default function Notifications() {
       const count = res?.meta?.unread_count ?? list.filter((n) => !n.read_at).length
       setUnreadCount(count)
     } catch (err) {
-      setError(err.message || 'Could not load notifications.')
+      setError(err.message || t('notifications.load_error'))
     } finally {
       setLoading(false)
     }
@@ -65,7 +67,7 @@ export default function Notifications() {
       )
       setUnreadCount(0)
     } catch (err) {
-      setError(err.message || 'Failed to mark all as read.')
+      setError(err.message || t('notifications.mark_error'))
     } finally {
       setActionLoading(false)
     }
@@ -77,7 +79,7 @@ export default function Notifications() {
       await deleteNotification(id)
       setNotifications((prev) => prev.filter((n) => n.id !== id))
     } catch (err) {
-      alert(err.message || 'Could not delete notification.')
+      alert(err.message || t('notifications.delete_error'))
     }
   }
 
@@ -97,9 +99,9 @@ export default function Notifications() {
   }
 
   const getPriorityBadge = (priority) => {
-    if (priority === 'urgent') return <Badge value="urgent" />
-    if (priority === 'high') return <Badge value="high" />
-    return <Badge value="normal" />
+    if (priority === 'urgent') return <Badge value="urgent" label={t('notifications.priority.urgent')} />
+    if (priority === 'high') return <Badge value="high" label={t('notifications.priority.high')} />
+    return <Badge value="normal" label={t('notifications.priority.normal')} />
   }
 
   const getTypeIconName = (type) => {
@@ -128,9 +130,7 @@ export default function Notifications() {
       <div className="row-between" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div className="row" style={{ gap: 8 }}>
-            <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}>
-              Notifications
-            </h1>
+            <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('notifications.title')} </h1>
             {unreadCount > 0 && (
               <span
                 style={{
@@ -142,13 +142,11 @@ export default function Notifications() {
                   fontWeight: 700,
                 }}
               >
-                {unreadCount} unread
+                {t('notifications.unread').replace('{count}', unreadCount)}
               </span>
             )}
           </div>
-          <p className="t-caption" style={{ marginTop: 2 }}>
-            Real-time updates on your journeys, transit alerts, and reports
-          </p>
+          <p className="t-caption" style={{ marginTop: 2 }}> {t('notifications.subtitle')} </p>
         </div>
 
         {notifications.length > 0 && (
@@ -157,9 +155,7 @@ export default function Notifications() {
             variant="secondary"
             loading={actionLoading}
             onClick={handleMarkAllRead}
-          >
-            Mark all read
-          </Button>
+          > {t('notifications.mark_all')} </Button>
         )}
       </div>
 
@@ -169,20 +165,18 @@ export default function Notifications() {
           type="button"
           onClick={() => setUnreadOnly(false)}
           className={`btn btn--sm ${!unreadOnly ? 'btn--primary' : 'btn--secondary'}`}
-        >
-          All ({notifications.length})
+        > {t('notifications.all_prefix')}{notifications.length})
         </button>
         <button
           type="button"
           onClick={() => setUnreadOnly(true)}
           className={`btn btn--sm ${unreadOnly ? 'btn--primary' : 'btn--secondary'}`}
-        >
-          Unread only ({unreadCount})
+        > {t('notifications.unread_prefix')}{unreadCount})
         </button>
       </div>
 
       {error && (
-        <Alert severity="error" title="Notification Error">
+        <Alert severity="error" title={t('notifications.error_title')}>
           {error}
         </Alert>
       )}
@@ -198,11 +192,11 @@ export default function Notifications() {
         <Card flat>
           <StateBlock
             icon={<Icon name="alerts" size={22} aria-hidden="true" />}
-            title={unreadOnly ? 'No unread notifications' : 'Inbox is empty'}
+            title={unreadOnly ? t('notifications.none_unread') : t('notifications.inbox_empty')}
             message={
               unreadOnly
-                ? 'You are all caught up on your active trips and alerts.'
-                : 'When you take trips or submit reports, updates will appear here.'
+                ? t('notifications.caught_up')
+                : t('notifications.empty_body')
             }
           />
         </Card>
@@ -232,14 +226,14 @@ export default function Notifications() {
                   <div className="row" style={{ gap: 8 }}>
                     <Icon name={iconName} size={18} aria-hidden='true' style={{ flexShrink: 0 }} />
                     <b style={{ fontSize: 13.5, color: isUnread ? 'var(--p900)' : 'var(--ink900)' }}>
-                      {item.title || 'Transit Alert'}
+                      {item.title || t('notifications.transit_alert')}
                     </b>
                   </div>
                   <div className="row" style={{ gap: 6 }}>
                     {getPriorityBadge(item.priority)}
                     <button
                       type="button"
-                      aria-label="Delete notification"
+                      aria-label={t('notifications.delete')}
                       onClick={(e) => handleDelete(e, item.id)}
                       style={{
                         background: 'transparent',
@@ -262,13 +256,13 @@ export default function Notifications() {
                 <div className="row-between" style={{ marginTop: 2 }}>
                   <span className="t-caption">
                     {item.sent_at
-                      ? new Date(item.sent_at).toLocaleString([], {
+                      ? new Date(item.sent_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en', {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
                         })
-                      : 'Just now'}
+                      : t('notifications.just_now')}
                   </span>
                   {isUnread && (
                     <span
@@ -277,9 +271,7 @@ export default function Notifications() {
                         color: 'var(--p600)',
                         fontWeight: 700,
                       }}
-                    >
-                      Tap to view & mark read
-                    </span>
+                    > {t('notifications.view_read')} </span>
                   )}
                 </div>
               </Card>

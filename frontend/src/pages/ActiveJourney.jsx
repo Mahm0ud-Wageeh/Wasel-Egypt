@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useI18n } from '../i18n/LanguageContext'
 import { Card } from '../components/ui/Card'
 import { Badge, ModeDot } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Alert } from '../components/ui/Alert'
 import { Skeleton, StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
-import { MapPanel } from '../components/map/MapPanel'
+import { MapPanel } from '../components/map/LazyMapPanel'
 import {
   getActiveJourneys,
   getActiveJourneyById,
@@ -49,6 +50,7 @@ function etaMinutes(tracking) {
  * responsive timeline of the whole itinerary.
  */
 export default function ActiveJourney() {
+  const { t } = useI18n()
   const { id: rawParamId } = useParams()
   // Route params arrive as strings; normalize for API calls.
   const paramId = rawParamId != null ? Number(rawParamId) : null
@@ -137,7 +139,7 @@ export default function ActiveJourney() {
     try {
       const res = await completeJourney(activeJourney.id)
       setActiveJourney(res.data ?? res)
-      setActionSuccess('Journey completed! Great trip.')
+      setActionSuccess(t('journey.completed_toast'))
       setTimeout(() => navigate('/home'), 1800)
     } catch (err) {
       setError(err.message || 'Failed to complete journey.')
@@ -153,7 +155,7 @@ export default function ActiveJourney() {
     try {
       const res = await cancelJourney(activeJourney.id)
       setActiveJourney(res.data ?? res)
-      setActionSuccess('Journey cancelled.')
+      setActionSuccess(t('journey.cancelled_toast'))
       setTimeout(() => navigate('/home'), 1400)
     } catch (err) {
       setError(err.message || 'Failed to cancel journey.')
@@ -239,11 +241,11 @@ export default function ActiveJourney() {
         <Card flat>
           <StateBlock
             icon={<Icon name="plan" size={22} aria-hidden="true" />}
-            title="No Active Journey"
-            message="You don't have any in-progress journeys right now. Plan a trip to start live tracking!"
+            title={t('journey.none_title')}
+            message={t('journey.none_body')}
             action={
               <Link to="/search">
-                <Button size="md">Search & Start Journey</Button>
+                <Button size="md">{t('journey.search_start')}</Button>
               </Link>
             }
           />
@@ -257,7 +259,7 @@ export default function ActiveJourney() {
       {/* Header */}
       <div className="row-between">
         <div>
-          <span className="t-caption">Live journey</span>
+          <span className="t-caption">{t('journey.live')}</span>
           <h1 className="t-h2" style={{ margin: 0, color: 'var(--p900)' }}>
             Trip #{activeJourney.id}
           </h1>
@@ -274,42 +276,42 @@ export default function ActiveJourney() {
       {isDeviated && (
         <Alert
           severity="error"
-          title="Deviation detected"
+          title={t('journey.deviated_title')}
           action={
             <Button
               size="sm"
               variant="primary"
               onClick={() => navigate(`/active-journeys/${activeJourney.id}/deviation`)}
             >
-              View recovery options
+              {t('journey.resolve')}
             </Button>
           }
         >
-          You appear to be off-route. Wasel has recovery alternatives ready.
+          {t('journey.deviated_body')}
         </Alert>
       )}
 
       {isRerouted && (
-        <Alert severity="warning" title="Following your new route">
-          This trip was recovered with a new plan — follow the updated itinerary below.
+        <Alert severity="warning" title={t('journey.rerouted_title')}>
+          {t('journey.rerouted_body')}
         </Alert>
       )}
 
       {/* Live status strip */}
       <Card flat style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
         <div style={{ flex: '1 1 150px', minWidth: 130 }}>
-          <div className="t-caption">Next stop</div>
+          <div className="t-caption">{t('journey.next_stop')}</div>
           <b style={{ fontSize: 15 }}>
             {nextStop?.name ?? (currentLeg ? 'Approaching destination' : '—')}
           </b>
           {eta != null && (
             <div className="t-caption" style={{ color: 'var(--p600)' }}>
-              ≈ {eta} min walk away
+              ≈ {eta} {t('journey.min_walk')}
             </div>
           )}
         </div>
         <div style={{ flex: '1 1 130px', minWidth: 120 }}>
-          <div className="t-caption">Current leg</div>
+          <div className="t-caption">{t('journey.current_leg')}</div>
           <div className="row" style={{ gap: 6 }}>
             <ModeDot mode={currentLeg?.mode ?? 'walking'} />
             <b style={{ fontSize: 14 }}>{currentLeg ? `Leg ${currentLegIndex + 1} / ${legs.length}` : '—'}</b>
@@ -317,7 +319,7 @@ export default function ActiveJourney() {
         </div>
         <div style={{ flex: '2 1 200px' }}>
           <div className="row-between" style={{ marginBottom: 4 }}>
-            <span className="t-caption">Progress</span>
+            <span className="t-caption">{t('journey.progress')}</span>
             <b className="t-num" style={{ fontSize: 15, color: isDeviated ? 'var(--e700)' : 'var(--p600)' }}>
               {progressPercent}%
             </b>
@@ -382,7 +384,7 @@ export default function ActiveJourney() {
       {legs.length > 0 && (
         <Card flat>
           <div className="row-between" style={{ marginBottom: 10 }}>
-            <b style={{ fontSize: 14 }}>Itinerary</b>
+            <b style={{ fontSize: 14 }}>{t('journey.itinerary')}</b>
             <span className="t-caption">
               {legs.length} legs · started {formatTime(activeJourney.started_at)}
             </span>
@@ -402,14 +404,14 @@ export default function ActiveJourney() {
                   <div className="row-between">
                     <div>
                       <b style={{ fontSize: 13 }}>
-                        {leg.mode === 'walking' ? 'Walk' : leg.mode}
+                        {leg.mode === 'walking' ? t('journey.walk') : leg.mode}
                         {leg.route_variant?.route?.short_name ? ` · ${leg.route_variant.route.short_name}` : ''}
                       </b>
                       <div className="t-caption">
-                        {leg.from_stop?.name || 'Origin'} → {leg.to_stop?.name || 'Destination'}
+                        {leg.from_stop?.name || t('results.origin')} → {leg.to_stop?.name || t('results.destination')}
                       </div>
                       {isCurrent && (
-                        <span className="badge b-active" style={{ marginTop: 4 }}>In progress</span>
+                        <span className="badge b-active" style={{ marginTop: 4 }}>{t('journey.in_progress')}</span>
                       )}
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -428,10 +430,10 @@ export default function ActiveJourney() {
       {!isDone && (
         <Card flat style={{ background: 'var(--sand)', border: '1px solid var(--a100)' }}>
           <b style={{ fontSize: 13.5, color: 'var(--a600)', display: 'block', marginBottom: 6 }}>
-            GPS simulation (demo)
+            {t('journey.gps_demo')}
           </b>
           <p className="t-caption" style={{ marginBottom: 10 }}>
-            Send a location ping along the route — or off it — to drive live tracking and recovery:
+            {t('journey.gps_hint')}
           </p>
           <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
             <Button
@@ -444,7 +446,7 @@ export default function ActiveJourney() {
                   : handleSendLocation(30.0423, 31.2315)
               }
             >
-              Ping on-route GPS
+              {t('journey.ping_on')}
             </Button>
             <Button
               size="sm"
@@ -452,7 +454,7 @@ export default function ActiveJourney() {
               loading={gpsSimulating}
               onClick={handleSimulateDeviation}
             >
-              Simulate deviation
+              {t('journey.sim_deviation')}
             </Button>
           </div>
         </Card>
@@ -462,10 +464,10 @@ export default function ActiveJourney() {
       {!isDone && (
         <div className="row" style={{ gap: 10, marginTop: 8 }}>
           <Button block variant="primary" loading={actionLoading} onClick={handleComplete}>
-            Complete journey
+            {t('journey.complete')}
           </Button>
           <Button block variant="danger" loading={actionLoading} onClick={handleCancel}>
-            Cancel trip
+            {t('journey.cancel_trip')}
           </Button>
         </div>
       )}

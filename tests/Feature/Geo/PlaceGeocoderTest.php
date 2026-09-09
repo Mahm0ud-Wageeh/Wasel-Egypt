@@ -119,4 +119,68 @@ class PlaceGeocoderTest extends TestCase
         $this->getJson('/api/v1/places/search?q=' . urlencode('ا'))->assertStatus(422);
         $this->getJson('/api/v1/places/search')->assertStatus(422);
     }
+
+    /** @test */
+    public function reverse_geocode_resolves_nearest_named_place()
+    {
+        Http::fake([
+            'photon.komoot.io/reverse*' => Http::response([
+                'features' => [
+                    [
+                        'geometry' => ['coordinates' => [31.2357, 30.0444]],
+                        'properties' => [
+                            'osm_id' => 999, 'osm_key' => 'place', 'osm_value' => 'square',
+                            'name' => 'Tahrir Square', 'city' => 'Cairo', 'country' => 'Egypt',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $service = new PlaceGeocoderService('https://photon.komoot.io/api/');
+        $result = $service->reverse(30.0445, 31.2358);
+
+        $this->assertNotNull($result);
+        $this->assertSame('Tahrir Square', $result['name']);
+        $this->assertSame(30.0444, $result['lat']);
+        $this->assertSame(31.2357, $result['lng']);
+        $this->assertSame('photon', $result['source']);
+    }
+
+    /** @test */
+    public function reverse_geocode_returns_null_on_provider_failure()
+    {
+        $service = new PlaceGeocoderService('http://127.0.0.1:59997');
+
+        $this->assertNull($service->reverse(30.0444, 31.2357));
+    }
+
+    /** @test */
+    public function places_endpoint_reverse_mode_resolves_coordinates()
+    {
+        Http::fake([
+            'photon.komoot.io/reverse*' => Http::response([
+                'features' => [
+                    [
+                        'geometry' => ['coordinates' => [31.2357, 30.0444]],
+                        'properties' => [
+                            'osm_id' => 999,
+                            'name' => 'Tahrir Square', 'city' => 'Cairo',
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->getJson('/api/v1/places/search?lat=30.0445&lng=31.2358');
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $response->assertJsonPath('data.reverse.name', 'Tahrir Square');
+    }
+
+    /** @test */
+    public function places_endpoint_reverse_mode_validates_coordinates()
+    {
+        $this->getJson('/api/v1/places/search?lat=95&lng=31.23')->assertStatus(422);
+    }
 }

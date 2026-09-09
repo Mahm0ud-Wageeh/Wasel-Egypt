@@ -21,3 +21,23 @@ export async function searchPlaces(query, { lat, lng } = {}) {
   })
   return response.data ?? response
 }
+
+/**
+ * Nearest named place for a coordinate, via the server-proxied reverse
+ * geocoder (GET /places/search?lat=&lng= with no q → Photon reverse).
+ * Falls back to a coordinate label when the network is unavailable —
+ * never throws.
+ */
+export async function reverseGeocode({ lat, lng }) {
+  try {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) })
+    const response = await apiRequest(`${endpoints.public.placesSearch}?${params.toString()}`, {
+      auth: false,
+    })
+    const name = response?.data?.reverse?.name
+    if (typeof name === 'string' && name !== '') return name
+  } catch {
+    /* fall through to coordinate label */
+  }
+  return `My location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+}

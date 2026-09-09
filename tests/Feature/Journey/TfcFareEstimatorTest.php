@@ -45,7 +45,7 @@ class TfcFareEstimatorTest extends TestCase
         ];
     }
 
-    private function seedMatrix(array $matrix): void
+    private function seedMatrix(array $matrix, array $metadata = []): void
     {
         DB::table('system_config')->updateOrInsert(
             ['config_key' => FareEstimator::TFC_FARES_KEY],
@@ -54,6 +54,7 @@ class TfcFareEstimatorTest extends TestCase
                     'source' => 'test fixture',
                     'currency' => 'EGP',
                     'matrix' => $matrix,
+                    ...$metadata,
                 ]),
                 'config_type' => 'json',
                 'description' => 'test',
@@ -80,6 +81,41 @@ class TfcFareEstimatorTest extends TestCase
         $this->assertSame(5.0, $fare['amount']);
         $this->assertSame('EGP', $fare['currency']);
         $this->assertSame('tfc_metro_fares', $fare['source']);
+    }
+
+    public function test_fare_metadata_comes_from_the_stored_import_date(): void
+    {
+        foreach (['2024-10', '2018-06', '2025-01'] as $asOf) {
+            $this->seedMatrix(['11' => ['22' => 8.0]], ['as_of' => $asOf]);
+            $fare = (new FareEstimator())->estimate($this->makePlan([$this->metroLeg(11, 22)]));
+            $this->assertSame([
+                'amount' => 8.0,
+                'currency' => 'EGP',
+                'source' => 'tfc_metro_fares_' . substr($asOf, 0, 4),
+                'as_of' => $asOf,
+            ], $fare);
+        }
+    }
+
+    public function test_missing_or_invalid_metadata_never_invents_a_date(): void
+    {
+        foreach ([[], ['as_of' => null], ['as_of' => '2024-13'], ['as_of' => 'invalid']] as $metadata) {
+            $this->seedMatrix(['11' => ['22' => 8.0]], $metadata);
+            $fare = (new FareEstimator())->estimate($this->makePlan([$this->metroLeg(11, 22)]));
+            $this->assertSame(8.0, $fare['amount']);
+            $this->assertSame('tfc_metro_fares', $fare['source']);
+            $this->assertNull($fare['as_of']);
+        }
+    }
+
+    public function test_dated_matrix_does_not_attach_fares_or_metadata_to_ground_plans(): void
+    {
+        $this->seedMatrix(['11' => ['22' => 8.0]], ['as_of' => '2024-10']);
+        foreach (['bus', 'minibus', 'microbus', 'rail'] as $mode) {
+            $ground = [...$this->metroLeg(11, 22), 'mode' => $mode];
+            $this->assertNull((new FareEstimator())->estimate($this->makePlan([$ground])));
+            $this->assertNull((new FareEstimator())->estimate($this->makePlan([$this->metroLeg(11, 22), $ground])));
+        }
     }
 
     /** @test */

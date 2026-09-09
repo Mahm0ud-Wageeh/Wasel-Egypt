@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
+import { Logo } from '../ui/Logo'
 
 /**
  * Admin shell — desktop-first (spec §2.6): a fixed left rail with section
@@ -19,10 +20,7 @@ export default function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-rail" aria-label="Admin sections">
         <div className="admin-rail__brand">
-          <span className="site-nav__brand-icon" aria-hidden="true">
-            <Icon name="navigate" size={16} />
-          </span>
-          <span>Wasel Admin</span>
+          <Logo size={24} subtitle="Admin" />
         </div>
         <nav className="admin-rail__nav">
           {SECTIONS.map((s) => (

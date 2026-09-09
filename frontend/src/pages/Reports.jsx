@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/LanguageContext'
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { Card } from '../components/ui/Card'
@@ -18,6 +19,7 @@ import {
 import { getPublicStops } from '../api/journeys'
 
 export default function Reports() {
+  const { t, language } = useI18n()
   const { user, isAuthenticated } = useAuth()
   const [activeTab, setActiveTab] = useState('feed') // 'feed' | 'mine'
   const [reports, setReports] = useState([])
@@ -74,7 +76,7 @@ export default function Reports() {
         setReports(list)
       }
     } catch (err) {
-      setError(err.message || 'Failed to load community reports. Please try again.')
+      setError(err.message || t('reports.load_error'))
     } finally {
       setLoading(false)
     }
@@ -124,12 +126,12 @@ export default function Reports() {
     setValidationErrors({})
 
     const errs = {}
-    if (!reportType) errs.report_type = 'Please select a report type.'
+    if (!reportType) errs.report_type = t('reports.choose_type')
     if (!description || description.trim().length < 10) {
-      errs.description = 'Please describe the issue in at least 10 characters.'
+      errs.description = t('reports.short_description')
     }
-    if (!latitude || isNaN(latitude)) errs.latitude = 'Valid latitude is required.'
-    if (!longitude || isNaN(longitude)) errs.longitude = 'Valid longitude is required.'
+    if (!latitude || isNaN(latitude)) errs.latitude = t('reports.invalid_latitude')
+    if (!longitude || isNaN(longitude)) errs.longitude = t('reports.invalid_longitude')
 
     if (Object.keys(errs).length > 0) {
       setValidationErrors(errs)
@@ -149,7 +151,7 @@ export default function Reports() {
       }
 
       await createReport(payload)
-      setSubmitSuccess('Your report has been submitted for moderation. Thank you for helping fellow commuters!')
+      setSubmitSuccess(t('reports.submitted'))
       setDescription('')
       setMediaUrls([''])
       setRelatedStopId('')
@@ -160,12 +162,12 @@ export default function Reports() {
       }, 1500)
     } catch (err) {
       if (err.isConflict) {
-        setSubmitError(err.message || 'Duplicate or rate-limited report. Please wait before reporting the same issue.')
+        setSubmitError(err.message || t('reports.duplicate'))
       } else if (err.isValidation && err.errors) {
         setValidationErrors(err.errors)
-        setSubmitError('Please correct the validation errors below.')
+        setSubmitError(t('reports.validation'))
       } else {
-        setSubmitError(err.message || 'Failed to submit report. Please try again.')
+        setSubmitError(err.message || t('reports.submit_error'))
       }
     } finally {
       setSubmitting(false)
@@ -173,12 +175,12 @@ export default function Reports() {
   }
 
   const handleDeleteReport = async (id) => {
-    if (!window.confirm('Are you sure you want to withdraw this report?')) return
+    if (!window.confirm(t('reports.withdraw_confirm'))) return
     try {
       await deleteReport(id)
       setReports((prev) => prev.filter((r) => r.id !== id))
     } catch (err) {
-      alert(err.message || 'Could not delete report.')
+      alert(err.message || t('reports.delete_error'))
     }
   }
 
@@ -205,12 +207,8 @@ export default function Reports() {
       {/* Header / Intro */}
       <div className="row-between" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}>
-            Community Reports
-          </h1>
-          <p className="t-caption" style={{ marginTop: 2 }}>
-            Real-time crowdsourced alerts, delays, and transit updates
-          </p>
+          <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('reports.title')} </h1>
+          <p className="t-caption" style={{ marginTop: 2 }}> {t('reports.subtitle')} </p>
         </div>
         {isAuthenticated && (
           <Button
@@ -221,9 +219,7 @@ export default function Reports() {
               setSubmitError(null)
               handleGetCurrentLocation()
             }}
-          >
-            + New Report
-          </Button>
+          > {t('reports.new_label')} </Button>
         )}
       </div>
 
@@ -240,9 +236,7 @@ export default function Reports() {
             borderRadius: 0,
             padding: '4px 8px',
           }}
-        >
-          Public Feed (Verified)
-        </button>
+        > {t('reports.feed')} </button>
         {isAuthenticated && (
           <button
             type="button"
@@ -255,9 +249,7 @@ export default function Reports() {
               borderRadius: 0,
               padding: '4px 8px',
             }}
-          >
-            My Reports
-          </button>
+          > {t('reports.mine')} </button>
         )}
       </div>
 
@@ -265,14 +257,14 @@ export default function Reports() {
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 160, flex: 1 }}>
           <Select
-            label="Filter by Type"
+            label={t('reports.filter_type')}
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
-            <option value="">All Types</option>
-            {REPORT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
+            <option value="">{t('reports.all_types')}</option>
+            {REPORT_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {t('reports.type.' + type.value)}
               </option>
             ))}
           </Select>
@@ -280,15 +272,15 @@ export default function Reports() {
         {activeTab === 'mine' && (
           <div style={{ minWidth: 140, flex: 1 }}>
             <Select
-              label="Status"
+              label={t('reports.status_label')}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="verified">Verified</option>
-              <option value="rejected">Rejected</option>
-              <option value="resolved">Resolved</option>
+              <option value="">{t('reports.all_statuses')}</option>
+              <option value="pending">{t('reports.status.pending')}</option>
+              <option value="verified">{t('reports.status.verified')}</option>
+              <option value="rejected">{t('reports.status.rejected')}</option>
+              <option value="resolved">{t('reports.status.resolved')}</option>
             </Select>
           </div>
         )}
@@ -296,7 +288,7 @@ export default function Reports() {
 
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" title="Failed to load reports">
+        <Alert severity="error" title={t('reports.load_error_title')}>
           {error}
         </Alert>
       )}
@@ -312,17 +304,15 @@ export default function Reports() {
         <Card flat>
           <StateBlock
             icon={<Icon name="reports" size={22} aria-hidden="true" />}
-            title="No reports found"
+            title={t('reports.empty_filtered')}
             message={
               activeTab === 'mine'
-                ? "You haven't submitted any reports yet."
-                : 'No community reports match the selected filters.'
+                ? t('reports.mine_empty')
+                : t('reports.feed_empty')
             }
             action={
               isAuthenticated && (
-                <Button size="sm" onClick={() => setShowSubmitModal(true)}>
-                  Submit a report
-                </Button>
+                <Button size="sm" onClick={() => setShowSubmitModal(true)}> {t('reports.submit_prompt')} </Button>
               )
             }
           />
@@ -330,7 +320,7 @@ export default function Reports() {
       ) : (
         <div className="stack">
           {reports.map((report) => {
-            const typeInfo = REPORT_TYPES.find((t) => t.value === report.report_type) || {
+            const typeInfo = REPORT_TYPES.find((type) => type.value === report.report_type) || {
               label: report.report_type,
               lucideIcon: 'pin',
             }
@@ -344,16 +334,16 @@ export default function Reports() {
                   <div className="row" style={{ gap: 8 }}>
                     <Icon name={typeInfo.lucideIcon || 'pin'} size={20} aria-hidden="true" style={{ flexShrink: 0 }} />
                     <div>
-                      <b style={{ fontSize: 14, color: 'var(--ink900)' }}>{typeInfo.label}</b>
+                      <b style={{ fontSize: 14, color: 'var(--ink900)' }}>{REPORT_TYPES.some((type) => type.value === report.report_type) ? t('reports.type.' + report.report_type) : typeInfo.label}</b>
                       <div className="t-caption">
                         {report.occurred_at
-                          ? new Date(report.occurred_at).toLocaleString([], {
+                          ? new Date(report.occurred_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit',
                             })
-                          : new Date(report.created_at).toLocaleString([], {
+                          : new Date(report.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
@@ -362,7 +352,7 @@ export default function Reports() {
                       </div>
                     </div>
                   </div>
-                  <Badge value={report.status} />
+                  <Badge value={report.status} label={t('reports.status.' + report.status)} />
                 </div>
 
                 {/* Description */}
@@ -379,12 +369,12 @@ export default function Reports() {
                   )}
                   {report.related_route && (
                     <span className="badge badge--neutral">
-                      <Icon name="bus" size={12} aria-hidden="true" /> Route #{report.related_route.route_short_name || report.related_route.id}
+                      <Icon name="bus" size={12} aria-hidden="true" /> {t('reports.route_prefix')}{report.related_route.route_short_name || report.related_route.id}
                     </span>
                   )}
                   {report.latitude && report.longitude && (
                     <span className="t-caption" style={{ color: 'var(--ink500)' }}>
-                      <Icon name="pin" size={12} aria-hidden="true" /> {report.latitude.toFixed(4)}, {report.longitude.toFixed(4)}
+                      <Icon name="pin" size={12} aria-hidden="true" /> {Number(report.latitude).toFixed(4)}, {Number(report.longitude).toFixed(4)}
                     </span>
                   )}
                 </div>
@@ -408,7 +398,7 @@ export default function Reports() {
                           textDecoration: 'none',
                         }}
                       >
-                        <Icon name="image" size={12} aria-hidden="true" /> Photo {idx + 1}
+                        <Icon name="image" size={12} aria-hidden="true" /> {t('reports.photo')} {idx + 1}
                       </a>
                     ))}
                   </div>
@@ -429,7 +419,7 @@ export default function Reports() {
                     style={{ padding: 0 }}
                     onClick={() => handleToggleModerationHistory(report.id)}
                   >
-                    {loadingModeration[report.id] ? 'Loading history...' : 'Moderation notes ▾'}
+                    {loadingModeration[report.id] ? t('reports.loading_history') : t('reports.moderation_notes')}
                   </button>
 
                   {canDelete && (
@@ -437,9 +427,7 @@ export default function Reports() {
                       size="sm"
                       variant="danger"
                       onClick={() => handleDeleteReport(report.id)}
-                    >
-                      Withdraw
-                    </Button>
+                    > {t('reports.withdraw')} </Button>
                   )}
                 </div>
 
@@ -453,11 +441,9 @@ export default function Reports() {
                       marginTop: 4,
                     }}
                   >
-                    <b style={{ fontSize: 12, color: 'var(--ink700)' }}>Moderation Timeline:</b>
+                    <b style={{ fontSize: 12, color: 'var(--ink700)' }}>{t('reports.timeline')}</b>
                     {moderations.length === 0 ? (
-                      <p className="t-caption" style={{ margin: '4px 0 0' }}>
-                        No moderation actions recorded yet.
-                      </p>
+                      <p className="t-caption" style={{ margin: '4px 0 0' }}> {t('reports.no_actions')} </p>
                     ) : (
                       <div className="stack-sm" style={{ marginTop: 6 }}>
                         {moderations.map((mod) => (
@@ -470,9 +456,9 @@ export default function Reports() {
                             }}
                           >
                             <div className="row-between">
-                              <b>Action: {mod.action_taken}</b>
+                              <b>{t('reports.action_label')} {mod.action_taken}</b>
                               <span className="t-caption">
-                                {new Date(mod.created_at).toLocaleString([], {
+                                {new Date(mod.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en', {
                                   month: 'short',
                                   day: 'numeric',
                                   hour: '2-digit',
@@ -520,26 +506,24 @@ export default function Reports() {
             }}
           >
             <div className="row-between" style={{ marginBottom: 16 }}>
-              <h2 className="t-h2" style={{ margin: 0, color: 'var(--p900)' }}>
-                Report an Issue
-              </h2>
+              <h2 className="t-h2" style={{ margin: 0, color: 'var(--p900)' }}> {t('reports.issue_title')} </h2>
               <button
                 className="topbar__back"
                 onClick={() => setShowSubmitModal(false)}
-                aria-label="Close"
+                aria-label={t('action.close')}
               >
                 <Icon name="close" size={14} />
               </button>
             </div>
 
             {submitSuccess && (
-              <Alert severity="success" title="Success">
+              <Alert severity="success" title={t('common.success')}>
                 {submitSuccess}
               </Alert>
             )}
 
             {submitError && (
-              <Alert severity="error" title="Submission Error">
+              <Alert severity="error" title={t('reports.submission_error')}>
                 {submitError}
               </Alert>
             )}
@@ -547,7 +531,7 @@ export default function Reports() {
             <form onSubmit={handleSubmitReport} noValidate className="stack" style={{ marginTop: 12 }}>
               {/* Type Grid */}
               <div className="field">
-                <label className="field__label">Issue Type *</label>
+                <label className="field__label">{t('reports.issue_type')}</label>
                 <div
                   style={{
                     display: 'grid',
@@ -555,13 +539,13 @@ export default function Reports() {
                     gap: 8,
                   }}
                 >
-                  {REPORT_TYPES.map((t) => {
-                    const isSelected = reportType === t.value
+                  {REPORT_TYPES.map((type) => {
+                    const isSelected = reportType === type.value
                     return (
                       <button
-                        key={t.value}
+                        key={type.value}
                         type="button"
-                        onClick={() => setReportType(t.value)}
+                        onClick={() => setReportType(type.value)}
                         style={{
                           border: isSelected ? '2px solid var(--p600)' : '1px solid var(--line)',
                           background: isSelected ? 'var(--p50)' : 'var(--surface)',
@@ -578,8 +562,8 @@ export default function Reports() {
                           color: isSelected ? 'var(--p700)' : 'var(--ink900)',
                         }}
                       >
-                        <Icon name={t.lucideIcon} size={16} aria-hidden="true" />
-                        <span>{t.label}</span>
+                        <Icon name={type.lucideIcon} size={16} aria-hidden="true" />
+                        <span>{t('reports.type.' + type.value)}</span>
                       </button>
                     )
                   })}
@@ -591,11 +575,11 @@ export default function Reports() {
 
               {/* Description */}
               <div className="field">
-                <label className="field__label">Description (min 10 characters) *</label>
+                <label className="field__label">{t('reports.description_label')}</label>
                 <textarea
                   className={`field__input ${validationErrors.description ? 'field__input--error' : ''}`}
                   style={{ height: 80, padding: 10, resize: 'vertical' }}
-                  placeholder="Provide clear details on what happened (e.g. bus #104 delayed by 25 mins at Ramses station)..."
+                  placeholder={t('reports.description_hint')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   minLength={10}
@@ -608,7 +592,7 @@ export default function Reports() {
 
               {/* Related Stop (Optional) */}
               <div className="field">
-                <label className="field__label">Related Station / Stop (Optional)</label>
+                <label className="field__label">{t('reports.related_stop')}</label>
                 <select
                   className="field__input"
                   value={relatedStopId}
@@ -621,7 +605,7 @@ export default function Reports() {
                     }
                   }}
                 >
-                  <option value="">Select a known stop...</option>
+                  <option value="">{t('reports.select_stop')}</option>
                   {stops.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name_en || s.name_ar} {s.code ? `(${s.code})` : ''}
@@ -634,7 +618,7 @@ export default function Reports() {
               <div className="row" style={{ gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <Input
-                    label="Latitude *"
+                    label={t('reports.latitude')}
                     type="number"
                     step="0.000001"
                     value={latitude}
@@ -644,7 +628,7 @@ export default function Reports() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <Input
-                    label="Longitude *"
+                    label={t('reports.longitude')}
                     type="number"
                     step="0.000001"
                     value={longitude}
@@ -661,23 +645,20 @@ export default function Reports() {
                   variant="secondary"
                   onClick={handleGetCurrentLocation}
                 >
-                  <Icon name="locate" size={14} aria-hidden="true" /> Auto-detect GPS Location
-                </Button>
+                  <Icon name="locate" size={14} aria-hidden="true" /> {t('reports.gps')} </Button>
               </div>
 
               {/* Media URLs (up to 3) */}
               <div className="field">
                 <div className="row-between">
-                  <label className="field__label">Evidence Photos / URLs (Max 3)</label>
+                  <label className="field__label">{t('reports.evidence')}</label>
                   {mediaUrls.length < 3 && (
                     <Button
                       type="button"
                       size="sm"
                       variant="ghost"
                       onClick={handleAddMediaUrl}
-                    >
-                      + Add Photo URL
-                    </Button>
+                    > {t('reports.add_photo')} </Button>
                   )}
                 </div>
                 {mediaUrls.map((url, idx) => (
@@ -695,7 +676,7 @@ export default function Reports() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleRemoveMediaUrl(idx)}
-                        aria-label="Remove URL"
+                        aria-label={t('reports.remove_url')}
                       >
                         <Icon name="close" size={14} />
                       </Button>
@@ -710,12 +691,8 @@ export default function Reports() {
                   type="button"
                   variant="secondary"
                   onClick={() => setShowSubmitModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" loading={submitting}>
-                  Submit Report
-                </Button>
+                > {t('action.cancel')} </Button>
+                <Button type="submit" variant="primary" loading={submitting}> {t('reports.submit')} </Button>
               </div>
             </form>
           </div>

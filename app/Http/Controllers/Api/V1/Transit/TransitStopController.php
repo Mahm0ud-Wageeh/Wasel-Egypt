@@ -86,18 +86,30 @@ class TransitStopController extends AuthController
 
     /**
      * Get all transit stops for public use (no authentication required).
+     *
+     * Supported filters: search (name LIKE), area_id, bbox
+     * (minLng,minLat,maxLng,maxLat — bounding-box viewport queries for
+     * map layers). All additive — existing consumers are unaffected.
      */
     public function publicIndex(Request $request)
     {
-        // We can reuse the same logic as index but without authentication check in middleware
-        // However, note that the publicIndex route is outside the auth middleware group.
-        // We'll just return all stops without any filtering for now, but we can add search and pagination.
         $query = TransitStop::query()->with('area.governorate');
 
         // Search functionality
-        if ($request->has('search')) {
+        if ($request->has('search') && trim((string) $request->input('search')) !== '') {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%");
+        }
+
+        // Bounding-box filter for map viewport queries: bbox=minLng,minLat,maxLng,maxLat
+        if ($request->has('bbox') && trim((string) $request->input('bbox')) !== '') {
+            $parts = array_map('floatval', explode(',', (string) $request->input('bbox')));
+            if (count($parts) === 4
+                && $parts[0] >= -180 && $parts[2] >= -180 && $parts[0] <= 180 && $parts[2] <= 180
+                && $parts[1] >= -90 && $parts[3] >= -90 && $parts[1] <= 90 && $parts[3] <= 90) {
+                $query->whereBetween('longitude', [min($parts[0], $parts[2]), max($parts[0], $parts[2])]);
+                $query->whereBetween('latitude', [min($parts[1], $parts[3]), max($parts[1], $parts[3])]);
+            }
         }
 
         // Sorting
@@ -106,7 +118,7 @@ class TransitStopController extends AuthController
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, (int) $request->input('per_page', 15));
         $transitStops = $query->paginate($perPage);
 
         return TransitStopResource::collection($transitStops);

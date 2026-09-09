@@ -2,3 +2,6 @@ node_modules
 dist
 *.local
 .env
+# Generated at predev/prebuild/pretest by scripts/sync-maplibre-worker.mjs
+# (copies of the installed maplibre-gl worker — never hand-edit).
+public/map/

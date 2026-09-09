@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/LanguageContext'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -17,6 +18,7 @@ import {
 } from '../api/users'
 
 export default function Profile() {
+  const { t } = useI18n()
   const { user, logout, refreshUser } = useAuth()
   const navigate = useNavigate()
 
@@ -88,7 +90,7 @@ export default function Profile() {
         // ignore
       }
     } catch (err) {
-      setError(err.message || 'Could not load full profile information.')
+      setError(err.message || t('profile.load_error'))
     } finally {
       setLoading(false)
     }
@@ -112,9 +114,9 @@ export default function Profile() {
       setUpdatedUser(nextU)
       if (refreshUser) await refreshUser()
       setIsEditingProfile(false)
-      setSuccessMsg('Profile details updated successfully!')
+      setSuccessMsg(t('profile.updated'))
     } catch (err) {
-      setError(err.message || 'Could not update profile.')
+      setError(err.message || t('profile.update_error'))
     } finally {
       setSavingProfile(false)
     }
@@ -146,9 +148,9 @@ export default function Profile() {
         })
       )
 
-      setSuccessMsg('Transit and notification preferences saved!')
+      setSuccessMsg(t('profile.preferences_saved'))
     } catch (err) {
-      setError(err.message || 'Failed to save preferences.')
+      setError(err.message || t('profile.preferences_error'))
     } finally {
       setSavingPrefs(false)
     }
@@ -156,10 +158,10 @@ export default function Profile() {
 
   const getTrustBadgeLevel = (score) => {
     const s = Number(score) || 0
-    if (s >= 90) return { label: 'Transit Legend', color: 'badge--verified' }
-    if (s >= 75) return { label: 'Trusted Scout', color: 'badge--active' }
-    if (s >= 50) return { label: 'Active Commuter', color: 'badge--pending' }
-    return { label: 'New Contributor', color: 'badge--neutral' }
+    if (s >= 90) return { label: t('profile.legend'), color: 'badge--verified' }
+    if (s >= 75) return { label: t('profile.scout'), color: 'badge--active' }
+    if (s >= 50) return { label: t('profile.commuter'), color: 'badge--pending' }
+    return { label: t('profile.contributor'), color: 'badge--neutral' }
   }
 
   if (loading) {
@@ -180,22 +182,18 @@ export default function Profile() {
     <div className="app-shell__page">
       {/* Header */}
       <div>
-        <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}>
-          Account & Preferences
-        </h1>
-        <p className="t-caption" style={{ marginTop: 2 }}>
-          Manage your personal information, community trust score, and transit routing defaults
-        </p>
+        <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('profile.account_title')} </h1>
+        <p className="t-caption" style={{ marginTop: 2 }}> {t('profile.subtitle')} </p>
       </div>
 
       {successMsg && (
-        <Alert severity="success" title="Success">
+        <Alert severity="success" title={t('common.success')}>
           {successMsg}
         </Alert>
       )}
 
       {error && (
-        <Alert severity="error" title="Notice">
+        <Alert severity="error" title={t('common.notice')}>
           {error}
         </Alert>
       )}
@@ -235,7 +233,7 @@ export default function Profile() {
               setPhone(displayUser?.phone || '')
             }}
           >
-            {isEditingProfile ? 'Cancel' : 'Edit'}
+            {isEditingProfile ? t('action.cancel') : t('profile.edit')}
           </Button>
         </div>
 
@@ -243,7 +241,7 @@ export default function Profile() {
         <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
           {(displayUser?.roles ?? [{ name: 'User' }]).map((r) => (
             <span key={r.id || r.name} className="badge badge--neutral">
-              {r.name}
+              {['admin', 'moderator', 'user', 'passenger'].includes(r.name.toLowerCase()) ? t('common.role.' + r.name.toLowerCase()) : r.name}
             </span>
           ))}
         </div>
@@ -252,13 +250,13 @@ export default function Profile() {
         {isEditingProfile && (
           <form onSubmit={handleSaveProfile} className="stack-sm" style={{ marginTop: 8 }}>
             <Input
-              label="Full Name"
+              label={t('profile.full_name')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
             <Input
-              label="Phone Number"
+              label={t('profile.phone_number')}
               value={phone}
               placeholder="+20 100 123 4567"
               onChange={(e) => setPhone(e.target.value)}
@@ -269,12 +267,8 @@ export default function Profile() {
                 size="sm"
                 variant="ghost"
                 onClick={() => setIsEditingProfile(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" variant="primary" loading={savingProfile}>
-                Save Profile
-              </Button>
+              > {t('action.cancel')} </Button>
+              <Button type="submit" size="sm" variant="primary" loading={savingProfile}> {t('profile.save_profile')} </Button>
             </div>
           </form>
         )}
@@ -293,8 +287,8 @@ export default function Profile() {
       >
         <div className="row-between">
           <div>
-            <b style={{ fontSize: 14, color: 'var(--s700)' }}>Community Trust Score</b>
-            <div className="t-caption">Based on verified crowd reports and moderation accuracy</div>
+            <b style={{ fontSize: 14, color: 'var(--s700)' }}>{t('profile.trust_title')}</b>
+            <div className="t-caption">{t('profile.trust_body')}</div>
           </div>
           <span className={`badge ${trustBadge.color}`}>{trustBadge.label}</span>
         </div>
@@ -311,11 +305,9 @@ export default function Profile() {
 
           <div style={{ fontSize: 12, color: 'var(--ink700)' }}>
             <div>
-              <Icon name="success" size={14} aria-hidden="true" /> <b>{trust?.verified_reports_count ?? trust?.verified_count ?? 0}</b> Verified reports
-            </div>
+              <Icon name="success" size={14} aria-hidden="true" /> <b>{trust?.verified_reports_count ?? trust?.verified_count ?? 0}</b> {t('profile.verified_reports')} </div>
             <div>
-              <Icon name="close" size={14} aria-hidden="true" /> <b>{trust?.rejected_reports_count ?? trust?.rejected_count ?? 0}</b> Rejected
-            </div>
+              <Icon name="close" size={14} aria-hidden="true" /> <b>{trust?.rejected_reports_count ?? trust?.rejected_count ?? 0}</b> {t('reports.status.rejected')} </div>
           </div>
         </div>
       </Card>
@@ -323,16 +315,14 @@ export default function Profile() {
       {/* Preferences Form */}
       <Card flat style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <b style={{ fontSize: 15, color: 'var(--p900)' }}>Transit & Alert Preferences</b>
-          <p className="t-caption" style={{ marginTop: 2 }}>
-            Customize notification sensitivity and default routing constraints
-          </p>
+          <b style={{ fontSize: 15, color: 'var(--p900)' }}>{t('profile.preferences_title')}</b>
+          <p className="t-caption" style={{ marginTop: 2 }}> {t('profile.preferences_body')} </p>
         </div>
 
         <form onSubmit={handleSavePreferences} className="stack">
           {/* Notification Toggles */}
           <div className="stack-sm">
-            <b style={{ fontSize: 13 }}>Push / In-App Notifications:</b>
+            <b style={{ fontSize: 13 }}>{t('profile.notification_heading')}</b>
 
             <label className="row" style={{ cursor: 'pointer', gap: 10 }}>
               <input
@@ -340,7 +330,7 @@ export default function Profile() {
                 checked={notifyDeviation}
                 onChange={(e) => setNotifyDeviation(e.target.checked)}
               />
-              <span style={{ fontSize: 13 }}>Alert me on route deviations & missed stops</span>
+              <span style={{ fontSize: 13 }}>{t('profile.notify_deviation')}</span>
             </label>
 
             <label className="row" style={{ cursor: 'pointer', gap: 10 }}>
@@ -349,7 +339,7 @@ export default function Profile() {
                 checked={notifyRecovery}
                 onChange={(e) => setNotifyRecovery(e.target.checked)}
               />
-              <span style={{ fontSize: 13 }}>Notify when recovery reroutes are available</span>
+              <span style={{ fontSize: 13 }}>{t('profile.notify_recovery')}</span>
             </label>
 
             <label className="row" style={{ cursor: 'pointer', gap: 10 }}>
@@ -358,7 +348,7 @@ export default function Profile() {
                 checked={notifyReports}
                 onChange={(e) => setNotifyReports(e.target.checked)}
               />
-              <span style={{ fontSize: 13 }}>Update me on my community report status changes</span>
+              <span style={{ fontSize: 13 }}>{t('profile.notify_reports')}</span>
             </label>
 
             <label className="row" style={{ cursor: 'pointer', gap: 10 }}>
@@ -367,7 +357,7 @@ export default function Profile() {
                 checked={notifyServiceAlerts}
                 onChange={(e) => setNotifyServiceAlerts(e.target.checked)}
               />
-              <span style={{ fontSize: 13 }}>Notify about active Cairo transit disruptions</span>
+              <span style={{ fontSize: 13 }}>{t('profile.notify_service')}</span>
             </label>
           </div>
 
@@ -379,14 +369,14 @@ export default function Profile() {
                 checked={quietHours}
                 onChange={(e) => setQuietHours(e.target.checked)}
               />
-              <b style={{ fontSize: 13 }}>Enable Quiet Hours (Mute non-urgent alerts)</b>
+              <b style={{ fontSize: 13 }}>{t('profile.quiet_hours')}</b>
             </label>
 
             {quietHours && (
               <div className="row" style={{ gap: 8, marginTop: 4 }}>
                 <div style={{ flex: 1 }}>
                   <Input
-                    label="From"
+                    label={t('landing.from')}
                     type="time"
                     value={quietStart.slice(0, 5)}
                     onChange={(e) => setQuietStart(`${e.target.value}:00`)}
@@ -394,7 +384,7 @@ export default function Profile() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <Input
-                    label="To"
+                    label={t('landing.to')}
                     type="time"
                     value={quietEnd.slice(0, 5)}
                     onChange={(e) => setQuietEnd(`${e.target.value}:00`)}
@@ -406,24 +396,24 @@ export default function Profile() {
 
           {/* Routing Defaults */}
           <div className="stack-sm" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-            <b style={{ fontSize: 13 }}>Default Routing Constraints:</b>
+            <b style={{ fontSize: 13 }}>{t('profile.routing_defaults')}</b>
 
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 140 }}>
                 <Select
-                  label="Walking Speed"
+                  label={t('profile.walking_speed')}
                   value={walkSpeed}
                   onChange={(e) => setWalkSpeed(e.target.value)}
                 >
-                  <option value="slow">Slow (3 km/h)</option>
-                  <option value="average">Average (4.5 km/h)</option>
-                  <option value="fast">Fast (6 km/h)</option>
+                  <option value="slow">{t('profile.slow')}</option>
+                  <option value="average">{t('profile.average')}</option>
+                  <option value="fast">{t('profile.fast')}</option>
                 </Select>
               </div>
 
               <div style={{ flex: 1, minWidth: 140 }}>
                 <Input
-                  label="Max Walk (meters)"
+                  label={t('profile.max_walk')}
                   type="number"
                   min={100}
                   max={10000}
@@ -440,13 +430,11 @@ export default function Profile() {
                 checked={wheelchair}
                 onChange={(e) => setWheelchair(e.target.checked)}
               />
-              <span style={{ fontSize: 13 }}>Prefer wheelchair accessible routes & stations</span>
+              <span style={{ fontSize: 13 }}>{t('profile.wheelchair')}</span>
             </label>
           </div>
 
-          <Button type="submit" variant="primary" loading={savingPrefs}>
-            Save All Preferences
-          </Button>
+          <Button type="submit" variant="primary" loading={savingPrefs}> {t('profile.save_preferences')} </Button>
         </form>
       </Card>
 
@@ -459,9 +447,7 @@ export default function Profile() {
           await logout()
           navigate('/login', { replace: true })
         }}
-      >
-        Sign Out of Wasel Egypt
-      </Button>
+      > {t('profile.sign_out')} </Button>
     </div>
   )
 }

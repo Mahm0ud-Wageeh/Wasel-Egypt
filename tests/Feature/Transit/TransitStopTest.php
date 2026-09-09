@@ -411,4 +411,49 @@ class TransitStopTest extends TestCase
         $response->assertJsonPath('data.id', $stop->id);
         $response->assertJsonPath('data.area.id', $this->area->id);
     }
+
+    /** @test */
+    public function public_stops_index_filters_by_bounding_box()
+    {
+        $inside = TransitStop::factory()->create([
+            'name' => 'Tahrir Square',
+            'latitude' => 30.0444,
+            'longitude' => 31.2357,
+            'area_id' => $this->area->id,
+        ]);
+        $outside = TransitStop::factory()->create([
+            'name' => 'Far Away Stop',
+            'latitude' => 29.0,
+            'longitude' => 30.0,
+            'area_id' => $this->area->id,
+        ]);
+
+        // bbox=minLng,minLat,maxLng,maxLat around Tahrir
+        $response = $this->getJson('/api/v1/stops?bbox=31.20,30.03,31.26,30.06&per_page=100');
+
+        $response->assertStatus(200);
+        $names = collect($response->json('data'))->pluck('name')->all();
+        $this->assertContains('Tahrir Square', $names);
+        $this->assertNotContains('Far Away Stop', $names);
+    }
+
+    /** @test */
+    public function public_stops_index_ignores_malformed_bbox()
+    {
+        TransitStop::factory()->create([
+            'latitude' => 30.0444,
+            'longitude' => 31.2357,
+            'area_id' => $this->area->id,
+        ]);
+
+        // Out-of-range coordinates must be ignored, not crash.
+        $response = $this->getJson('/api/v1/stops?bbox=999,999,999,999');
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+
+        // Wrong segment count must be ignored, not crash.
+        $response = $this->getJson('/api/v1/stops?bbox=31.20,30.03');
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+    }
 }

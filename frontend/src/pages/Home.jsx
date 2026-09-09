@@ -10,7 +10,6 @@ import { Alert } from '../components/ui/Alert'
 import { Skeleton, StateBlock } from '../components/ui/Feedback'
 import { Button } from '../components/ui/Button'
 import { Icon } from '../components/ui/Icon'
-
 /**
  * Passenger home — launchpad shell.
  * APIs: GET /active-journeys, GET /service-alerts/active,
@@ -108,8 +107,8 @@ export default function Home() {
         </h2>
         <Link to="/search" style={{ textDecoration: 'none', display: 'block' }}>
           <div className="searchbar">
-            <span className="searchbar__pin" aria-hidden="true">◎</span>
-            {t('home.greeting')}
+            <span className="searchbar__pin" aria-hidden="true"><Icon name="search" size={16} /></span>
+            {t('home.subtitle')}
             <span className="spacer" />
             <b style={{ color: 'var(--p600)' }}>{t('nav.search')}</b>
           </div>

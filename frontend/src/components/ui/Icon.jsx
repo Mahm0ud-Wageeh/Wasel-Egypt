@@ -31,6 +31,7 @@ import {
   Users,
   ArrowRight,
   ArrowLeft,
+  ArrowUpDown,
   Menu,
   X,
   Languages,
@@ -47,6 +48,11 @@ import {
   Info,
   ChevronRight,
   ExternalLink,
+  Plus,
+  Minus,
+  Crosshair,
+  Layers,
+  LoaderCircle,
 } from 'lucide-react'
 
 /**
@@ -93,10 +99,16 @@ const ICONS = {
   // ui
   arrowRight: ArrowRight,
   arrowLeft: ArrowLeft,
+  arrowUpDown: ArrowUpDown,
   chevronRight: ChevronRight,
   navigate: Navigation,
   pin: MapPin,
   external: ExternalLink,
+  plus: Plus,
+  minus: Minus,
+  crosshair: Crosshair,
+  layers: Layers,
+  spinner: LoaderCircle,
 
   // status
   success: CircleCheck,

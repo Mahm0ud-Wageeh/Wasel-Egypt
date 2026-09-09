@@ -34,14 +34,14 @@ php artisan migrate --force
 # 1.4 Seed reference data (governorates, roles, permissions, modes, operators)
 php artisan db:seed --force
 
-# 1.5 Serve the API — MULTI-WORKER (critical for concurrent requests)
-PHP_CLI_SERVER_WORKERS=6 php artisan serve --host=127.0.0.1 --port=8000
+# 1.5 Serve the API (native Windows: single worker)
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-> **Demo note:** `php artisan serve` defaults to ONE worker; the app makes
-> concurrent requests (map tiles + notifications + search). Always set
-> `PHP_CLI_SERVER_WORKERS=6` for development/demos. Production (nginx+fpm)
-> is unaffected.
+On Linux/WSL, use `PHP_CLI_SERVER_WORKERS=6 php artisan serve --host=127.0.0.1 --port=8000`
+for concurrent development requests. PHP's worker mode is not supported on native
+Windows: run verification sequentially there. Production uses nginx/PHP-FPM,
+not `artisan serve`. Map tiles are fetched from the tile provider, not Laravel.
 
 ## 2. Real transit data (one-time import)
 
@@ -101,30 +101,59 @@ npm run build       # outputs dist/ with PWA manifest + service worker
 ```
 
 `.env` (frontend): `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`,
-`VITE_MAP_TILES_URL` (defaults to Stadia demo tier — **register a free
-production key** and set it before any public deployment).
+`VITE_MAP_TILES_URL` defaults to the Stadia demo configuration. Configure a
+provider-authorized production URL before public deployment, for example:
+
+```dotenv
+VITE_MAP_TILES_URL=https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}.png?api_key=YOUR_PRODUCTION_TILE_KEY
+```
+
+This is a placeholder, not a working key. Vite variables are public browser
+configuration: use provider-side domain restrictions and never put private
+credentials in them. Rebuild the frontend after changing them. Do not add a
+Leaflet retina placeholder. Keep the service worker app-shell-only: never cache
+API responses or map tiles.
 
 ## 5. Verification checklist
 
 ```bash
-php artisan test                        # backend: 246 green
-cd frontend && npx vitest run            # frontend: 65 green
+php artisan test                        # record fresh passed/failed totals
+cd frontend && npx vitest run            # record fresh passed/failed totals
 npm run build                           # production build clean
 php artisan transit:quality-report      # CRITICAL: 0
 ```
 
-Live smoke: open `http://127.0.0.1:5174/` → search "ميدان التحرير" →
+Live smoke: open `http://127.0.0.1:5173/` → search "ميدان التحرير" →
 pick place → destination "29.9773, 31.1325" → Find journeys → 3 real
 options → details → save → start → live tracking.
 
 ## 6. Known operational notes
 
-- **Auth rate limits:** login/register are throttled 5/min (by design).
+- **Rate limits:** login/register are throttled at 5 requests/minute;
+  `/api/v1/places/search` at 10/minute. Respect HTTP 429 responses during checks.
+  Route declarations in `routes/api.php` are the source of truth.
 - **Planner cache:** `php artisan cache:clear` after any data import.
-- **CORS:** dev origins are allow-listed in `config/cors.php`; add
-  production origins via `CORS_EXTRA_ORIGIN_1/2` env vars.
-- **Demo credentials** (seeded): `admin@example.com / password`,
-  `moderator@example.com / password`.
+- **CORS:** configure the exact production SPA origin (scheme, host and port)
+  using `CORS_EXTRA_ORIGIN_1` and, if needed, `CORS_EXTRA_ORIGIN_2` in the backend
+  environment. Refresh cached configuration after deployment. A single
+  `CORS_EXTRA_ORIGIN` variable is not consumed by this project.
+- **Production accounts:** change all seeded administrator and moderator default
+  passwords before public access. Never commit production passwords or keys.
+- **Fare refresh:** `php artisan tfc:fare-import --dry-run` validates the archived
+  mdb-3354 source; `php artisan tfc:fare-import` re-imports it idempotently and logs
+  provenance. Re-importing the same archive does not make its fares current:
+  they remain recorded October 2024 prices. A genuinely newer feed requires
+  verified provenance/date support in the import command before use. Do not
+  enable `--legacy2018` for the active demo or invent ground fares.
+- **Stale development servers (Windows):** stop the project terminals first.
+  Inspect the process listening on 8000/5173 with
+  `Get-NetTCPConnection -State Listen -LocalPort 8000,5173`, then inspect its
+  `OwningProcess` with `Get-Process -Id <PID>`. Stop only the confirmed stale
+  project process with `Stop-Process -Id <PID>` (use `-Force` only if needed).
+  Restart plain `php artisan serve --host=127.0.0.1 --port=8000` from the root
+  and `npm run dev -- --strictPort` from `frontend/` in separate terminals.
+  Confirm OSRM on 5001, run `php artisan cache:clear`, then probe the API.
+  Do not terminate unrelated Node/PHP processes.
 - **T4C data license (CC-BY-NC-SA):** non-commercial use — attribution is
   rendered in the app footer; do not remove (see
   `docs/demo/LICENSES_AND_ATTRIBUTIONS.md`). Licensing follow-up is

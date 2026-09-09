@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/LanguageContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -11,6 +12,7 @@ import { getAdminUsers, deleteAdminUser } from '../api/admin'
 import { getUserTrust } from '../api/reports'
 
 export default function AdminUsers() {
+  const { t } = useI18n()
   const { user: currentUser } = useAuth()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,7 @@ export default function AdminUsers() {
       const list = Array.isArray(res) ? res : (res?.data ?? [])
       setUsers(list)
     } catch (err) {
-      setError(err.message || 'Could not load users list.')
+      setError(err.message || t('admin.users_load_error'))
     } finally {
       setLoading(false)
     }
@@ -42,16 +44,16 @@ export default function AdminUsers() {
 
   const handleDeleteUser = async (user) => {
     if (user.id === currentUser?.id) {
-      alert('You cannot delete your own account from here.')
+      alert(t('admin.self_delete'))
       return
     }
-    if (!window.confirm(`Permanently remove user "${user.name}" (${user.email})?`)) return
+    if (!window.confirm(t('admin.delete_confirm').replace('{name}', user.name).replace('{email}', user.email))) return
 
     try {
       await deleteAdminUser(user.id)
       setUsers((prev) => prev.filter((u) => u.id !== user.id))
     } catch (err) {
-      alert(err.message || 'Failed to delete user.')
+      alert(err.message || t('admin.delete_error'))
     }
   }
 
@@ -85,30 +87,25 @@ export default function AdminUsers() {
         <div>
           <div className="row" style={{ gap: 8 }}>
             <Link to="/admin" style={{ textDecoration: 'none', color: 'var(--p600)' }}>
-              <Icon name="arrowLeft" size={14} aria-hidden="true" /> Dashboard
-            </Link>
+              <Icon name="arrowLeft" size={14} aria-hidden="true" /> {t('admin.dashboard')} </Link>
             <span style={{ color: 'var(--ink300)' }}>/</span>
-            <h1 className="t-h2" style={{ color: 'var(--p900)', margin: 0 }}>
-              User Directory & Roles
-            </h1>
+            <h1 className="t-h2" style={{ color: 'var(--p900)', margin: 0 }}> {t('admin.users_title')} </h1>
           </div>
-          <p className="t-caption" style={{ marginTop: 2 }}>
-            Manage registered commuter profiles, administrative roles, and trust ratings
-          </p>
+          <p className="t-caption" style={{ marginTop: 2 }}> {t('admin.users_subtitle')} </p>
         </div>
       </div>
 
       {/* Search Bar */}
       <div style={{ maxWidth: 360 }}>
         <Input
-          placeholder="Search by name, email, or phone..."
+          placeholder={t('admin.search_users')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
       {error && (
-        <Alert severity="error" title="User Management Notice">
+        <Alert severity="error" title={t('admin.users_notice')}>
           {error}
         </Alert>
       )}
@@ -123,8 +120,8 @@ export default function AdminUsers() {
         <Card flat>
           <StateBlock
             icon={<Icon name="users" size={22} aria-hidden="true" />}
-            title="No Users Found"
-            message="No user profiles match your search criteria."
+            title={t('admin.no_users')}
+            message={t('admin.no_users_body')}
           />
         </Card>
       ) : (
@@ -155,7 +152,7 @@ export default function AdminUsers() {
                     <div>
                       <div className="row" style={{ gap: 6 }}>
                         <b style={{ fontSize: 14 }}>{u.name}</b>
-                        {isMe && <span className="badge badge--active">You</span>}
+                        {isMe && <span className="badge badge--active">{t('admin.you')}</span>}
                       </div>
                       <div className="t-caption">
                         {u.email} {u.phone ? `${u.phone}` : ''}
@@ -168,7 +165,7 @@ export default function AdminUsers() {
                     <div className="row" style={{ gap: 4 }}>
                       {(u.roles ?? [{ name: 'user' }]).map((role) => (
                         <span key={role.id || role.name} className="badge badge--neutral">
-                          {role.name}
+                          {['admin', 'moderator', 'user', 'passenger'].includes(role.name) ? t('common.role.' + role.name) : role.name}
                         </span>
                       ))}
                     </div>
@@ -177,18 +174,14 @@ export default function AdminUsers() {
                       size="sm"
                       variant="secondary"
                       onClick={() => handleInspectTrust(u)}
-                    >
-                      Trust Score
-                    </Button>
+                    > {t('admin.trust_score')} </Button>
 
                     {!isMe && (
                       <Button
                         size="sm"
                         variant="danger"
                         onClick={() => handleDeleteUser(u)}
-                      >
-                        Delete
-                      </Button>
+                      > {t('admin.delete')} </Button>
                     )}
                   </div>
                 </div>
@@ -224,15 +217,13 @@ export default function AdminUsers() {
           >
             <div className="row-between" style={{ marginBottom: 16 }}>
               <div>
-                <h3 className="t-h3" style={{ margin: 0 }}>
-                  Reputation Profile
-                </h3>
+                <h3 className="t-h3" style={{ margin: 0 }}> {t('admin.reputation')} </h3>
                 <span className="t-caption">{inspectingUser.name}</span>
               </div>
               <button
                 className="topbar__back"
                 onClick={() => setInspectingUser(null)}
-                aria-label="Close"
+                aria-label={t('action.close')}
               >
                 <Icon name="close" size={14} />
               </button>
@@ -254,18 +245,16 @@ export default function AdminUsers() {
                   <div className="t-display t-num" style={{ color: 'var(--s700)', fontSize: 36 }}>
                     {trustData?.score ?? trustData?.trust_score ?? 100} / 100
                   </div>
-                  <span className="t-caption" style={{ color: 'var(--s700)' }}>
-                    Calculated Community Trust Index
-                  </span>
+                  <span className="t-caption" style={{ color: 'var(--s700)' }}> {t('admin.trust_index')} </span>
                 </div>
 
                 <div className="stack-sm">
                   <div className="row-between">
-                    <span className="t-caption">Verified Community Reports:</span>
+                    <span className="t-caption">{t('admin.verified_reports')}</span>
                     <b>{trustData?.verified_reports_count ?? trustData?.verified_count ?? 0}</b>
                   </div>
                   <div className="row-between">
-                    <span className="t-caption">Rejected / Flagged Reports:</span>
+                    <span className="t-caption">{t('admin.flagged_reports')}</span>
                     <b style={{ color: 'var(--e700)' }}>
                       {trustData?.rejected_reports_count ?? trustData?.rejected_count ?? 0}
                     </b>
@@ -279,9 +268,7 @@ export default function AdminUsers() {
                 block
                 variant="secondary"
                 onClick={() => setInspectingUser(null)}
-              >
-                Close Profile
-              </Button>
+              > {t('admin.close_profile')} </Button>
             </div>
           </div>
         </div>

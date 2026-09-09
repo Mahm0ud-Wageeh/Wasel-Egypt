@@ -80,6 +80,83 @@ class PlaceGeocoderService
         return $this->memo[$key] = $results;
     }
 
+    /**
+     * Reverse geocode a coordinate to the nearest named place (Photon
+     * reverse mode). Returns [] on failure — the caller falls back to a
+     * coordinate label. Cached like forward lookups.
+     *
+     * @return array|null { id, name, detail, lat, lng, source }
+     */
+    public function reverse(float $lat, float $lng, int $limit = 5): ?array
+    {
+        if (!$this->enabled()) {
+            return null;
+        }
+
+        $key = 'geocode-r:' . md5(sprintf('%.5F,%.5F|%d', $lat, $lng, $limit));
+
+        if (array_key_exists($key, $this->memo)) {
+            return $this->memo[$key];
+        }
+
+        $cached = cache()->get($key);
+        if ($cached !== null) {
+            return $this->memo[$key] = $cached;
+        }
+
+        $result = $this->queryPhotonReverse($lat, $lng, $limit);
+
+        cache()->put($key, $result, now()->addMinutes(self::CACHE_TTL_MINUTES));
+
+        return $this->memo[$key] = $result;
+    }
+
+    protected function queryPhotonReverse(float $lat, float $lng, int $limit): ?array
+    {
+        try {
+            // Photon reverse endpoint: /reverse?lat=&lon=
+            $url = rtrim(str_replace('/api/', '/reverse', $this->url()), '/') ?: $this->url();
+            $response = Http::timeout(5)->get($url, [
+                'lat' => round($lat, 5),
+                'lon' => round($lng, 5),
+                'limit' => 1,
+            ]);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $feature = $response->json('features.0');
+            $props = $feature['properties'] ?? [];
+            $coords = $feature['geometry']['coordinates'] ?? null;
+            $name = $props['name'] ?? null;
+
+            if ($name === null || $name === '' || !is_array($coords) || count($coords) < 2) {
+                return null;
+            }
+
+            $detailParts = array_filter([
+                $props['street'] ?? null,
+                $props['district'] ?? null,
+                $props['city'] ?? $props['county'] ?? null,
+                $props['state'] ?? null,
+            ]);
+
+            return [
+                'id' => 'photon-' . ($props['osm_id'] ?? md5($name . implode(',', $coords))),
+                'name' => $name,
+                'detail' => implode(' · ', $detailParts),
+                'lat' => (float) $coords[1],
+                'lng' => (float) $coords[0],
+                'source' => 'photon',
+            ];
+        } catch (\Throwable $e) {
+            Log::debug('Photon reverse geocode failed: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
     protected function queryPhoton(string $query, ?float $biasLat, ?float $biasLng, int $limit): array
     {
         $params = [

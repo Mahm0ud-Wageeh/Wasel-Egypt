@@ -1,0 +1,240 @@
+{
+  "language": "en",
+  "width": 390,
+  "errors": [],
+  "tiles": [
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1201/844.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1202/844.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1201/845.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1202/845.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1200/844.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1200/845.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/600/422.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/601/422.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/600/421.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/601/421.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/9/300/211.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/9/300/210.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/9/299/211.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/9/301/211.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/9/299/210.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/9/301/210.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/600/423.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/601/423.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/599/422.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/599/421.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/599/423.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/602/423.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/602/421.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/10/602/422.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1689.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2403/1690.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1688.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2402/1690.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/12/2404/1690.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1201/844.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1201/845.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1202/844.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1202/845.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1202/846.png",
+      "status": 200
+    },
+    {
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/11/1201/846.png",
+      "status": 200
+    }
+  ],
+  "checks": [
+    {
+      "dir": "ltr",
+      "overflow": false,
+      "panelOverflow": false,
+      "raw": false
+    },
+    {
+      "dir": "ltr",
+      "overflow": false,
+      "panelOverflow": false,
+      "raw": false
+    }
+  ],
+  "fares": [
+    {
+      "amount": 8,
+      "currency": "EGP",
+      "source": "tfc_metro_fares_2024",
+      "as_of": "2024-10"
+    },
+    null,
+    null
+  ],
+  "canvas": {
+    "width": 370,
+    "height": 554
+  },
+  "passed": true
+}

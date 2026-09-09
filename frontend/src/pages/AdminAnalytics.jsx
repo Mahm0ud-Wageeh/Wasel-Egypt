@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/LanguageContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
@@ -17,16 +18,17 @@ import {
 } from '../api/admin'
 
 const TABS = [
-  { key: 'journeys', label: 'Trips & Journeys', lucideIcon: 'plan' },
-  { key: 'deviations', label: 'Deviations & Recovery', lucideIcon: 'warning' },
-  { key: 'usage', label: 'Usage & Traffic', lucideIcon: 'chart' },
-  { key: 'reports', label: 'Community Reports', lucideIcon: 'reports' },
-  { key: 'trust', label: 'Trust & Reputation', lucideIcon: 'shield' },
-  { key: 'notifications', label: 'Notifications', lucideIcon: 'alerts' },
-  { key: 'modes', label: 'Transit Modes', lucideIcon: 'modeBus' },
+  { key: 'journeys', label: "admin.tab_journeys", lucideIcon: 'plan' },
+  { key: 'deviations', label: "admin.tab_deviations", lucideIcon: 'warning' },
+  { key: 'usage', label: "admin.tab_usage", lucideIcon: 'chart' },
+  { key: 'reports', label: "reports.title", lucideIcon: 'reports' },
+  { key: 'trust', label: "admin.tab_trust", lucideIcon: 'shield' },
+  { key: 'notifications', label: "notifications.title", lucideIcon: 'alerts' },
+  { key: 'modes', label: "admin.tab_modes", lucideIcon: 'modeBus' },
 ]
 
 export default function AdminAnalytics() {
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState('journeys')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -70,7 +72,7 @@ export default function AdminAnalytics() {
       }
       setData(res)
     } catch (err) {
-      setError(err.message || 'Could not load analytics for selected tab.')
+      setError(err.message || t('admin.analytics_error'))
     } finally {
       setLoading(false)
     }
@@ -87,16 +89,11 @@ export default function AdminAnalytics() {
         <div>
           <div className="row" style={{ gap: 8 }}>
             <Link to="/admin" style={{ textDecoration: 'none', color: 'var(--p600)' }}>
-              <Icon name="arrowLeft" size={14} aria-hidden="true" /> Dashboard
-            </Link>
+              <Icon name="arrowLeft" size={14} aria-hidden="true" /> {t('admin.dashboard')} </Link>
             <span style={{ color: 'var(--ink300)' }}>/</span>
-            <h1 className="t-h2" style={{ color: 'var(--p900)', margin: 0 }}>
-              System Analytics Explorer
-            </h1>
+            <h1 className="t-h2" style={{ color: 'var(--p900)', margin: 0 }}> {t('admin.analytics_title')} </h1>
           </div>
-          <p className="t-caption" style={{ marginTop: 2 }}>
-            Deep-dive operational metrics, failure patterns, mode distribution, and user engagement
-          </p>
+          <p className="t-caption" style={{ marginTop: 2 }}> {t('admin.analytics_subtitle')} </p>
         </div>
 
         {/* Date Filter */}
@@ -108,7 +105,7 @@ export default function AdminAnalytics() {
             value={from}
             onChange={(e) => setFrom(e.target.value)}
           />
-          <span className="t-caption">to</span>
+          <span className="t-caption">{t('admin.to')}</span>
           <input
             type="date"
             className="field__input"
@@ -145,13 +142,13 @@ export default function AdminAnalytics() {
               whiteSpace: 'nowrap',
             }}
           >
-            <Icon name={tab.lucideIcon} size={13} aria-hidden="true" /> {tab.label}
+            <Icon name={tab.lucideIcon} size={13} aria-hidden="true" /> {t(tab.label)}
           </button>
         ))}
       </div>
 
       {error && (
-        <Alert severity="error" title="Analytics Notice">
+        <Alert severity="error" title={t('admin.analytics_notice')}>
           {error}
         </Alert>
       )}
@@ -166,8 +163,8 @@ export default function AdminAnalytics() {
         <Card flat>
           <StateBlock
             icon={<Icon name="chart" size={22} aria-hidden="true" />}
-            title="No Data"
-            message="No records found for this metric category and date range."
+            title={t('admin.no_data')}
+            message={t('admin.no_metrics')}
           />
         </Card>
       ) : (
@@ -175,8 +172,7 @@ export default function AdminAnalytics() {
           {/* Render structured stats based on activeTab */}
           <Card flat>
             <b style={{ fontSize: 15, color: 'var(--p900)', display: 'block', marginBottom: 12 }}>
-              <Icon name={TABS.find((t) => t.key === activeTab)?.lucideIcon} size={15} aria-hidden="true" /> {TABS.find((t) => t.key === activeTab)?.label} Overview
-            </b>
+              <Icon name={TABS.find((t) => t.key === activeTab)?.lucideIcon} size={15} aria-hidden="true" /> {t(TABS.find((tab) => tab.key === activeTab)?.label)} {t('admin.overview')} </b>
 
             {/* If data is an object with key-value pairs */}
             {typeof data === 'object' && !Array.isArray(data) ? (
@@ -201,7 +197,7 @@ export default function AdminAnalytics() {
                       }}
                     >
                       <span className="t-caption" style={{ color: 'var(--ink500)' }}>
-                        {formattedKey}
+                        {t('admin.metric.' + key) === 'admin.metric.' + key ? formattedKey : t('admin.metric.' + key)}
                       </span>
                       <div className="t-h3 t-num" style={{ color: 'var(--p900)', marginTop: 4 }}>
                         {typeof val === 'number' ? val.toLocaleString() : String(val)}
@@ -215,7 +211,7 @@ export default function AdminAnalytics() {
             {/* Nested Lists/Breakdowns if any */}
             {data.by_mode || data.modes || data.by_status || data.by_type || data.breakdown ? (
               <div style={{ marginTop: 20 }}>
-                <b style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>Categorical Breakdown:</b>
+                <b style={{ fontSize: 13.5, display: 'block', marginBottom: 8 }}>{t('admin.categorical')}</b>
                 <div className="stack-sm">
                   {Object.entries(
                     data.by_mode || data.modes || data.by_status || data.by_type || data.breakdown || {}
@@ -238,8 +234,8 @@ export default function AdminAnalytics() {
           {/* Raw JSON Inspect Card for Defending Professors */}
           <Card flat style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}>
             <div className="row-between" style={{ marginBottom: 6 }}>
-              <b style={{ fontSize: 12, color: 'var(--ink700)' }}>Audit Telemetry Payload (API v1)</b>
-              <span className="badge badge--neutral">Aggregated Analytics</span>
+              <b style={{ fontSize: 12, color: 'var(--ink700)' }}>{t('admin.audit_payload')}</b>
+              <span className="badge badge--neutral">{t('admin.aggregated')}</span>
             </div>
             <pre
               style={{
