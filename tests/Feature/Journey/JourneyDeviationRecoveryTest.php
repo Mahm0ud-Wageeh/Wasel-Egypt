@@ -13,6 +13,10 @@ use Tests\TestCase;
 
 class JourneyDeviationRecoveryTest extends TestCase
 {
+    // Time convention: all scenario timestamps are naive "Y-m-d\TH:i"
+    // (Cairo wall clock), matching the planner's GTFS frame — see
+    // JourneyPlannerService::search. Using offset-carrying ISO here would
+    // silently shift every scenario by the UTC offset.
     use RefreshDatabase;
     use CreatesJourneyNetwork;
 
@@ -46,14 +50,14 @@ class JourneyDeviationRecoveryTest extends TestCase
                 'origin_lng' => $origin['lng'],
                 'destination_lat' => $destination['lat'],
                 'destination_lng' => $destination['lng'],
-                'requested_at' => Carbon::today()->setTime(7, 30)->toIso8601String(),
+                'requested_at' => Carbon::today()->setTime(7, 30)->format('Y-m-d\TH:i'), // naive = Cairo wall (GTFS frame)
             ])
             ->assertStatus(201)
             ->json('data.id');
 
         return $this->actingAs($user ?? $this->user)
             ->postJson("/api/v1/journeys/{$journeyId}/start", [
-                'started_at' => Carbon::today()->setTimeFromTimeString($startTime)->toIso8601String(),
+                'started_at' => Carbon::today()->setTimeFromTimeString($startTime)->format('Y-m-d\TH:i'),
             ])
             ->assertStatus(201)
             ->json('data.id');
@@ -73,7 +77,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeJourneyId, [
             'latitude' => (float) $this->stopA->latitude,
             'longitude' => (float) $this->stopA->longitude,
-            'recorded_at' => Carbon::today()->setTimeFromTimeString($time)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTimeFromTimeString($time)->format('Y-m-d\TH:i'),
         ], $user)->assertStatus(200);
     }
 
@@ -88,7 +92,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response = $this->sendLocation($activeId, [
             'latitude' => 30.0532,
             'longitude' => 31.2432,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertStatus(200);
@@ -109,7 +113,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response = $this->sendLocation($activeId, [
             'latitude' => 30.0900,
             'longitude' => 31.3000,
-            'recorded_at' => Carbon::today()->setTime(7, 35)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 35)->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertStatus(200);
@@ -128,13 +132,13 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => (float) $this->stopC->latitude,
             'longitude' => (float) $this->stopC->longitude,
-            'recorded_at' => Carbon::today()->setTime(8, 11)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(8, 11)->format('Y-m-d\TH:i'),
         ]);
 
         $response = $this->sendLocation($activeId, [
             'latitude' => (float) $this->stopC->latitude,
             'longitude' => (float) $this->stopC->longitude,
-            'recorded_at' => Carbon::today()->setTime(9, 30)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(9, 30)->format('Y-m-d\TH:i'),
         ]);
 
         $this->assertEquals('active', $response->json('data.status'));
@@ -151,7 +155,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response = $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $response->assertStatus(200);
@@ -185,7 +189,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response = $this->sendLocation($activeId, [
             'latitude' => 30.0900,
             'longitude' => 31.3000,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $data = $response->json('data');
@@ -206,7 +210,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response = $this->sendLocation($activeId, [
             'latitude' => 30.0532,
             'longitude' => 31.2432,
-            'recorded_at' => Carbon::today()->setTime(8, 40)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(8, 40)->format('Y-m-d\TH:i'),
         ]);
 
         $data = $response->json('data');
@@ -228,7 +232,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response = $this->sendLocation($activeId, [
             'latitude' => 30.0532,
             'longitude' => 31.2432,
-            'recorded_at' => Carbon::today()->setTime(8, 15)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(8, 15)->format('Y-m-d\TH:i'),
         ]);
 
         $this->assertEquals('active', $response->json('data.status'));
@@ -244,14 +248,14 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
         // A wildly off-route position while already deviated must not create
         // a second event.
         $this->sendLocation($activeId, [
             'latitude' => 30.0900,
             'longitude' => 31.3000,
-            'recorded_at' => Carbon::today()->setTime(7, 55)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 55)->format('Y-m-d\TH:i'),
         ]);
 
         $this->assertEquals(1, DeviationEvent::count());
@@ -265,7 +269,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $response = $this->actingAs($this->user)
@@ -305,7 +309,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $first = $this->actingAs($this->user)
@@ -329,7 +333,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $response = $this->actingAs($this->user)->postJson("/api/v1/active-journeys/{$activeId}/resume");
@@ -347,7 +351,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0900,
             'longitude' => 31.3000,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $response = $this->actingAs($this->user)->postJson("/api/v1/active-journeys/{$activeId}/resume");
@@ -365,7 +369,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $options = $this->actingAs($this->user)
@@ -402,7 +406,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $options = $this->actingAs($this->user)
@@ -418,7 +422,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => (float) $this->stopA->latitude,
             'longitude' => (float) $this->stopA->longitude,
-            'recorded_at' => Carbon::today()->setTime(7, 55)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 55)->format('Y-m-d\TH:i'),
         ]);
         $deviated = $this->sendLocation($activeId, [
             // Far enough off any rerouted corridor (recovery widens boarding
@@ -426,7 +430,7 @@ class JourneyDeviationRecoveryTest extends TestCase
             // while staying in the fixture's geography.
             'latitude' => 30.0790,
             'longitude' => 31.2720,
-            'recorded_at' => Carbon::today()->setTime(7, 58)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 58)->format('Y-m-d\TH:i'),
         ]);
         $this->assertEquals('deviated', $deviated->json('data.status'));
         $this->assertEquals(2, DeviationEvent::count());
@@ -447,7 +451,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $cancelled = $this->actingAs($this->user)->postJson("/api/v1/active-journeys/{$activeId}/cancel");
@@ -479,7 +483,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
         $options = $this->actingAs($this->user)
             ->postJson("/api/v1/active-journeys/{$activeId}/recovery-options", [])
@@ -490,7 +494,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($foreignActiveId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ], $this->otherUser);
 
         // Unknown id -> 404.
@@ -520,7 +524,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
         $this->actingAs($this->user)
             ->postJson("/api/v1/active-journeys/{$activeId}/recovery-options", [])
@@ -555,7 +559,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         // Reads: owner and admin ok, others 403.
@@ -580,7 +584,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->sendLocation($activeId, [
             'latitude' => 30.0585,
             'longitude' => 31.2420,
-            'recorded_at' => Carbon::today()->setTime(7, 50)->toIso8601String(),
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
         ]);
 
         $this->actingAs($this->user)

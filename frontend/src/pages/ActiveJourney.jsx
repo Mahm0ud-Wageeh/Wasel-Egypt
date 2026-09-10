@@ -429,7 +429,7 @@ export default function ActiveJourney() {
       {/* GPS simulation (demo tool) */}
       {!isDone && (
         <Card flat style={{ background: 'var(--sand)', border: '1px solid var(--a100)' }}>
-          <b style={{ fontSize: 13.5, color: 'var(--a600)', display: 'block', marginBottom: 6 }}>
+          <b style={{ fontSize: 13.5, color: 'var(--a800)', display: 'block', marginBottom: 6 }}>
             {t('journey.gps_demo')}
           </b>
           <p className="t-caption" style={{ marginBottom: 10 }}>

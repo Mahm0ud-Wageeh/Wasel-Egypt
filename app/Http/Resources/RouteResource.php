@@ -41,6 +41,22 @@ class RouteResource extends JsonResource
             'active' => $this->active,
             'continuous_pickup' => $this->continuous_pickup,
             'continuous_drop_off' => $this->continuous_drop_off,
+            // Route/line experience (design §route): included ONLY when the
+            // controller eager-loads variants — list endpoints stay untouched.
+            'variants' => $this->whenLoaded('routeVariants', function () {
+                return $this->routeVariants->values()->map(function ($variant) {
+                    return [
+                        'id' => $variant->id,
+                        'name' => $variant->name,
+                        'headsign' => $variant->headsign,
+                        'direction' => $variant->direction,
+                        'active' => $variant->active,
+                        'reliability_score' => $variant->reliability_score !== null
+                            ? (float) $variant->reliability_score
+                            : null,
+                    ];
+                });
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

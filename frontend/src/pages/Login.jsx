@@ -27,7 +27,10 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(form)
-      navigate(from, { replace: true })
+      // Forward any carried router state (e.g. planner prefillStop) so
+      // post-login landings (like /search) can honor the original intent.
+      const { from: _from, ...rest } = location.state ?? {}
+      navigate(from, { replace: true, ...(Object.keys(rest).length > 0 ? { state: rest } : {}) })
     } catch (error) {
       if (error instanceof ApiError) {
         setFieldErrors(error.errors ?? {})

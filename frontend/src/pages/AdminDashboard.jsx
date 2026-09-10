@@ -162,7 +162,7 @@ export default function AdminDashboard() {
                 <span className="t-caption">{t('admin.in_flight')}</span>
                 <Icon name="modeBus" size={18} aria-hidden="true" />
               </div>
-              <div className="t-display t-num" style={{ color: 'var(--a600)', margin: '6px 0 2px' }}>
+              <div className="t-display t-num" style={{ color: 'var(--a800)', margin: '6px 0 2px' }}>
                 {data?.totals?.active_journeys_in_flight ?? 0}
               </div>
               <span className="t-caption">{t('admin.in_flight_body')}</span>
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
                 <span className="t-caption">{t('admin.pending_reports')}</span>
                 <Icon name="reports" size={18} aria-hidden="true" />
               </div>
-              <div className="t-display t-num" style={{ color: 'var(--w700)', margin: '6px 0 2px' }}>
+              <div className="t-display t-num" style={{ color: 'var(--w800)', margin: '6px 0 2px' }}>
                 {data?.totals?.pending_reports ?? 0}
               </div>
               <span className="t-caption" style={{ color: 'var(--p600)', fontWeight: 600 }}> {t('admin.open_queue')} </span>
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
                       style={{
                         width: `${Math.min(100, Math.round(data?.journey_completion_rate || 0))}%`,
                         height: '100%',
-                        background: 'var(--s700)',
+                        background: 'var(--s800)',
                         borderRadius: 3,
                       }}
                     />
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="row-between">
                   <span className="t-caption">{t('admin.average_trust')}</span>
-                  <b className="t-num" style={{ color: 'var(--s700)' }}>
+                  <b className="t-num" style={{ color: 'var(--s800)' }}>
                     {data?.average_user_trust_score != null ? Math.round(data.average_user_trust_score) : '—'} / 100
                   </b>
                 </div>

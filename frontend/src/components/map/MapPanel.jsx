@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Icon } from '../ui/Icon'
+import { StopPanel } from '../ui/StopPanel'
 import { useI18n } from '../../i18n/LanguageContext'
 import { apiRequest } from '../../api/client'
 import { endpoints } from '../../api/endpoints'
@@ -114,7 +115,6 @@ function normalizeStops(stops) {
   }
   return out
 }
-
 /** Collect every stop referenced by the itinerary legs. */
 function itineraryStops(itinerary) {
   const out = []
@@ -140,6 +140,7 @@ export function MapPanel({
   showControls = true,
   showNearbyStops = false, // live nearby network stops layer
   onMapClick = null,
+  onSelectStop = null, // (selection {id,name,latitude,longitude}) — Set as origin/destination from the stop panel
   children,
 }) {
   const { t } = useI18n()
@@ -153,7 +154,22 @@ export function MapPanel({
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [stopsLayerOn, setStopsLayerOn] = useState(showNearbyStops)
   const [selectedPlace, setSelectedPlace] = useState(null)
+  const [selectedStopId, setSelectedStopId] = useState(null)
   const [legendOpen, setLegendOpen] = useState(false)
+
+  // Stable stop object for the panel: an inline literal would get a fresh
+  // identity on every MapPanel render (e.g. zoom state), refetching the
+  // departures API and stealing focus on every gesture while open.
+  const selectedStop = useMemo(
+    () => (selectedStopId == null ? null : {
+      id: selectedStopId,
+      name: selectedPlace?.name,
+      lat: selectedPlace?.lat,
+      lng: selectedPlace?.lng,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedStopId, selectedPlace?.name, selectedPlace?.lat, selectedPlace?.lng],
+  )
 
   const hasItinerary = Boolean(itinerary?.legs?.length)
 
@@ -227,8 +243,13 @@ export function MapPanel({
               lat: f.geometry.coordinates[1],
               lng: f.geometry.coordinates[0],
             })
+            // Numeric db ids open the full stop panel (design v3 §10);
+            // synthetic ids (geo_/coord_) fall back to the place chip.
+            const sid = f.properties.stop_id
+            setSelectedStopId(Number.isFinite(Number(sid)) ? Number(sid) : null)
           } else {
             setSelectedPlace(null)
+            setSelectedStopId(null)
             onMapClick?.({ lat: e.lngLat.lat, lng: e.lngLat.lng })
           }
         })
@@ -295,7 +316,10 @@ export function MapPanel({
 
     // -- nearby network stops layer (context) --
     const nearbyStops = stopsLayerOn ? nearby : []
-    const routeStops = itinerary ? itineraryStops(itinerary) : normalizeStops(stops)
+    // Explicit stops prop MERGES with itinerary stops (both deduped):
+    // pages like the route detail pass a polyline-only itinerary PLUS a
+    // stop list — either/or would silently drop one of them.
+    const routeStops = normalizeStops([...itineraryStops(itinerary), ...stops])
     const contextStops = nearbyStops.filter(
       (s) => !routeStops.some((r) => r.lat === s.lat && r.lng === s.lng),
     )
@@ -307,7 +331,7 @@ export function MapPanel({
           type: 'FeatureCollection',
           features: contextStops.map((s) => ({
             type: 'Feature',
-            properties: { name: s.name },
+            properties: { name: s.name, stop_id: Number.isFinite(Number(s.id)) ? Number(s.id) : null },
             geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
           })),
         },
@@ -409,7 +433,7 @@ export function MapPanel({
           type: 'FeatureCollection',
           features: routeStops.map((s) => ({
             type: 'Feature',
-            properties: { name: s.name },
+            properties: { name: s.name, stop_id: Number.isFinite(Number(s.id)) ? Number(s.id) : null },
             geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
           })),
         },
@@ -683,6 +707,26 @@ export function MapPanel({
                 </ul>
               )}
             </div>
+          )}
+
+          {selectedStop != null && (
+            <StopPanel
+              stop={selectedStop}
+              onClose={() => {
+                setSelectedStopId(null)
+                setSelectedPlace(null)
+              }}
+              onSelectOrigin={(sel) => {
+                onSelectStop?.({ ...sel, target: 'origin' })
+                setSelectedStopId(null)
+                setSelectedPlace(null)
+              }}
+              onSelectDestination={(sel) => {
+                onSelectStop?.({ ...sel, target: 'destination' })
+                setSelectedStopId(null)
+                setSelectedPlace(null)
+              }}
+            />
           )}
 
           {selectedPlace && (

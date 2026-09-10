@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Transit;
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Models\Route;
+use App\Models\RouteVariant;
 use Illuminate\Http\Request;
 use App\Http\Requests\RouteRequest;
 use App\Http\Resources\RouteResource;
@@ -143,9 +144,78 @@ class RouteController extends AuthController
      */
     public function publicShow(Route $route)
     {
+        // Route/line page (design §route): variants with direction/headsign
+        // and per-variant geometry/schedule summaries, in one payload.
+        $route->load([
+            'routeVariants' => fn ($q) => $q->where('active', true)->orderBy('id'),
+        ]);
+
+        $variants = $route->routeVariants->map(function ($variant) {
+            $geometry = $variant->routeGeometry()->value('geometry');
+            $windows = $variant->schedules()
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->value('frequency_windows');
+
+            return [
+                'id' => $variant->id,
+                'name' => $variant->name,
+                'headsign' => $variant->headsign,
+                'direction' => $variant->direction,
+                'active' => $variant->active,
+                'reliability_score' => $variant->reliability_score !== null
+                    ? (float) $variant->reliability_score
+                    : null,
+                'has_geometry' => is_array($geometry) && count($geometry) >= 2,
+                'frequency_windows' => is_array($windows) ? $windows : null,
+            ];
+        });
+
+        $base = (new RouteResource($route))->resolve(request());
+        $base['variants'] = $variants->values()->all();
+
         return response()->json([
             'success' => true,
-            'data' => new RouteResource($route)
+            'data' => $base,
+        ]);
+    }
+
+    /**
+     * Public polyline for one route variant (route geometry table —
+     * the same data the planner uses for leg rendering). Real geometry
+     * only: 404s when the variant has no stored shape instead of
+     * inventing a line.
+     */
+    public function publicVariantGeometry($variantId)
+    {
+        $variant = RouteVariant::where('active', true)->find($variantId);
+
+        if (!$variant) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Route variant not found',
+            ], 404);
+        }
+
+        $geometry = $variant->routeGeometry()->first();
+
+        if (!$geometry || !is_array($geometry->geometry) || count($geometry->geometry) < 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No geometry stored for this variant',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'route_variant_id' => (int) $variantId,
+                'length_meters' => $geometry->length_meters !== null
+                    ? (float) $geometry->length_meters
+                    : null,
+                'points' => count($geometry->geometry),
+                'geometry' => $geometry->geometry,
+            ],
         ]);
     }
 
@@ -164,6 +234,9 @@ class RouteController extends AuthController
                 return [
                     'variant_id' => $variant->id,
                     'variant_name' => $variant->name,
+                    'headsign' => $variant->headsign,
+                    'direction' => $variant->direction,
+                    'active' => $variant->active,
                     'stops' => $variant->routeStops
                         ->sortBy('sequence')
                         ->map(function($routeStop) {

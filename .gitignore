@@ -22,3 +22,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local verification artifacts (screenshots, logs, dumps)
+.playwright-mcp/
+
+# Composer installer binary (download tool, not project source)
+composer.phar

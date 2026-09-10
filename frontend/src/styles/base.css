@@ -259,7 +259,7 @@ h1, h2, h3 { text-wrap: balance; }
   block-size: 34px;
   border-radius: var(--r-md);
   background: var(--a100);
-  color: var(--a600);
+  color: var(--a800);
   display: flex;
   align-items: center;
   justify-content: center;

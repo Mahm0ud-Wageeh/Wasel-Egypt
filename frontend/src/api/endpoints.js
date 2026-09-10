@@ -1,7 +1,8 @@
 /**
  * Central registry of backend endpoints (Laravel API v1).
  *
- * Source of truth: routes/api.php — audited 2026-09-04.
+ * Source of truth: routes/api.php — audited 2026-09-04,
+ * stop-info endpoints added 2026-09-09 (design v3 §10 stop panel).
  * Only endpoints that exist on the backend may be added here.
  */
 
@@ -30,8 +31,17 @@ export const endpoints = {
     routes: '/public-routes',
     route: (id) => `/public-routes/${id}`,
     routeStops: (id) => `/routes/${id}/stops`,
+    // Route/line page (final-product completion): enriched detail (active
+    // variants + frequency) and the stored variant polyline.
+    routeDetail: (id) => `/public-routes/${id}`,
+    variantGeometry: (variantId) => `/route-variants/${variantId}/geometry`,
     stops: '/stops',
     stop: (id) => `/stops/${id}`,
+    // Design v3 §10 — stop info panel: serving routes + next departures,
+    // plus nearby-radius search for the map layer.
+    stopWithRoutes: (id) => `/stops/${id}?with_routes=1`,
+    stopDepartures: (id) => `/stops/${id}/departures`,
+    nearbyStops: '/stops', // + ?lat=&lng=&radius= query params
     transitModes: '/transit-modes',
     transitMode: (id) => `/transit-modes/${id}`,
     governorates: '/governorates',

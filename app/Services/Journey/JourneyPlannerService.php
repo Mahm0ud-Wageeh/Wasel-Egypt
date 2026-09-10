@@ -85,9 +85,16 @@ class JourneyPlannerService
      */
     public function search(User $user, array $params): array
     {
+        // Time-frame contract: GTFS static times (schedules, stop_times,
+        // frequency windows, service calendars) are Cairo wall-clock times.
+        // Planning MUST run in Africa/Cairo so "now" and requested_at line
+        // up with the published service day. Carbon::parse keeps an explicit
+        // offset when present (frontend "now" is UTC ISO) and assumes Cairo
+        // wall time for naive input (frontend datetime-local) — both resolve
+        // to the same Cairo wall clock for Cairo passengers.
         $requestedAt = isset($params['requested_at'])
-            ? Carbon::parse($params['requested_at'])
-            : Carbon::now();
+            ? Carbon::parse($params['requested_at'], 'Africa/Cairo')->setTimezone('Africa/Cairo')
+            : Carbon::now('Africa/Cairo');
 
         $prefs = $user->preferences()->first();
 

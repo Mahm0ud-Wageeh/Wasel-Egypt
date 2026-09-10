@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\Transit;
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Models\TransitStop;
+use App\Services\Journey\GeoCalculator;
+use App\Services\Transit\StopDeparturesService;
 use Illuminate\Http\Request;
 use App\Http\Requests\TransitStopRequest;
 use App\Http\Resources\TransitStopResource;
@@ -89,7 +91,9 @@ class TransitStopController extends AuthController
      *
      * Supported filters: search (name LIKE), area_id, bbox
      * (minLng,minLat,maxLng,maxLat — bounding-box viewport queries for
-     * map layers). All additive — existing consumers are unaffected.
+     * map layers), and lat/lng/radius (nearby search, haversine meters —
+     * the stop info panel / "stops near me" map layer). All additive —
+     * existing consumers are unaffected.
      */
     public function publicIndex(Request $request)
     {
@@ -112,7 +116,52 @@ class TransitStopController extends AuthController
             }
         }
 
+        // Nearby search: lat/lng/radius (meters, default 500, max 2000).
+        // Distance filtering happens post-query (haversine) so the
+        // index-friendly bbox prefilter stays optional.
+        $nearby = null;
+        if ($request->filled('lat') && $request->filled('lng')) {
+            $lat = (float) $request->input('lat');
+            $lng = (float) $request->input('lng');
+            $radius = min(2000, max(50, (int) $request->input('radius', 500)));
+
+            if ($lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
+                $nearby = ['lat' => $lat, 'lng' => $lng, 'radius' => $radius];
+                // Cheap degree-space prefilter before exact haversine.
+                $dLat = $radius / 111000;
+                $dLng = $radius / (111000 * max(0.2, cos(deg2rad($lat))));
+                $query->whereBetween('latitude', [$lat - $dLat, $lat + $dLat]);
+                $query->whereBetween('longitude', [$lng - $dLng, $lng + $dLng]);
+            }
+        }
+
         // Sorting
+        if ($nearby !== null) {
+            // Nearby results read best nearest-first; distance computed per row.
+            $perPage = min(100, (int) $request->input('per_page', 40));
+            $all = $query->get();
+            $withDistance = $all->map(function ($stop) use ($nearby) {
+                $stop->distance_meters = (int) round(
+                    GeoCalculator::distanceMeters($nearby['lat'], $nearby['lng'], (float) $stop->latitude, (float) $stop->longitude)
+                );
+                return $stop;
+            })->filter(fn ($stop) => $stop->distance_meters <= $nearby['radius'])
+                ->sortBy('distance_meters')
+                ->values();
+            $page = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+            $items = $withDistance->forPage($page, $perPage);
+            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $withDistance->count(),
+                $perPage,
+                $page,
+                ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            );
+            // Same {data, links, meta} envelope as every other paginated
+            // endpoint — the frontend reads meta.total on /stops already.
+            return TransitStopResource::collection($paginator);
+        }
+
         $sortBy = $request->input('sort_by', 'name');
         $sortOrder = $request->input('sort_order', 'asc');
         $query->orderBy($sortBy, $sortOrder);
@@ -126,8 +175,11 @@ class TransitStopController extends AuthController
 
     /**
      * Get a specific transit stop for public use.
+     *
+     * When ?with_routes=1, includes the serving routes (design §10 stop
+     * panel): active variants through this stop with mode + line info.
      */
-    public function publicShow($id)
+    public function publicShow(Request $request, $id)
     {
         $transitStop = TransitStop::with('area.governorate')->find($id);
 
@@ -138,6 +190,83 @@ class TransitStopController extends AuthController
             ], 404);
         }
 
-        return new TransitStopResource($transitStop);
+        $resource = new TransitStopResource($transitStop);
+
+        if ($request->boolean('with_routes')) {
+            $resource->additional([
+                'data' => array_merge(
+                    $resource->resolve($request),
+                    ['serving_routes' => $this->servingRoutesFor($transitStop)]
+                ),
+            ]);
+        }
+
+        return $resource;
+    }
+
+    /**
+     * Upcoming departures at a stop (public stop info panel, design §10).
+     *
+     * GET /stops/{id}/departures?limit=3
+     * Resolves real times from schedules/stop_times/frequency_windows
+     * (StopDeparturesService); variants without timetable data are listed
+     * with has_timetable=false — no invented times.
+     */
+    public function publicDepartures(Request $request, $id)
+    {
+        $transitStop = TransitStop::find($id);
+
+        if (!$transitStop) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transit stop not found',
+            ], 404);
+        }
+
+        $limit = min(6, max(1, (int) $request->input('limit', 3)));
+        $service = app(StopDeparturesService::class);
+        $departures = $service->upcomingDepartures($transitStop, null, $limit);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'stop' => [
+                    'id' => $transitStop->id,
+                    'name' => $transitStop->name,
+                    'latitude' => $transitStop->latitude,
+                    'longitude' => $transitStop->longitude,
+                ],
+                'generated_at' => now()->toISOString(),
+                'departures' => $departures,
+            ],
+        ]);
+    }
+
+    /**
+     * Active routes serving a stop, deduplicated by route with the
+     * modes of its serving variants (stop panel "Lines" chips).
+     */
+    private function servingRoutesFor(TransitStop $stop): array
+    {
+        return $stop->routeStops()
+            ->with(['routeVariant.route.transitMode'])
+            ->get()
+            ->filter(fn ($rs) => $rs->routeVariant && $rs->routeVariant->active && $rs->routeVariant->route)
+            ->groupBy(fn ($rs) => $rs->routeVariant->route->id)
+            ->map(function ($group) {
+                $first = $group->first();
+                $route = $first->routeVariant->route;
+                return [
+                    'route_id' => $route->id,
+                    'short_name' => $route->short_name,
+                    'long_name' => $route->long_name,
+                    'color' => $route->color,
+                    'modes' => $group->map(fn ($rs) => $rs->routeVariant->route->transitMode->name ?? 'bus')
+                        ->unique()->values()->all(),
+                    'variants_count' => $group->pluck('route_variant_id')->unique()->count(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 }

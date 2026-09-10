@@ -9,6 +9,7 @@ import Register from '../pages/Register'
 import ForgotPassword from '../pages/ForgotPassword'
 import ResetPassword from '../pages/ResetPassword'
 import Home from '../pages/Home'
+import RouteDetail from '../pages/RouteDetail'
 import { JourneySearchPage as Search } from '../pages/JourneySearch'
 import { JourneyResultsPage as JourneyResults } from '../pages/JourneyResults'
 import ActiveJourney from '../pages/ActiveJourney'
@@ -64,6 +65,9 @@ export const router = createBrowserRouter([
     element: <PassengerLayout />,
     children: [
       { path: '/home', element: <Home /> },
+      // Line information — public endpoints only (route detail, stops,
+      // variant geometry), so guests can browse the network too.
+      { path: '/routes/:id', element: <RouteDetail /> },
     ],
   },
 

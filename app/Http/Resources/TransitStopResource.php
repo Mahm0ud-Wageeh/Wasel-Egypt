@@ -46,6 +46,9 @@ class TransitStopResource extends JsonResource
             'location_accuracy' => $this->location_accuracy,
             'wheelchair_accessible' => $this->wheelchair_accessible,
             'platform_code' => $this->platform_code,
+            // Present only for nearby queries (publicIndex lat/lng/radius);
+            // omitted entirely elsewhere so the existing contract is unchanged.
+            'distance_meters' => $this->when(isset($this->distance_meters), $this->distance_meters),
             'area' => $area,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

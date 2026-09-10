@@ -179,7 +179,7 @@ function JourneyOptionCard({ option, isSelected, isBest, isFastest, isFewestTran
           </span>
           {reliabilityPct != null && (
             <span className="t-caption" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Icon name="shield" size={12} aria-hidden="true" style={{ color: reliabilityPct >= 70 ? 'var(--s700)' : 'var(--w700)' }} />
+              <Icon name="shield" size={12} aria-hidden="true" style={{ color: reliabilityPct >= 70 ? 'var(--s800)' : 'var(--w800)' }} />
               {t('results.reliability').replace('{pct}', reliabilityPct)}
             </span>
           )}
@@ -308,35 +308,55 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
                   const translated = t(key)
                   return translated === key ? leg.mode : translated
                 })()
+            // Inter-leg wait (design QA): the gap between the previous leg's
+            // arrival and this leg's departure. Real data — the planner sets
+            // distinct departure/arrival times per leg, so a 5-hour overnight
+            // gap (metro closed) is shown honestly instead of an unexplained
+            // "5h 47m" total.
+            const prev = legs[idx - 1]
+            const waitSec = prev && leg.departure_time && prev.arrival_time
+              ? (new Date(leg.departure_time).getTime() - new Date(prev.arrival_time).getTime()) / 1000
+              : 0
+            const showWait = idx > 0 && waitSec > 120
             return (
-              <div key={idx} className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}`}>
-                <span className="jtl__dot" style={{ background: legColor(leg) }} aria-hidden="true">
-                  <Icon name={isWalk ? 'modeWalking' : (MODE_ICONS[leg.mode] ?? 'navigate')} size={12} />
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div className="row-between">
-                    <b style={{ fontSize: 13 }}>
-                      {legModeLabel}
-                      {leg.route?.short_name ? ` · ${leg.route.short_name}` : ''}
-                    </b>
-                    <span className="t-caption t-num">
-                      {formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)} · {Math.round(leg.duration_sec / 60)} min
+              <>
+                {showWait && (
+                  <div key={`wait-${idx}`} className="jtl__row jtl__row--transfer" style={{ marginBlock: 2 }}>
+                    <span className="jtl__dot jtl__dot--ghost" aria-hidden="true"><Icon name="clock" size={11} /></span>
+                    <span className="t-caption" style={{ fontWeight: 600, color: 'var(--w800)' }}>
+                      {t('results.wait_minutes').replace('{n}', Math.max(1, Math.round(waitSec / 60)))}
                     </span>
                   </div>
-                  <div className="t-caption" style={{ marginBlockStart: 2 }}>
-                    {leg.from_stop?.name ?? t('results.origin')} → {leg.to_stop?.name ?? t('results.destination')}
-                    {leg.distance_meters ? ` · ${formatDistance(leg.distance_meters)}` : ''}
-                  </div>
-                  {!isWalk && leg.route?.long_name && (
-                    <div className="t-caption" style={{ fontSize: 11, color: 'var(--ink300)' }}>{leg.route.long_name}</div>
-                  )}
-                  {isWalk && leg.walk_source === 'estimate' && (
-                    <div className="t-caption" style={{ fontSize: 11, color: 'var(--w700)' }}>
-                      Walking distance estimated (routing engine unavailable)
+                )}
+                <div key={idx} className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}`}>
+                  <span className="jtl__dot" style={{ background: legColor(leg) }} aria-hidden="true">
+                    <Icon name={isWalk ? 'modeWalking' : (MODE_ICONS[leg.mode] ?? 'navigate')} size={12} />
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div className="row-between">
+                      <b style={{ fontSize: 13 }}>
+                        {legModeLabel}
+                        {leg.route?.short_name ? ` · ${leg.route.short_name}` : ''}
+                      </b>
+                      <span className="t-caption t-num">
+                        {formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)} · {Math.round(leg.duration_sec / 60)} min
+                      </span>
                     </div>
-                  )}
+                    <div className="t-caption" style={{ marginBlockStart: 2 }}>
+                      {leg.from_stop?.name ?? t('results.origin')} → {leg.to_stop?.name ?? t('results.destination')}
+                      {leg.distance_meters ? ` · ${formatDistance(leg.distance_meters)}` : ''}
+                    </div>
+                    {!isWalk && leg.route?.long_name && (
+                      <div className="t-caption" style={{ fontSize: 11, color: 'var(--ink300)' }}>{leg.route.long_name}</div>
+                    )}
+                    {isWalk && leg.walk_source === 'estimate' && (
+                      <div className="t-caption" style={{ fontSize: 11, color: 'var(--w800)' }}>
+                        Walking distance estimated (routing engine unavailable)
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )
           })}
 
@@ -405,7 +425,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
 
 /** Results page — ranked options, map sync, details drawer, save + start. */
 export function JourneyResultsPage() {
-  const { searchParams, searchResults, storeSaved } = useJourneyContext()
+  const { searchParams, searchResults, storeSaved, storeSearch } = useJourneyContext()
   const { t } = useI18n()
   const navigate = useNavigate()
 
@@ -527,6 +547,26 @@ export function JourneyResultsPage() {
   const endpointOrigin = searchParams ? { lat: searchParams.origin_lat, lng: searchParams.origin_lng } : null
   const endpointDestination = searchParams ? { lat: searchParams.destination_lat, lng: searchParams.destination_lng } : null
 
+  // Stop-panel action (design v3 §10): store the selected stop as the
+  // origin/destination in the real journey context, then return to the
+  // planner — the same state bridge the search flow itself uses.
+  const handleMapStopSelect = (selection) => {
+    const target = selection.target === 'origin' ? 'origin' : 'destination'
+    const stop = {
+      id: selection.id,
+      name: selection.name,
+      latitude: selection.latitude ?? selection.lat,
+      longitude: selection.longitude ?? selection.lng,
+    }
+    const next = {
+      ...(searchParams ?? {}),
+      originStop: target === 'origin' ? stop : (searchParams?.originStop ?? null),
+      destinationStop: target === 'destination' ? stop : (searchParams?.destinationStop ?? null),
+    }
+    storeSearch(next)
+    navigate('/search')
+  }
+
   return (
     <>
       <div className="row-between" style={{ marginBottom: 'var(--sp-4)' }}>
@@ -596,6 +636,7 @@ export function JourneyResultsPage() {
                 origin={endpointOrigin}
                 destination={endpointDestination}
                 stops={routeStops}
+                onSelectStop={handleMapStopSelect}
               />
             </div>
           )}

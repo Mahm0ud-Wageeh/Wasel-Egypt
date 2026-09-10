@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/LanguageContext'
 import { useJourneyContext } from '../contexts/JourneyContext'
+import { cairoWallTime } from '../api/journeys'
 import { Button } from '../components/ui/Button'
 import { SelectInput } from '../components/ui/Input'
 import { ModeChip } from '../components/ui/Badge'
@@ -34,16 +35,27 @@ export function JourneySearchPage() {
   const { t } = useI18n()
   const { searchParams } = useJourneyContext()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // "Plan from <stop>" on the line page / stop panel navigates here with
+  // a prefillStop (+ optional prefillTarget). An explicit prefill wins
+  // over stale stored params; live user typing afterwards is never
+  // overwritten (mount-time initial state only).
+  const prefill = location.state?.prefillStop ?? null
+  const prefillTarget = location.state?.prefillTarget === 'destination' ? 'destination' : 'origin'
 
   const planner = useJourneyPlanner({
     initial: {
-      originStop: searchParams?.originStop ?? null,
-      destinationStop: searchParams?.destinationStop ?? null,
+      originStop: (prefillTarget === 'origin' ? prefill : null) ?? searchParams?.originStop ?? null,
+      destinationStop: (prefillTarget === 'destination' ? prefill : null) ?? searchParams?.destinationStop ?? null,
     },
   })
 
+  // Stored requested_at echoes carry an offset ("...+03:00") which
+  // datetime-local rejects (it needs naive wall time); slice keeps the
+  // wall clock the backend planned against.
   const [departure, setDeparture] = useState(
-    searchParams?.requested_at ?? new Date().toISOString().slice(0, 16))
+    searchParams?.requested_at ? String(searchParams.requested_at).slice(0, 16) : cairoWallTime())
   const [maxTransfers, setMaxTransfers] = useState(searchParams?.max_transfers ?? 1)
   const [maxWalk, setMaxWalk] = useState(searchParams?.max_walk_distance_per_leg ?? 1000)
   const [alternatives, setAlternatives] = useState(searchParams?.alternatives ?? 3)
@@ -111,7 +123,7 @@ export function JourneySearchPage() {
             <button
               type="button"
               className="chip"
-              onClick={() => setDeparture(new Date().toISOString().slice(0, 16))}
+              onClick={() => setDeparture(cairoWallTime())}
             >
               {t('action.now')}
             </button>
@@ -200,6 +212,17 @@ export function JourneySearchPage() {
             : null}
           height="100%"
           fitTo="origin"
+          showNearbyStops
+          onSelectStop={({ target, id, name, latitude, longitude }) => {
+            const stop = {
+              id,
+              name: name ?? t('map.selected_stop'),
+              latitude: latitude ?? 0,
+              longitude: longitude ?? 0,
+            }
+            if (target === 'origin') planner.setOriginStop(stop)
+            else planner.setDestinationStop(stop)
+          }}
         />
         {user?.name && (
           <span className="planner-map__badge">Planner · {user.name}</span>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { StateBlock } from '../components/ui/Feedback'
+import { Icon } from '../components/ui/Icon'
 
 /** 403 — role-gated areas (admin/moderation) reached without permission. */
 export default function Forbidden() {

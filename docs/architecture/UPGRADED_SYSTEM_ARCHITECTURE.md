@@ -464,7 +464,7 @@ Actual numbers depend on feeds obtained; synthetic realistic pattern fills gaps 
 
 ### 7.2 Frontend Tests (Must Remain Green)
 
-- All 13 suites / 51 tests remain green. Fixing isolated test issues not required except real blockers.
+- All suites remain green (backend 274, frontend 118 across 21 files at v1.0.0). Fixing isolated test issues not required except real blockers.
 - New tests for MapPanel (mock MapLibre if needed) are optional; existing tests not weakened.
 - Manual browser checks required for every UI change (per final report includes browser checks).
 

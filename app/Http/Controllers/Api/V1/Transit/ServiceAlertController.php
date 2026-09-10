@@ -106,6 +106,7 @@ class ServiceAlertController extends AuthController
     public function getActiveAlerts(Request $request)
     {
         $query = ServiceAlert::query()
+            ->with(['serviceAlertRoutes', 'serviceAlertStops'])
             ->where(function ($q) {
                 $q->whereNull('active_period_start')
                   ->orWhere('active_period_start', '<=', now());

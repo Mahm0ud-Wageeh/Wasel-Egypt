@@ -90,17 +90,17 @@
   line-height: 1.5;
   white-space: nowrap;
 }
-.badge--pending { background: var(--w50); color: var(--w700); }
-.badge--verified { background: var(--s50); color: var(--s700); }
+.badge--pending { background: var(--w50); color: var(--w800); }
+.badge--verified { background: var(--s50); color: var(--s800); }
 .badge--rejected { background: var(--e50); color: var(--e700); }
 .badge--resolved { background: #e0f0f0; color: var(--nile); }
 .badge--active { background: var(--p50); color: var(--p700); }
 .badge--deviated { background: var(--e50); color: var(--e700); }
-.badge--rerouted { background: var(--a100); color: var(--a600); }
-.badge--completed { background: var(--s50); color: var(--s700); }
+.badge--rerouted { background: var(--a100); color: var(--a800); }
+.badge--completed { background: var(--s50); color: var(--s800); }
 .badge--cancelled { background: #edf0f3; color: var(--ink500); }
-.badge--low { background: var(--s50); color: var(--s700); }
-.badge--medium { background: var(--w50); color: var(--w700); }
+.badge--low { background: var(--s50); color: var(--s800); }
+.badge--medium { background: var(--w50); color: var(--w800); }
 .badge--high { background: var(--e50); color: var(--e700); }
 .badge--urgent { background: var(--e700); color: #fff; }
 .badge--normal { background: #edf0f3; color: var(--ink500); }
@@ -142,9 +142,9 @@
 .alert--info { background: var(--p50); }
 .alert--info .alert__title, .alert--info .alert__icon { color: var(--p700); }
 .alert--success { background: var(--s50); }
-.alert--success .alert__title, .alert--success .alert__icon { color: var(--s700); }
+.alert--success .alert__title, .alert--success .alert__icon { color: var(--s800); }
 .alert--warning { background: var(--w50); }
-.alert--warning .alert__title, .alert--warning .alert__icon { color: var(--w700); }
+.alert--warning .alert__title, .alert--warning .alert__icon { color: var(--w800); }
 .alert--error { background: var(--e50); }
 .alert--error .alert__title, .alert--error .alert__icon { color: var(--e700); }
 
@@ -678,7 +678,7 @@
   border-radius: var(--r-sm);
   margin: 0;
 }
-.hero-planner__geo--warning { background: var(--w50); color: var(--w700); }
+.hero-planner__geo--warning { background: var(--w50); color: var(--w800); }
 .hero-planner__geo--info { background: var(--p50); color: var(--p700); }
 .hero-planner__geo .chip { margin-inline-start: auto; height: 26px; font-size: 11.5px; }
 .hero-planner__actions {
@@ -1287,7 +1287,7 @@
 .details-drawer__scrim {
   position: absolute;
   inset: 0;
-  background: rgba(18, 35, 46, 0.45);
+  background: var(--scrim);
 }
 .details-drawer__panel {
   position: relative;
@@ -1421,3 +1421,188 @@
 [dir='rtl'] .planner-advanced-toggle svg { transform: scaleX(-1) !important; }
 [dir='rtl'] .routestrip { direction: ltr; } /* route sequence reads left-to-right even in AR */
 [dir='rtl'] .planner-od::before { inset-inline-start: 19px; }
+
+
+/* ============================================================
+   Design v3 §8 — prefers-reduced-motion: every decorative
+   transform/loop becomes an instant opacity-only change.
+   Functional motion (map camera, toast) collapses to instant.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .feature-card:hover { transform: none; }
+  .card--interactive:active { transform: none; }
+  .od-block__swap:hover:not(:disabled) { transform: translateY(-50%); }
+  .btn:active:not(:disabled) { transform: none; }
+}
+
+/* ============================================================
+   Design v3 §10 — Stop information panel (map overlay)
+   Bottom sheet on mobile, side card on ≥768px. Real serving
+   routes + next departures (StopPanel.jsx).
+   ============================================================ */
+.stop-panel {
+  position: absolute;
+  inset-block-end: 12px;
+  inset-inline: 12px;
+  z-index: 8;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
+  padding: var(--sp-4);
+  max-block-size: min(60%, 380px);
+  overflow-y: auto;
+  animation: stop-panel-in var(--dur-slow) var(--ease);
+}
+@media (min-width: 768px) {
+  .stop-panel {
+    inset-inline: auto 12px;
+    inline-size: 340px;
+  }
+}
+[dir='rtl'] .stop-panel { inset-inline: 12px auto; }
+@media (min-width: 768px) {
+  [dir='rtl'] .stop-panel { inset-inline: 12px auto; }
+}
+@keyframes stop-panel-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stop-panel--closing { opacity: 0; transition: opacity 140ms var(--ease); }
+.stop-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-block-end: var(--sp-3);
+}
+.stop-panel__heading { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.stop-panel__icon {
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: var(--r-md);
+  background: var(--p50);
+  color: var(--p600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.stop-panel__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink900);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.stop-panel__close {
+  inline-size: 30px;
+  block-size: 30px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink700);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+.stop-panel__close:hover { background: var(--e50); color: var(--e700); }
+.stop-panel__close:focus-visible { outline: 2px solid var(--p600); }
+.stop-panel__lines { display: flex; flex-wrap: wrap; gap: 6px; margin-block-end: var(--sp-3); }
+.stop-panel__more { color: var(--ink500); font-weight: 600; }
+.stop-panel__section-title {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--ink500);
+  margin-block-end: 6px;
+}
+[dir='rtl'] .stop-panel__section-title { letter-spacing: 0; }
+.stop-panel__loading { display: flex; justify-content: center; padding: var(--sp-3); }
+.stop-panel__empty { margin: 0 0 var(--sp-2); }
+.stop-panel__dep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-block-start: 1px solid var(--line);
+}
+.stop-panel__dep-info { flex: 1; min-width: 0; }
+.stop-panel__dep-route { font-size: 13px; font-weight: 700; color: var(--ink900); display: block; }
+.stop-panel__dep-dir {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stop-panel__dep-times { display: flex; gap: 6px; flex: none; }
+.stop-panel__time {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink700);
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+  padding: 3px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.stop-panel__time.is-next { background: var(--p50); color: var(--p700); font-weight: 700; }
+.stop-panel__dep-notime { flex: none; }
+.stop-panel__actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-block-start: var(--sp-3);
+  padding-block-start: var(--sp-3);
+  border-block-start: 1px solid var(--line);
+}
+.stop-panel__actions .btn { flex: 1; }
+
+/* ============================================================
+   Route/line page — ordered stop list with plan-from actions
+   (final-product completion; real route_stops data only)
+   ============================================================ */
+.route-stoplist__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 9px 0;
+  border-block-start: 1px solid var(--line);
+}
+.route-stoplist__item:first-child { border-block-start: none; }
+.route-stoplist__node {
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 50%;
+  background: var(--p50);
+  color: var(--p700);
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.route-stoplist__name {
+  flex: 1;
+  min-inline-size: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink900);
+  overflow-wrap: anywhere;
+}
+.route-stoplist__plan { flex: none; }
+[dir='rtl'] .route-stoplist__plan svg { transform: scaleX(-1); }
+
+/* Direction switcher on the line page */
+.seg--directions { display: inline-flex; gap: 6px; flex-wrap: wrap; }

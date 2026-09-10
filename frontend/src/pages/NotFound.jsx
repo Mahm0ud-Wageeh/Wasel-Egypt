@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { StateBlock } from '../components/ui/Feedback'
+import { Icon } from '../components/ui/Icon'
 
 export default function NotFound() {
   return (

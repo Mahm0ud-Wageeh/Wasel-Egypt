@@ -32,7 +32,7 @@ class JourneySearchTest extends TestCase
             'origin_lng' => $origin['lng'],
             'destination_lat' => $destination['lat'],
             'destination_lng' => $destination['lng'],
-            'requested_at' => \Carbon\Carbon::today()->setTime(7, 30)->toIso8601String(),
+            'requested_at' => \Carbon\Carbon::today()->setTime(7, 30)->format('Y-m-d\TH:i'), // naive = Cairo wall (GTFS frame)
         ], $overrides);
     }
 
@@ -140,6 +140,33 @@ class JourneySearchTest extends TestCase
         // Requested at 07:30; the scheduled metro departs Tahrir at 08:00.
         $this->assertStringContainsString('08:00', $transitLeg['departure_time']);
         $this->assertStringContainsString('08:20', $transitLeg['arrival_time']);
+    }
+
+    /** @test */
+    public function naive_requested_at_is_planned_in_cairo_wall_time()
+    {
+        // Time-frame contract (GTFS static times are Cairo wall-clock):
+        // a naive 07:30 request catches the 08:00 wall trip, and leg times
+        // carry the +03:00 offset so clients display true wall clock.
+        // An offset-carrying 07:30Z (04:30 wall, pre-service) must NOT
+        // catch it — proving the frame follows the instant, not the digits.
+        $naive = $this->actingAs($this->user)
+            ->postJson('/api/v1/journeys/search', $this->searchPayload([
+                'requested_at' => \Carbon\Carbon::today()->setTime(7, 30)->format('Y-m-d\TH:i'),
+            ]));
+        $leg = collect(collect($naive->json('data.options'))->firstWhere('total_transfers', 0)['legs'])
+            ->firstWhere('type', 'transit');
+        $this->assertStringContainsString('08:00', $leg['departure_time']);
+        $this->assertStringContainsString('+03:00', $leg['departure_time']);
+
+        $offset = $this->actingAs($this->user)
+            ->postJson('/api/v1/journeys/search', $this->searchPayload([
+                'requested_at' => \Carbon\Carbon::today()->setTime(7, 30)->toIso8601String(),
+            ]));
+        $firstLeg = $offset->json('data.options')[0]['legs'][0];
+        // 07:30Z == 10:30 wall: the 08:00 trip is gone, so the first leg
+        // cannot depart at 08:00.
+        $this->assertStringNotContainsString('T08:00', $firstLeg['departure_time']);
     }
 
     /** @test */

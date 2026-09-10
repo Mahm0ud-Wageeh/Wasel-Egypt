@@ -9,7 +9,9 @@ export function ProtectedRoute() {
 
   if (status === 'loading') return <BootScreen />
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    // Pass through any router state (e.g. planner prefillStop) so the
+    // post-login landing can honor it instead of dropping user intent.
+    return <Navigate to="/login" replace state={{ ...(location.state ?? {}), from: location.pathname }} />
   }
   return <Outlet />
 }
@@ -30,7 +32,7 @@ export function RoleRoute({ roles }) {
 
   if (status === 'loading') return <BootScreen />
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    return <Navigate to="/login" replace state={{ ...(location.state ?? {}), from: location.pathname }} />
   }
 
   const userRoles = Array.isArray(user?.roles) ? user.roles.map((r) => r.name) : []

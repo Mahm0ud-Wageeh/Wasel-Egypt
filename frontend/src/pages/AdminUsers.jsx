@@ -239,7 +239,7 @@ export default function AdminUsers() {
                     padding: 16,
                     borderRadius: 'var(--r-lg)',
                     textAlign: 'center',
-                    border: '1px solid var(--s700)',
+                    border: '1px solid var(--s800)',
                   }}
                 >
                   <div className="t-display t-num" style={{ color: 'var(--s700)', fontSize: 36 }}>

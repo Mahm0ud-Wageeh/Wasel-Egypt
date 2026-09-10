@@ -199,12 +199,14 @@ export default function Home() {
               <Card key={line.id} flat className="row">
                 <ModeDot mode="metro" />
                 <div className="grow">
-                  <b style={{ fontSize: 13 }}>
-                    {line.line} · {line.from} → {line.to}
-                  </b>
-                  <div className="t-caption">{line.line} · {line.stopCount} {t('home.metro_stops')}</div>
+                  <Link to={`/routes/${line.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <b style={{ fontSize: 13 }}>
+                      {line.line} · {line.from} → {line.to}
+                    </b>
+                    <div className="t-caption">{line.line} · {line.stopCount} {t('home.metro_stops')}</div>
+                  </Link>
                 </div>
-                <Link to="/search" className="t-label">
+                <Link to={`/routes/${line.id}`} className="t-label">
                   {t('home.metro_plan')}
                 </Link>
               </Card>
@@ -296,12 +298,14 @@ export default function Home() {
               <Card key={line.id} flat className="row">
                 <ModeDot mode="metro" />
                 <div className="grow">
-                  <b style={{ fontSize: 13 }}>
-                    {line.line} · {line.from} → {line.to}
-                  </b>
-                  <div className="t-caption">{line.line} · {line.stopCount} {t('home.metro_stops')}</div>
+                  <Link to={`/routes/${line.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <b style={{ fontSize: 13 }}>
+                      {line.line} · {line.from} → {line.to}
+                    </b>
+                    <div className="t-caption">{line.line} · {line.stopCount} {t('home.metro_stops')}</div>
+                  </Link>
                 </div>
-                <Link to="/search" className="t-label">
+                <Link to={`/routes/${line.id}`} className="t-label">
                   {t('home.metro_plan')}
                 </Link>
               </Card>

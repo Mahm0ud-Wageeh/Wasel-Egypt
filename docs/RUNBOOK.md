@@ -101,11 +101,14 @@ npm run build       # outputs dist/ with PWA manifest + service worker
 ```
 
 `.env` (frontend): `VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1`,
-`VITE_MAP_TILES_URL` defaults to the Stadia demo configuration. Configure a
-provider-authorized production URL before public deployment, for example:
+`VITE_MAP_TILES_URL` defaults to keyless OpenStreetMap standard raster
+(Stadia's endpoint now requires an API key and returns 401 without one).
+Configure a provider-authorized production URL before public deployment
+at real traffic volume, for example:
 
 ```dotenv
-VITE_MAP_TILES_URL=https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}.png?api_key=YOUR_PRODUCTION_TILE_KEY
+VITE_MAP_TILES_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+# or: VITE_MAP_TILES_URL=https://tiles.example.com/your-style/{z}/{x}/{y}.png?api_key=YOUR_PRODUCTION_TILE_KEY
 ```
 
 This is a placeholder, not a working key. Vite variables are public browser

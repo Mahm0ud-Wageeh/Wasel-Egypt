@@ -317,7 +317,7 @@ export default function AdminModeration() {
                 <Skeleton height={30} />
               ) : authorTrust ? (
                 <div className="row-between" style={{ fontSize: 12 }}>
-                  <div> {t('admin.trust_score_label')} <b style={{ color: 'var(--s700)' }}>{authorTrust.score ?? 100}/100</b>
+                  <div> {t('admin.trust_score_label')} <b style={{ color: 'var(--s800)' }}>{authorTrust.score ?? 100}/100</b>
                   </div>
                   <div> {t('admin.verified_label')} <b>{authorTrust.verified_reports_count ?? 0}</b> {t('admin.rejected_label')}{' '}
                     <b>{authorTrust.rejected_reports_count ?? 0}</b>

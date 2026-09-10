@@ -37,7 +37,7 @@ class JourneyApiTest extends TestCase
             'origin_lng' => $origin['lng'],
             'destination_lat' => $destination['lat'],
             'destination_lng' => $destination['lng'],
-            'requested_at' => \Carbon\Carbon::today()->setTime(7, 30)->toIso8601String(),
+            'requested_at' => \Carbon\Carbon::today()->setTime(7, 30)->format('Y-m-d\TH:i'), // naive = Cairo wall (GTFS frame)
         ], $overrides);
     }
 

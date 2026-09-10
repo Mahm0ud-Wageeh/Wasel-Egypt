@@ -169,6 +169,7 @@ Route::prefix('v1')->group(function () {
     Route::get('places/search', [App\Http\Controllers\Api\V1\PlaceController::class, 'search'])
         ->middleware('throttle:10,1');
     Route::get('stops/{id}', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicShow']);
+    Route::get('stops/{id}/departures', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicDepartures']);
 
     // Public transit modes
     Route::get('transit-modes', [App\Http\Controllers\Api\V1\Transit\TransitModeController::class, 'publicIndex']);
@@ -190,6 +191,7 @@ Route::prefix('v1')->group(function () {
     Route::get('public-routes', [App\Http\Controllers\Api\V1\Transit\RouteController::class, 'publicIndex']);
     Route::get('public-routes/{route}', [App\Http\Controllers\Api\V1\Transit\RouteController::class, 'publicShow']);
     Route::get('routes/{id}/stops', [App\Http\Controllers\Api\V1\Transit\RouteController::class, 'getRouteStops']);
+    Route::get('route-variants/{variantId}/geometry', [App\Http\Controllers\Api\V1\Transit\RouteController::class, 'publicVariantGeometry']);
 
     // Public schedules
     Route::get('public-schedules', [App\Http\Controllers\Api\V1\Transit\ScheduleController::class, 'publicIndex']);

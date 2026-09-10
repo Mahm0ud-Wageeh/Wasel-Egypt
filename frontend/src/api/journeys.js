@@ -32,6 +32,30 @@ export async function startSavedJourney(journeyId) {
   return response.data ?? response
 }
 
+/**
+ * Current time as a Cairo wall-clock `datetime-local` value ("YYYY-MM-DDTHH:mm").
+ *
+ * Time-frame contract with the backend: GTFS static times are Cairo
+ * wall-clock, and the planner interprets naive `requested_at` as Cairo
+ * wall time. `Date.toISOString()` is UTC — sending it sliced (naive)
+ * would shift dawn requests into the pre-service gap. Manual
+ * datetime-local input is already wall time, so this helper aligns the
+ * "Now" defaults with it.
+ */
+export function cairoWallTime(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const get = (type) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
+}
+
 /** All transit stops, public endpoint (legacy: default page only). */
 export async function getPublicStops() {
   const response = await apiRequest(endpoints.public.stops, { auth: false })

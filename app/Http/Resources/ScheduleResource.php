@@ -37,6 +37,9 @@ class ScheduleResource extends JsonResource
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
             'is_active' => $this->is_active,
+            // Frequency-based service headways (GTFS frequencies.txt) — the
+            // real "every X minutes" data the route page displays.
+            'frequency_windows' => $this->frequency_windows,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
