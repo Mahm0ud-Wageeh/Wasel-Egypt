@@ -28,3 +28,9 @@ Thumbs.db
 
 # Composer installer binary (download tool, not project source)
 composer.phar
+
+# Local-only project documentation/reference
+docs/
+design-system/
+.playwright-mcp/
+
