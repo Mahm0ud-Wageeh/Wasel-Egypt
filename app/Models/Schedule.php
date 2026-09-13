@@ -34,6 +34,7 @@ class Schedule extends Model
         'end_date',
         'is_active',
         'frequency_windows',
+        'import_log_id',
     ];
 
     /**

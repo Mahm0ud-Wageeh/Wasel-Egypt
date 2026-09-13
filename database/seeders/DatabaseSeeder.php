@@ -64,5 +64,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             FayoumTransportPackSeeder::class,
         ]);
+
+        // Fayoum VERIFIED pack: ENR rail service (real timetable), Moneeb
+        // intercity corridor and its governorate-approved fares. Every fact
+        // cites a fetched source (see FayoumVerifiedPackSeeder docblock).
+        $this->call([
+            FayoumVerifiedPackSeeder::class,
+        ]);
     }
 }

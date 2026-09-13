@@ -24,6 +24,9 @@ import AdminModeration from '../pages/AdminModeration'
 import AdminUsers from '../pages/AdminUsers'
 import AdminFares from '../pages/AdminFares'
 import AdminNetwork from '../pages/AdminNetwork'
+import AdminData from '../pages/AdminData'
+import AdminStopTimes from '../pages/AdminStopTimes'
+import AdminGeometry from '../pages/AdminGeometry'
 import Fares from '../pages/Fares'
 import Forbidden from '../pages/Forbidden'
 import NotFound from '../pages/NotFound'
@@ -122,6 +125,9 @@ export const router = createBrowserRouter([
               { path: '/admin/users', element: <AdminUsers /> },
               { path: '/admin/fares', element: <AdminFares /> },
               { path: '/admin/network', element: <AdminNetwork /> },
+              { path: '/admin/data', element: <AdminData /> },
+              { path: '/admin/stop-times', element: <AdminStopTimes /> },
+              { path: '/admin/geometry', element: <AdminGeometry /> },
             ],
           },
         ],

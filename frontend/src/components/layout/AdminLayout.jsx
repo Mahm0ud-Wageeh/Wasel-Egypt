@@ -27,6 +27,9 @@ const GROUPS = [
   {
     label: 'Data & network',
     items: [
+      { to: '/admin/data', label: 'Data governance', icon: 'layers' },
+      { to: '/admin/stop-times', label: 'Stop times', icon: 'clock' },
+      { to: '/admin/geometry', label: 'Route geometry', icon: 'route' },
       { to: '/admin/fares', label: 'Fares', icon: 'wallet' },
       { to: '/admin/network', label: 'Network', icon: 'layers' },
     ],

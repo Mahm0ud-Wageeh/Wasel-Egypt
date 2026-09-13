@@ -172,6 +172,10 @@
   background-size: 200% 100%;
   animation: skeleton 1.4s infinite;
 }
+/* Card-shaped loading placeholder (admin consoles + fares): without an
+   explicit height the skeleton collapses to 0px and pages look blank
+   while their data loads. */
+.skeleton--card { height: 140px; }
 @keyframes skeleton { to { background-position: -200% 0; } }
 
 .state-block {

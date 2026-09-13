@@ -45,6 +45,19 @@ class MockTransitProvider implements AiProvider
         'مريت جيرجيس' => 'Mar Girgis',
         'المقطم' => 'Mokattam',
         'حدائق القبة' => 'Hadaeq El Qobbah',
+        // Fayoum expansion pack stops (Latin names in the DB). The bare
+        // governorate name maps to the city terminal — the passenger's
+        // actual boarding point — not to any street containing the word.
+        'الفيوم' => 'Fayoum Bus Terminal',
+        'محطة الفيوم' => 'Fayoum Bus Terminal',
+        'تامية' => 'Tamiya',
+        'سنورس' => 'Sinnuris',
+        'إبشواي' => 'Ibsheway',
+        'الإبشواي' => 'Ibsheway',
+        'إطسا' => 'Itsa',
+        'يوسف الصديق' => 'Youssef El-Seddik',
+        'جامعة الفيوم' => 'Fayoum University',
+        'الفيوم الجديدة' => 'New Fayoum City',
     ];
 
     public function id(): string
@@ -114,6 +127,10 @@ class MockTransitProvider implements AiProvider
         } elseif (preg_match('/من\s+(.+?)\s+(?:إلى|الى)\s+(.+?)\s*$/u', $text, $m)) {
             $from = trim($m[1]);
             $to = trim($m[2]);
+        } elseif (preg_match('/من\s+(.+?)\s+لل(.+?)\s*$/u', $text, $m)) {
+            // Egyptian Arabic "من X للY" (لـ+ال التعريف مدموجة في "لل").
+            $from = trim($m[1]);
+            $to = 'ال' . trim($m[2]);
         } elseif (preg_match('/(?:عايز|أوزع|اريد|أريد|هروح|أروح|اروح)\s+(?:أروح\s+|اروح\s+)?(?:إلى|الى|على|ل)?\s*(.+?)\s*$/u', $text, $m)) {
             $to = trim($m[1]);
         }
@@ -317,17 +334,11 @@ class MockTransitProvider implements AiProvider
         }
 
         return Cache::remember('ai.stop.'.md5(mb_strtolower($name)), 60, function () use ($name) {
-            $stop = TransitStop::query()
-                ->where('name', 'like', "%{$name}%")
-                ->orderByRaw('LENGTH(name) asc')
-                ->first();
-
-            if ($stop !== null) {
-                return $stop;
-            }
-
-            // Arabic query against Latin stop names: try the well-known
-            // station hint (longest matching hint wins, e.g. "سعد زغلول").
+            // Arabic query against Latin stop names: an explicit hint wins
+            // BEFORE the generic LIKE — otherwise an Arabic governorate name
+            // ("الفيوم") can fuzzy-match an unrelated Latin street ("Al
+            // Fayoum Rd.") ahead of the real terminal. Longest hint matches
+            // first (e.g. "محطة الفيوم" before "الفيوم").
             foreach (self::ARABIC_NAME_HINTS as $arabic => $latin) {
                 if (mb_strpos($name, $arabic) !== false) {
                     $stop = TransitStop::query()
@@ -340,7 +351,10 @@ class MockTransitProvider implements AiProvider
                 }
             }
 
-            return null;
+            return TransitStop::query()
+                ->where('name', 'like', "%{$name}%")
+                ->orderByRaw('LENGTH(name) asc')
+                ->first();
         });
     }
 

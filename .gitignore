@@ -41,3 +41,6 @@ design-system/
 frontend/.env
 frontend/.env.local
 frontend/.env.*.local
+
+# Local GUI-QA evidence (untracked test artifacts)
+gui-test-screenshots/

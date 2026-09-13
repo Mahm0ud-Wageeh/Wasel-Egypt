@@ -86,6 +86,14 @@ Route::prefix('v1')->group(function () {
 
         // Fare management (real + demo/estimated rows editable by admins)
         Route::apiResource('fares', App\Http\Controllers\Api\V1\Admin\FareAdminController::class)->except(['show']);
+
+        // Data governance console: import history, data quality, audit
+        // history, and authorized import rollback (server-side gated here).
+        Route::get('data/imports', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'imports']);
+        Route::get('data/quality', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'quality']);
+        Route::get('data/audit', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'audit']);
+        Route::get('data/imports/{id}/rollback-preview', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'rollbackPreview']);
+        Route::post('data/imports/{id}/rollback', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'executeRollback']);
     });
 });
 

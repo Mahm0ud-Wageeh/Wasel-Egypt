@@ -1376,3 +1376,54 @@ span {
   animation: ai-rise var(--dur-fast) ease;
 }
 .modal-card h2 { font-size: 17px; font-weight: 800; color: var(--ink900); margin: 0 0 var(--sp-3); }
+
+/* ---- Admin data governance (quality / imports / audit / rollback) ---- */
+.admin-data { display: flex; flex-direction: column; gap: var(--sp-4); }
+.admin-data__head h1 { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; color: var(--ink900); margin: 0 0 4px; }
+.admin-data__head svg { color: var(--p600); }
+.admin-data__tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 2px; flex-wrap: wrap; }
+.admin-data__tab {
+  background: none; border: none; cursor: pointer; font-size: 13.5px; font-weight: 700;
+  color: var(--ink500); padding: 8px 14px; border-radius: var(--r-sm) var(--r-sm) 0 0;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+}
+.admin-data__tab.is-active { color: var(--p700, var(--ink900)); border-bottom-color: var(--p600); }
+.admin-data__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.admin-data__card {
+  border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3);
+  display: flex; flex-direction: column; gap: 3px; background: var(--surface);
+}
+.admin-data__card strong { font-size: 19px; font-weight: 800; color: var(--ink900); }
+.admin-data__card-icon { color: var(--p600); display: inline-flex; }
+.admin-data__card.is-warn { border-color: var(--a300, #e8d5a8); background: var(--a50); }
+.admin-data__card.is-warn strong { color: var(--a800); }
+.admin-data__note { display: flex; align-items: center; gap: 6px; color: var(--ink500); }
+.admin-data__note svg { flex-shrink: 0; color: var(--p600); }
+.admin-status { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: var(--r-pill); padding: 2px 9px; white-space: nowrap; }
+.admin-status--ok { background: var(--s50); color: var(--s800); }
+.admin-status--bad { background: var(--e50, #fdf1f1); color: var(--e800, #8f2d2d); }
+.admin-status--warn { background: var(--a50); color: var(--a800); }
+.admin-chip { font-size: 11.5px; background: var(--ink50, var(--surface)); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px 8px; }
+.admin-audit__changes details summary { cursor: pointer; color: var(--p700, var(--ink700)); font-weight: 700; }
+.admin-audit__changes pre {
+  margin: 6px 0 0; padding: 8px; background: var(--ink50, #f5f7fa); border-radius: var(--r-sm);
+  font-size: 11px; max-width: 360px; overflow-x: auto; white-space: pre-wrap; direction: ltr; text-align: left;
+}
+.admin-rollback__warnings { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.admin-rollback__warnings li { display: flex; align-items: flex-start; gap: 6px; color: var(--a800); }
+.admin-rollback__warnings svg { flex-shrink: 0; margin-top: 1px; }
+.admin-table--compact th, .admin-table--compact td { font-size: 12.5px; padding: 6px 10px; }
+
+/* ---- Admin stop times ---- */
+.admin-stoptimes { display: flex; flex-direction: column; gap: var(--sp-4); }
+
+/* ---- Admin route geometry ---- */
+.admin-geometry { display: flex; flex-direction: column; gap: var(--sp-4); }
+.modal-card--wide { width: min(720px, 100%); }
+.admin-geo__points { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 2px; }
+.admin-geo__point-row { display: grid; grid-template-columns: 42px 1fr 1fr 34px; gap: 8px; align-items: center; }
+.admin-geo__point-row .t-caption { font-weight: 700; color: var(--ink500); }
+@media (max-width: 560px) { .admin-geo__point-row { grid-template-columns: 36px 1fr 1fr 30px; gap: 6px; } }
+
+/* RTL: audit JSON stays LTR (code), tab underline stays physical */
+[dir="rtl"] .admin-audit__changes pre { text-align: left; }

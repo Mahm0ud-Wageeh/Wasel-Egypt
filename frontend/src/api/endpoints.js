@@ -134,5 +134,19 @@ export const endpoints = {
     removePermission: (roleId, permissionId) =>
       `/admin/roles/${roleId}/remove-permission/${permissionId}`,
     permissions: '/admin/permissions',
+    // Data governance console (admin-only, server-gated).
+    dataImports: '/admin/data/imports',
+    dataQuality: '/admin/data/quality',
+    dataAudit: '/admin/data/audit',
+    rollbackPreview: (id) => `/admin/data/imports/${id}/rollback-preview`,
+    rollback: (id) => `/admin/data/imports/${id}/rollback`,
+  },
+
+  // ---- Admin transit consoles (transit-data-edit permission, server-gated) ----
+  adminTransit: {
+    stopTimes: '/stop-times',
+    stopTime: (id) => `/stop-times/${id}`,
+    routeGeometry: '/route-geometry',
+    routeGeometryItem: (id) => `/route-geometry/${id}`,
   },
 }

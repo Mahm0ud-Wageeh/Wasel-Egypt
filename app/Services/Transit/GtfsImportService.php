@@ -254,6 +254,12 @@ class GtfsImportService
             $agencyModeMap = $options['agency_mode_map'] ?? [];
             $maxGeometryPoints = (int) ($options['max_geometry_points'] ?? self::MAX_GEOMETRY_POINTS);
 
+            // 0. Provenance first: the import log row is created BEFORE the
+            // entities so every imported row can be stamped with its id —
+            // this stamp is what makes a governed rollback possible. The
+            // log is finalized (counts/status) after the import succeeds.
+            $importLogId = $this->createImportLog($options);
+
             // 1. Agencies → transit operators (idempotent on license_number = agency_id).
             $operatorIds = $this->importAgencies($zip, $importResult);
 
@@ -261,13 +267,13 @@ class GtfsImportService
             $modeIds = $this->ensureModes($zip, $agencyModeMap, $importResult);
 
             // 3. Stops → transit_stops (idempotent on gtfs_stop_id).
-            $stopIds = $this->importStops($zip, $importResult);
+            $stopIds = $this->importStops($zip, $importResult, $importLogId);
 
             // 4. Routes → routes with correct mode + operator per agency.
-            $routeIds = $this->importRoutes($zip, $operatorIds, $modeIds, $agencyModeMap, $importResult);
+            $routeIds = $this->importRoutes($zip, $operatorIds, $modeIds, $agencyModeMap, $importResult, $importLogId);
 
             // 5. Trips → route_variants + schedules (idempotent on gtfs_trip_id).
-            $tripMap = $this->importTrips($zip, $routeIds, $importResult);
+            $tripMap = $this->importTrips($zip, $routeIds, $importResult, $importLogId);
 
             // 6. Frequencies → schedule frequency_windows.
             $this->importFrequencies($zip, $tripMap, $importResult);
@@ -281,8 +287,8 @@ class GtfsImportService
             // 9. Shapes → one decimated JSON geometry per variant (streamed).
             $this->importShapes($zip, $tripMap, $maxGeometryPoints, $importResult);
 
-            // 10. Provenance log.
-            $this->recordProvenance($options, $importResult);
+            // 10. Finalize the provenance log with the real counts.
+            $this->finalizeImportLog($importLogId, $options, $importResult);
 
             DB::commit();
         } catch (Exception $e) {
@@ -366,13 +372,13 @@ class GtfsImportService
         };
     }
 
-    protected function importStops($zip, array &$result): array
+    protected function importStops($zip, array &$result, ?int $importLogId = null): array
     {
         $stopIds = [];
         $defaultArea = $this->ensureDefaultArea();
         $batch = [];
 
-        $this->streamCsv($zip, 'stops.txt', function (array $row) use (&$stopIds, &$batch, $defaultArea, &$result) {
+        $this->streamCsv($zip, 'stops.txt', function (array $row) use (&$stopIds, &$batch, $defaultArea, &$result, $importLogId) {
             $gtfsStopId = $row['stop_id'];
 
             $stopIds[$gtfsStopId] = null;
@@ -385,6 +391,7 @@ class GtfsImportService
                 'wheelchair_accessible' => ($row['wheelchair_boarding'] ?? 0) == 1,
                 'platform_code' => $row['platform_code'] ?? null,
                 'area_id' => $defaultArea->id,
+                'import_log_id' => $importLogId,
             ];
 
             if (count($batch) >= self::CHUNK_SIZE) {
@@ -414,7 +421,10 @@ class GtfsImportService
             }
         }
 
-        // Idempotent upsert keyed on the unique gtfs_stop_id.
+        // Idempotent upsert keyed on the unique gtfs_stop_id. The stamp
+        // column is deliberately NOT in the update list: a re-import never
+        // re-stamps an existing stop (first provenance wins), so rollback of
+        // one import can never claim a stop owned by another import.
         DB::table('transit_stops')->upsert(
             $batch,
             ['gtfs_stop_id'],
@@ -450,11 +460,11 @@ class GtfsImportService
         ]);
     }
 
-    protected function importRoutes($zip, array $operatorIds, array $modeIds, array $agencyModeMap, array &$result): array
+    protected function importRoutes($zip, array $operatorIds, array $modeIds, array $agencyModeMap, array &$result, ?int $importLogId = null): array
     {
         $routeIds = [];
 
-        $this->streamCsv($zip, 'routes.txt', function (array $row) use (&$routeIds, $operatorIds, $modeIds, $agencyModeMap, &$result) {
+        $this->streamCsv($zip, 'routes.txt', function (array $row) use (&$routeIds, $operatorIds, $modeIds, $agencyModeMap, &$result, $importLogId) {
             $gtfsRouteId = $row['route_id'];
             $agencyId = $row['agency_id'] ?? null;
             $routeType = isset($row['route_type']) ? (int) $row['route_type'] : null;
@@ -486,6 +496,7 @@ class GtfsImportService
                 'continuous_pickup' => $row['route_continuous_pickup'] ?? 1,
                 'continuous_drop_off' => $row['route_continuous_drop_off'] ?? 1,
                 'active' => true,
+                'import_log_id' => $importLogId,
             ]);
             $routeIds[$gtfsRouteId] = $route->id;
             $result['routes_created']++;
@@ -499,11 +510,11 @@ class GtfsImportService
      *
      * @return array trip_id => ['variant_id' => int, 'schedule_id' => int, 'shape_id' => ?string]
      */
-    protected function importTrips($zip, array $routeIds, array &$result): array
+    protected function importTrips($zip, array $routeIds, array &$result, ?int $importLogId = null): array
     {
         $tripMap = [];
 
-        $this->streamCsv($zip, 'trips.txt', function (array $row) use (&$tripMap, $routeIds, &$result) {
+        $this->streamCsv($zip, 'trips.txt', function (array $row) use (&$tripMap, $routeIds, &$result, $importLogId) {
             $routeId = $routeIds[$row['route_id']] ?? null;
             if ($routeId === null) {
                 return;
@@ -517,6 +528,7 @@ class GtfsImportService
                 [
                     'headsign' => $row['trip_headsign'] ?? null,
                     'active' => true,
+                    'import_log_id' => $importLogId,
                 ]
             );
 
@@ -531,6 +543,7 @@ class GtfsImportService
                     'notes' => 'Imported from GTFS (trips.txt)',
                     'start_date' => now()->toDateString(),
                     'is_active' => true,
+                    'import_log_id' => $importLogId,
                 ]
             );
 
@@ -750,24 +763,47 @@ class GtfsImportService
         return $kept;
     }
 
-    protected function recordProvenance(array $options, array $result): void
+    /**
+     * Create the provenance log row BEFORE importing, so imported rows can
+     * be stamped with import_log_id (rollback key). Returns null when no
+     * source is named (unstamped, ungoverned import — legacy behavior).
+     */
+    protected function createImportLog(array $options): ?int
     {
         $source = $options['source'] ?? null;
 
         if ($source === null || !isset($source['name'])) {
-            return;
+            return null;
         }
 
-        DB::table('data_import_logs')->insert([
+        return DB::table('data_import_logs')->insertGetId([
             'source' => $source['name'],
             'url' => $source['url'] ?? null,
             'dataset_version' => $source['version'] ?? null,
             'license' => $source['license'] ?? null,
             'options' => json_encode(array_intersect_key($options, array_flip(['agency_mode_map', 'service_start', 'service_end']))),
-            'counts' => json_encode($result),
-            'status' => 'completed',
+            'counts' => null, // finalized after success
+            'status' => 'running',
             'imported_at' => now(),
             'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Finalize the provenance row created by createImportLog with real
+     * counts and completed status (the surrounding transaction guarantees
+     * this only persists when the whole import commits).
+     */
+    protected function finalizeImportLog(?int $importLogId, array $options, array $result): void
+    {
+        if ($importLogId === null) {
+            return;
+        }
+
+        DB::table('data_import_logs')->where('id', $importLogId)->update([
+            'counts' => json_encode($result),
+            'status' => 'completed',
             'updated_at' => now(),
         ]);
     }

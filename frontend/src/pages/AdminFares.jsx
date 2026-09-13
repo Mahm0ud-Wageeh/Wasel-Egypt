@@ -187,13 +187,13 @@ export default function AdminFares() {
         <input
           type="search"
           className="input"
-          placeholder={t('admin.search_users')}
+          placeholder={t('admin.search_fares')}
           value={search}
           onChange={(e) => {
             setPage(1)
             setSearch(e.target.value)
           }}
-          aria-label={t('admin.search_users')}
+          aria-label={t('admin.search_fares')}
         />
         <select
           className="input"

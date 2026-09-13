@@ -37,6 +37,7 @@ class Route extends Model
         'url',
         'continuous_pickup',
         'continuous_drop_off',
+        'import_log_id',
     ];
 
     /**

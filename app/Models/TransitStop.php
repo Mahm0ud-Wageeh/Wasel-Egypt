@@ -31,6 +31,7 @@ class TransitStop extends Model
         'wheelchair_accessible',
         'platform_code',
         'area_id',
+        'import_log_id',
     ];
 
     /**

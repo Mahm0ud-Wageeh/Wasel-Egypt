@@ -29,6 +29,7 @@ class RouteVariant extends Model
         'headsign',
         'active',
         'reliability_score',
+        'import_log_id',
     ];
 
     /**

@@ -54,6 +54,13 @@ export default function RouteDetail() {
     setVariantStops([])
     setGeometry(null)
 
+    // Both fetches must settle before the loading gate lifts, otherwise a
+    // slow route-detail payload flashes the "line not found" state.
+    let pending = 2
+    const settle = () => {
+      if (active && --pending === 0) setLoading(false)
+    }
+
     getData(endpoints.public.routeDetail(id))
       .then((res) => {
         if (!active) return
@@ -62,6 +69,7 @@ export default function RouteDetail() {
       .catch(() => {
         if (active) setFailed(true)
       })
+      .finally(settle)
 
     getData(endpoints.public.routeStops(id))
       .then((res) => {
@@ -70,9 +78,7 @@ export default function RouteDetail() {
         if (active) setVariantStops(variants)
       })
       .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+      .finally(settle)
 
     return () => {
       active = false
