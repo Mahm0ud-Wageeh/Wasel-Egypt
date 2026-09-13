@@ -93,6 +93,7 @@ class TfcFareEstimatorTest extends TestCase
                 'currency' => 'EGP',
                 'source' => 'tfc_metro_fares_' . substr($asOf, 0, 4),
                 'as_of' => $asOf,
+                'data_status' => 'real',
             ], $fare);
         }
     }

@@ -125,10 +125,20 @@ class JourneyPlannerService
             'occurred_at' => Carbon::now(),
         ]);
 
+        // Single-recommendation contract: the ranking is deterministic
+        // (score, then duration, transfers, walk, departure) and the first
+        // option is always the platform's one recommended journey. Candidates
+        // stay available internally for scoring and recovery; the product
+        // surfaces only this primary option in the initial planner UI.
+        if ($options !== []) {
+            $options[0]['recommended'] = true;
+        }
+
         return [
             'origin' => ['lat' => (float) $params['origin_lat'], 'lng' => (float) $params['origin_lng']],
             'destination' => ['lat' => (float) $params['destination_lat'], 'lng' => (float) $params['destination_lng']],
             'requested_at' => $requestedAt->toIso8601String(),
+            'best_option_index' => $options === [] ? null : 0,
             'options' => $options,
         ];
     }
@@ -213,10 +223,25 @@ class JourneyPlannerService
                 }
             }
             unset($plan);
-
-            usort($ranked, fn (array $a, array $b) => [$a['score'], $a['legs'][0]['departure_time']->getTimestamp()]
-                <=> [$b['score'], $b['legs'][0]['departure_time']->getTimestamp()]);
         }
+
+        // Canonical deterministic ordering for the single recommended journey:
+        // identical inputs must always yield the identical best route, so the
+        // tie-break chain is explicit end-to-end (independent of disruption
+        // state or candidate generation order).
+        usort($ranked, fn (array $a, array $b) => [
+            $a['score'],
+            $a['total_duration_sec'],
+            $a['total_transfers'],
+            $a['walk_distance_meters'],
+            $a['legs'][0]['departure_time']->getTimestamp(),
+        ] <=> [
+            $b['score'],
+            $b['total_duration_sec'],
+            $b['total_transfers'],
+            $b['walk_distance_meters'],
+            $b['legs'][0]['departure_time']->getTimestamp(),
+        ]);
 
         return array_slice($ranked, 0, max(1, $optionCount));
     }
@@ -711,6 +736,18 @@ class JourneyPlannerService
 
         $distance = $this->variantLegDistance($variant, $fromStop['id'], $toStop['id']);
         $geometry = $this->variantGeometry($variant['id']);
+        if ($geometry !== null) {
+            // Stored variant polylines cover the WHOLE line (imported shapes);
+            // a leg only rides the segment between its boarding and alighting
+            // stops. Draw that segment — never the full line.
+            $geometry = $this->trimVariantToLeg(
+                $geometry,
+                (float) $fromStop['lat'],
+                (float) $fromStop['lng'],
+                (float) $toStop['lat'],
+                (float) $toStop['lng'],
+            );
+        }
 
         return [
             'type' => 'transit',
@@ -747,6 +784,74 @@ class JourneyPlannerService
         }
 
         return $this->geometryMemo[$variantId];
+    }
+
+    /**
+     * Trim a variant's full-line polyline down to the segment this leg rides:
+     * snap both stops to their nearest polyline points, cut between them, and
+     * flip the polyline when the variant runs counter to the leg direction.
+     * The rendered endpoints snap to the actual boarding/alighting stops.
+     *
+     * Safety: if either stop does not sit on this polyline (within the snap
+     * tolerance) the stored geometry is untrustworthy for this leg — fall
+     * back to a straight stop-to-stop connector instead of drawing a wrong
+     * line across the city.
+     */
+    private function trimVariantToLeg(
+        array $geometry,
+        float $fromLat,
+        float $fromLng,
+        float $toLat,
+        float $toLng,
+    ): array {
+        $count = count($geometry);
+        if ($count < 2) {
+            return $geometry;
+        }
+
+        $fromIdx = 0;
+        $fromBest = INF;
+        $toIdx = $count - 1;
+        $toBest = INF;
+
+        foreach ($geometry as $idx => $pt) {
+            $df = GeoCalculator::distanceMeters($fromLat, $fromLng, (float) $pt[0], (float) $pt[1]);
+            if ($df < $fromBest) {
+                $fromBest = $df;
+                $fromIdx = $idx;
+            }
+            $dt = GeoCalculator::distanceMeters($toLat, $toLng, (float) $pt[0], (float) $pt[1]);
+            if ($dt < $toBest) {
+                $toBest = $dt;
+                $toIdx = $idx;
+            }
+        }
+
+        $snapTolerance = 400.0; // stops ride their variant; anything wider means the polyline is not this leg's line
+        if ($fromBest > $snapTolerance || $toBest > $snapTolerance) {
+            return [
+                [$fromLat, $fromLng],
+                [$toLat, $toLng],
+            ];
+        }
+
+        if ($fromIdx === $toIdx) {
+            return [
+                [$fromLat, $fromLng],
+                [$toLat, $toLng],
+            ];
+        }
+
+        if ($fromIdx > $toIdx) {
+            $geometry = array_reverse($geometry);
+            [$fromIdx, $toIdx] = [$count - 1 - $toIdx, $count - 1 - $fromIdx];
+        }
+
+        $trimmed = array_slice($geometry, $fromIdx, $toIdx - $fromIdx + 1);
+        $trimmed[0] = [$fromLat, $fromLng];
+        $trimmed[count($trimmed) - 1] = [$toLat, $toLng];
+
+        return array_values($trimmed);
     }
 
     /**
@@ -876,7 +981,11 @@ class JourneyPlannerService
         foreach ($windows as $window) {
             $windowStart = $this->combineDateAndTime($travelDate, $window['start_time']);
             $windowEnd = $this->combineDateAndTime($travelDate, $window['end_time']);
-            $headway = max(60, (int) $window['headway_secs']);
+            // Importers store headway_seconds; tolerate legacy headway_secs.
+            $headway = max(60, (int) ($window['headway_seconds'] ?? $window['headway_secs'] ?? 0));
+            if ($headway < 60) {
+                continue;
+            }
 
             if ($windowStart === null || $windowEnd === null || $windowEnd->lessThan($earliestDeparture)) {
                 continue;

@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/LanguageContext'
 import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/ui/Button'
 import { LogoMark } from '../components/ui/Logo'
+import { AuthLayout } from '../components/layout/AuthLayout'
 import { TextInput } from '../components/ui/Input'
 import { ApiError } from '../api/client'
 
@@ -42,6 +43,7 @@ export default function Register() {
   }
 
   return (
+    <AuthLayout>
     <div className="auth-shell">
       <div className="auth-brand">
         <div className="auth-brand__logo" aria-hidden="true">
@@ -105,5 +107,6 @@ export default function Register() {
         Already registered? <Link to="/login">{t('auth.login')}</Link>
       </p>
     </div>
+    </AuthLayout>
   )
 }

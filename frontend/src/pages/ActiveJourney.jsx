@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useI18n } from '../i18n/LanguageContext'
+import { useLiveJourneyTracking } from '../hooks/useLiveJourneyTracking'
 import { Card } from '../components/ui/Card'
 import { Badge, ModeDot } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -8,6 +9,7 @@ import { Alert } from '../components/ui/Alert'
 import { Skeleton, StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
 import { MapPanel } from '../components/map/LazyMapPanel'
+import { formatDistance } from '../utils/format'
 import {
   getActiveJourneys,
   getActiveJourneyById,
@@ -16,12 +18,31 @@ import {
   cancelJourney,
 } from '../api/activeJourneys'
 
+const PANEL_STORAGE_KEY = 'wasel.cockpit.panel'
+
 const MODE_GLYPH = {
   metro: 'M',
   bus: 'B',
   minibus: 'mi',
   microbus: 'mci',
   rail: 'R',
+}
+
+/** Localized mode labels — raw mode ids never surface in the UI. */
+const MODE_LABEL_KEYS = {
+  walking: 'journey.walk',
+  metro: 'landing.metro',
+  bus: 'landing.bus',
+  rail: 'landing.rail',
+  minibus: 'landing.minibus',
+  microbus: 'landing.microbus',
+}
+
+function modeLabel(t, mode) {
+  const key = MODE_LABEL_KEYS[mode]
+  if (!key) return mode ?? ''
+  const translated = t(key)
+  return translated === key ? (mode ?? '') : translated
 }
 
 function LegGlyph({ mode }) {
@@ -43,11 +64,17 @@ function etaMinutes(tracking) {
 }
 
 /**
- * Active journey — the flagship live-tracking screen.
+ * Active journey — the map-first Journey Cockpit.
  *
- * Full route map with the live user marker, current leg, next stop, ETA,
- * progress, deviation/rerouted states, GPS simulation for demos, and a
- * responsive timeline of the whole itinerary.
+ * The map is the dominant surface; journey details live in one floating
+ * panel integrated with it (fixed side panel on desktop, expandable bottom
+ * sheet on mobile). The hierarchy is deliberate:
+ *   1. the next action, 2. the next stop, 3. progress, 4. what remains,
+ *   5. full itinerary context, 6. controls.
+ *
+ * Progress styling on the map (completed legs dimmed, current leg at full
+ * strength, next stop emphasized) is purely cosmetic — camera behavior is
+ * governed by the geometry-based fit contract and never reacts to pings.
  */
 export default function ActiveJourney() {
   const { t } = useI18n()
@@ -62,6 +89,28 @@ export default function ActiveJourney() {
   const [actionLoading, setActionLoading] = useState(false)
   const [actionSuccess, setActionSuccess] = useState(null)
   const [gpsSimulating, setGpsSimulating] = useState(false)
+  // Journey Cockpit panel: expanded | collapsed | hidden — persisted for the
+  // current session. Desktop defaults to expanded; phones to a compact sheet.
+  const [panelMode, setPanelMode] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(PANEL_STORAGE_KEY)
+      if (saved === 'expanded' || saved === 'collapsed' || saved === 'hidden') return saved
+      const isDesktop = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(min-width: 900px)').matches
+        : true // no matchMedia (tests/old engines): assume the desktop cockpit
+      return isDesktop ? 'expanded' : 'collapsed'
+    } catch {
+      return 'expanded'
+    }
+  })
+
+  useEffect(() => {
+    try { sessionStorage.setItem(PANEL_STORAGE_KEY, panelMode) } catch { /* private mode */ }
+  }, [panelMode])
+
+  // Live GPS: consent-based device tracking with throttled honest pings.
+  const [liveOn, setLiveOn] = useState(false)
+  const [followOn, setFollowOn] = useState(false)
 
   const fetchJourney = useCallback(async () => {
     setLoading(true)
@@ -89,6 +138,31 @@ export default function ActiveJourney() {
   useEffect(() => {
     fetchJourney()
   }, [fetchJourney])
+
+  // Throttled live fixes -> journey API (drives tracking/progress/deviation).
+  const postFix = useCallback(async (payload) => {
+    if (!activeJourney?.id) return
+    try {
+      const updated = await updateJourneyLocation(activeJourney.id, {
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        speed_mps: Number.isFinite(payload.speed) ? payload.speed : 1.4,
+        recorded_at: payload.recorded_at ?? new Date().toISOString(),
+      })
+      const resultData = updated.data ?? updated
+      setActiveJourney(resultData)
+      if (resultData.status === 'deviated') {
+        navigate(`/active-journeys/${activeJourney.id}/deviation`)
+      }
+    } catch { /* transient - the next fix retries */ }
+  }, [activeJourney?.id, navigate])
+
+  const live = useLiveJourneyTracking({ enabled: liveOn, postPosition: postFix })
+
+  // Follow-me arms automatically once the first live fix lands.
+  useEffect(() => {
+    if (live.status === 'live') setFollowOn(true)
+  }, [live.status])
 
   const handleSendLocation = async (lat, lng) => {
     if (!activeJourney) return
@@ -177,8 +251,21 @@ export default function ActiveJourney() {
   const isDone = status === 'completed' || status === 'cancelled'
 
   const currentLeg = legs[currentLegIndex]
+  const nextLeg = legs[currentLegIndex + 1]
   const nextStop = tracking?.next_stop
   const eta = etaMinutes(tracking)
+
+  // Honest plan-based remainder: the duration of everything from the current
+  // leg onward, clearly a plan estimate — never fabricated precision.
+  const remainingMin = useMemo(() => {
+    if (!legs.length || isDone) return null
+    const total = legs
+      .slice(currentLegIndex)
+      .reduce((sum, leg) => sum + (Number(leg.duration_sec) || 0), 0)
+    return total > 0 ? Math.max(1, Math.round(total / 60)) : null
+  }, [legs, currentLegIndex, isDone])
+
+  const lastLeg = legs[legs.length - 1]
 
   // The live user position: the latest progress ping (recorded locations).
   // Handles both shapes: a progress array (list responses) or the single
@@ -196,9 +283,12 @@ export default function ActiveJourney() {
     return near?.latitude != null ? near : null
   }, [activeJourney])
 
-  const userLocation = latestPing?.latitude
-    ? { lat: Number(latestPing.latitude), lng: Number(latestPing.longitude) }
-    : null
+  // Live GPS fix wins when present; otherwise fall back to recorded pings.
+  const userLocation = live.position
+    ?? (latestPing?.latitude
+      ? { lat: Number(latestPing.latitude), lng: Number(latestPing.longitude) }
+      : null)
+  const userHeading = liveOn ? live.heading : null
 
   // Deviation pin from the tracking payload (deviated journeys only).
   const deviationPin = isDeviated && tracking?.deviation
@@ -224,6 +314,35 @@ export default function ActiveJourney() {
     }),
     [legs]
   )
+
+  // Next-action copy (single source of truth for the cockpit hero):
+  // walking → "Walk {distance} to {stop}"; transit → "Next stop: X" with
+  // boarding/alighting and a transfer hint when the next leg changes mode.
+  const nextAction = useMemo(() => {
+    if (!currentLeg) return null
+    const legKind = (leg) => leg?.type ?? (leg?.mode === 'walking' ? 'walking' : 'transit')
+    if (legKind(currentLeg) === 'walking') {
+      return {
+        icon: 'modeWalking',
+        main: t('cockpit.walk_to')
+          .replace('{distance}', formatDistance(currentLeg.distance_meters ?? 0))
+          .replace('{stop}', currentLeg.to_stop?.name ?? t('results.destination')),
+        sub: null,
+      }
+    }
+    const modeChanged = nextLeg && (nextLeg.type ?? nextLeg.mode) !== (currentLeg.type ?? currentLeg.mode)
+    const alightTo = nextStop?.name ?? currentLeg.to_stop?.name
+    return {
+      icon: 'circleDot',
+      main: `${t('journey.next_stop')}: ${alightTo ?? '—'}`,
+      sub: {
+        line: currentLeg.route_variant?.route?.short_name ?? null,
+        board: currentLeg.from_stop?.name ?? null,
+        alight: currentLeg.to_stop?.name ?? null,
+        transferHint: modeChanged ? t('cockpit.transfer_here') : null,
+      },
+    }
+  }, [currentLeg, nextLeg, nextStop, t])
 
   if (loading) {
     return (
@@ -255,222 +374,356 @@ export default function ActiveJourney() {
   }
 
   return (
-    <div className="app-shell__page">
-      {/* Header */}
-      <div className="row-between">
-        <div>
-          <span className="t-caption">{t('journey.live')}</span>
-          <h1 className="t-h2" style={{ margin: 0, color: 'var(--p900)' }}>
-            Trip #{activeJourney.id}
-          </h1>
-        </div>
-        <div className="row" style={{ gap: 8 }}>
-          {isRerouted && <Badge value="rerouted" />}
-          <Badge value={status} />
-        </div>
-      </div>
+    <div className="app-shell__page app-shell__page--cockpit">
+      <div className={`cockpit${isDeviated ? ' cockpit--deviated' : ''}${isRerouted ? ' cockpit--rerouted' : ''}`}>
+        {/* ── The map is the cockpit ── */}
+        <div className="cockpit__map">
+          <MapPanel
+            itinerary={itinerary}
+            userLocation={userLocation}
+            deviation={deviationPin}
+            stops={nextStop ? [nextStop] : []}
+            highlightStop={nextStop?.latitude != null && nextStop?.longitude != null
+              ? { lat: Number(nextStop.latitude), lng: Number(nextStop.longitude) }
+              : null}
+            currentLegIndex={isDone ? null : currentLegIndex}
+            userHeading={userHeading}
+            follow={followOn}
+            onFollowInterrupt={() => setFollowOn(false)}
+            height="100%"
+            fitTo="route"
+          />
 
-      {actionSuccess && <Alert severity="success" title="Success">{actionSuccess}</Alert>}
-      {error && <Alert severity="error" title="Tracking Notice">{error}</Alert>}
+          {/* Floating header over the map */}
+          <div className="cockpit__topbar">
+            <button
+              type="button"
+              className="cockpit__back"
+              onClick={() => navigate('/home')}
+              aria-label={t('action.back')}
+            >
+              <Icon name="arrowLeft" size={17} aria-hidden="true" />
+            </button>
+            <div className="cockpit__title">
+              <span className="t-caption">{t('journey.live')}</span>
+              <h1 className="t-h2">Trip #{activeJourney.id}</h1>
+            </div>
+            <div className="row" style={{ gap: 6 }}>
+              {/* one status badge: rerouted state replaces the raw status */}
+              <Badge value={isRerouted ? 'rerouted' : status} />
+            </div>
+          </div>
 
-      {isDeviated && (
-        <Alert
-          severity="error"
-          title={t('journey.deviated_title')}
-          action={
-            <Button
-              size="sm"
-              variant="primary"
+          {/* Live navigation controls: GPS toggle + follow-me */}
+          <div className="cockpit__chips">
+            <button
+              type="button"
+              className={`chip${liveOn && live.status === 'live' ? ' on' : ''}`}
+              aria-pressed={liveOn}
+              disabled={live.status === 'starting'}
+              onClick={() => setLiveOn((v) => !v)}
+            >
+              <Icon name={live.status === 'live' ? 'track' : 'locate'} size={13} aria-hidden="true" />
+              {live.status === 'live' ? t('cockpit.live_on') : t('cockpit.live_tracking')}
+            </button>
+            {liveOn && live.status === 'live' && (
+              <button
+                type="button"
+                className={`chip${followOn ? ' on' : ''}`}
+                aria-pressed={followOn}
+                onClick={() => setFollowOn((v) => !v)}
+              >
+                <Icon name="crosshair" size={13} aria-hidden="true" />
+                {followOn ? t('cockpit.follow_me') : t('cockpit.resume_following')}
+              </button>
+            )}
+          </div>
+
+          {/* Deviation: keep the rider oriented, one tap from recovery */}
+          {isDeviated && (
+            <button
+              type="button"
+              className="cockpit__deviation-chip"
               onClick={() => navigate(`/active-journeys/${activeJourney.id}/deviation`)}
             >
+              <Icon name="detect" size={14} aria-hidden="true" />
               {t('journey.resolve')}
-            </Button>
-          }
-        >
-          {t('journey.deviated_body')}
-        </Alert>
-      )}
-
-      {isRerouted && (
-        <Alert severity="warning" title={t('journey.rerouted_title')}>
-          {t('journey.rerouted_body')}
-        </Alert>
-      )}
-
-      {/* Live status strip */}
-      <Card flat style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
-        <div style={{ flex: '1 1 150px', minWidth: 130 }}>
-          <div className="t-caption">{t('journey.next_stop')}</div>
-          <b style={{ fontSize: 15 }}>
-            {nextStop?.name ?? (currentLeg ? 'Approaching destination' : '—')}
-          </b>
-          {eta != null && (
-            <div className="t-caption" style={{ color: 'var(--p600)' }}>
-              ≈ {eta} {t('journey.min_walk')}
-            </div>
+            </button>
           )}
         </div>
-        <div style={{ flex: '1 1 130px', minWidth: 120 }}>
-          <div className="t-caption">{t('journey.current_leg')}</div>
-          <div className="row" style={{ gap: 6 }}>
-            <ModeDot mode={currentLeg?.mode ?? 'walking'} />
-            <b style={{ fontSize: 14 }}>{currentLeg ? `Leg ${currentLegIndex + 1} / ${legs.length}` : '—'}</b>
-          </div>
-        </div>
-        <div style={{ flex: '2 1 200px' }}>
-          <div className="row-between" style={{ marginBottom: 4 }}>
-            <span className="t-caption">{t('journey.progress')}</span>
-            <b className="t-num" style={{ fontSize: 15, color: isDeviated ? 'var(--e700)' : 'var(--p600)' }}>
-              {progressPercent}%
-            </b>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Journey progress"
-            style={{ height: 8, background: 'var(--p100)', borderRadius: 4, overflow: 'hidden' }}
-          >
-            <div
-              style={{
-                width: `${progressPercent}%`,
-                height: '100%',
-                background: isDeviated ? 'var(--e700)' : 'var(--p600)',
-                borderRadius: 4,
-                transition: 'width 0.4s ease',
-              }}
-            />
-          </div>
-        </div>
-      </Card>
 
-      {/* Live map — the centerpiece */}
-      <div className="active-journey-map">
-        <MapPanel
-          itinerary={itinerary}
-          userLocation={userLocation}
-          deviation={deviationPin}
-          stops={nextStop ? [nextStop] : []}
-          height="100%"
-          fitTo={userLocation ? 'route' : 'route'}
-        />
-        {nextStop && (
-          <div
-            className="next-stop-pill"
-            style={{
-              position: 'absolute',
-              left: 12,
-              top: 12,
-              background: 'var(--surface)',
-              borderRadius: 999,
-              boxShadow: 'var(--sh-md)',
-              padding: '6px 14px',
-              fontSize: 12.5,
-              fontWeight: 700,
-              display: 'flex',
-              gap: 6,
-              alignItems: 'center',
-            }}
-          >
-            <Icon name="chevronRight" size={12} aria-hidden="true" />
-            Next: {nextStop.name}
-            {eta != null && <span className="t-caption" style={{ fontWeight: 600 }}>· {eta} min</span>}
+        {/* ── Integrated journey panel (side panel / bottom sheet) ── */}
+        <aside
+          className={`cockpit__panel cockpit__panel--${panelMode}`}
+          aria-label={t('results.details')}
+        >
+          <div className="cockpit__sheet-toggle" role="group">
+            <button
+              type="button"
+              className="cockpit__sheet-toggle__main"
+              onClick={() => setPanelMode((m) => (m === 'expanded' ? 'collapsed' : 'expanded'))}
+              aria-expanded={panelMode === 'expanded'}
+            >
+              <span className="cockpit__sheet-bar" aria-hidden="true" />
+              <span className="t-caption" style={{ fontWeight: 700 }}>
+                {panelMode === 'collapsed' ? t('cockpit.show_details') : t('cockpit.hide_details')}
+              </span>
+              <Icon
+                name="chevronDown"
+                size={15}
+                aria-hidden="true"
+                style={{ transform: panelMode === 'collapsed' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+              />
+            </button>
+            {panelMode === 'expanded' && (
+              <button
+                type="button"
+                className="cockpit__panel-close"
+                onClick={() => setPanelMode('hidden')}
+                aria-label={t('cockpit.panel_hide')}
+              >
+                <Icon name="close" size={13} aria-hidden="true" />
+              </button>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Itinerary timeline */}
-      {legs.length > 0 && (
-        <Card flat>
-          <div className="row-between" style={{ marginBottom: 10 }}>
-            <b style={{ fontSize: 14 }}>{t('journey.itinerary')}</b>
-            <span className="t-caption">
-              {legs.length} legs · started {formatTime(activeJourney.started_at)}
-            </span>
-          </div>
-          <div className="route-timeline">
-            {legs.map((leg, index) => {
-              const isCurrent = index === currentLegIndex && !isDone
-              const isPast = index < currentLegIndex
-              return (
-                <div
-                  key={leg.id || index}
-                  className={`tl-leg tl-leg--${leg.mode}${isCurrent ? ' tl-leg--current' : ''}${isPast ? ' tl-leg--done' : ''}`}
-                >
-                  <span className="tl-leg__dot" aria-hidden>
-                    <LegGlyph mode={leg.mode} />
-                  </span>
-                  <div className="row-between">
-                    <div>
-                      <b style={{ fontSize: 13 }}>
-                        {leg.mode === 'walking' ? t('journey.walk') : leg.mode}
-                        {leg.route_variant?.route?.short_name ? ` · ${leg.route_variant.route.short_name}` : ''}
-                      </b>
-                      <div className="t-caption">
-                        {leg.from_stop?.name || t('results.origin')} → {leg.to_stop?.name || t('results.destination')}
-                      </div>
-                      {isCurrent && (
-                        <span className="badge b-active" style={{ marginTop: 4 }}>{t('journey.in_progress')}</span>
+          <div className="cockpit__scroll">
+            {actionSuccess && <Alert severity="success" title="Success">{actionSuccess}</Alert>}
+            {error && <Alert severity="error" title="Tracking Notice">{error}</Alert>}
+            {liveOn && live.status === 'denied' && (
+              <Alert severity="warning" title={t('cockpit.gps_denied_title')}>{t('cockpit.gps_denied')}</Alert>
+            )}
+            {liveOn && (live.status === 'unavailable' || live.status === 'error') && (
+              <Alert severity="warning" title={t('cockpit.gps_denied_title')}>{t('cockpit.gps_unavailable')}</Alert>
+            )}
+
+            {isDeviated && (
+              <Alert
+                severity="error"
+                title={t('journey.deviated_title')}
+                action={
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => navigate(`/active-journeys/${activeJourney.id}/deviation`)}
+                  >
+                    {t('journey.resolve')}
+                  </Button>
+                }
+              >
+                {t('journey.deviated_body')}
+              </Alert>
+            )}
+
+            {isRerouted && (
+              <Alert severity="warning" title={t('journey.rerouted_title')}>
+                {t('journey.rerouted_body')}
+              </Alert>
+            )}
+
+            {/* 1 — the next action, top of the hierarchy */}
+            <div className="cockpit__next" aria-live="polite">
+              <span className="t-caption" style={{ fontWeight: 700, color: 'var(--p600)' }}>
+                {t('cockpit.next_action')}
+              </span>
+              {nextAction ? (
+                <>
+                  <b className="cockpit__next-main">
+                    <Icon name={nextAction.icon} size={16} aria-hidden="true" />
+                    {nextAction.main}
+                  </b>
+                  {nextAction.sub && (
+                    <div className="cockpit__next-sub">
+                      <span className="row" style={{ gap: 6 }}>
+                        <ModeDot mode={currentLeg?.mode ?? 'walking'} />
+                        <b style={{ fontSize: 13 }}>
+                          {currentLeg?.route_variant?.route?.short_name
+                            ? `Line ${currentLeg.route_variant.route.short_name}`
+                            : modeLabel(t, currentLeg?.mode)}
+                        </b>
+                      </span>
+                      {nextAction.sub.board && (
+                        <span className="t-caption">
+                          {t('cockpit.board_at').replace('{stop}', nextAction.sub.board)}
+                          {' → '}
+                          {t('cockpit.alight_at').replace('{stop}', nextAction.sub.alight ?? '—')}
+                        </span>
+                      )}
+                      {nextAction.sub.transferHint && (
+                        <span className="badge b-rerouted" style={{ marginTop: 2 }}>
+                          <Icon name="recover" size={11} aria-hidden="true" /> {nextAction.sub.transferHint}
+                          {nextLeg?.route_variant?.route?.short_name
+                            ? ` · ${nextLeg.route_variant.route.short_name}`
+                            : ''}
+                        </span>
                       )}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div className="t-caption t-num">{Math.round((leg.duration_sec || 0) / 60)} min</div>
-                      <div className="t-caption">{formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)}</div>
-                    </div>
+                  )}
+                </>
+              ) : (
+                <b className="cockpit__next-main">—</b>
+              )}
+              {eta != null && (
+                <span className="chip on" style={{ marginTop: 6, display: 'inline-flex' }}>
+                  ≈ {eta} {t('journey.min_walk')}
+                </span>
+              )}
+            </div>
+
+            {/* 2 — progress: where am I, how much is left */}
+            <div className="cockpit__progress">
+              <div className="row-between" style={{ marginBottom: 4 }}>
+                <span className="t-caption">{t('journey.progress')}</span>
+                <b className="t-num" style={{ fontSize: 15, color: isDeviated ? 'var(--e700)' : 'var(--p600)' }}>
+                  {progressPercent}%
+                </b>
+              </div>
+              <div
+                role="progressbar"
+                aria-valuenow={progressPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Journey progress"
+                style={{ height: 8, background: 'var(--p100)', borderRadius: 4, overflow: 'hidden' }}
+              >
+                <div
+                  style={{
+                    width: `${progressPercent}%`,
+                    height: '100%',
+                    background: isDeviated ? 'var(--e700)' : 'var(--p600)',
+                    borderRadius: 4,
+                    transition: 'width 0.4s ease',
+                  }}
+                />
+              </div>
+              <div className="cockpit__stats">
+                <span className="t-caption" style={{ fontWeight: 700 }}>
+                  {currentLeg ? `Leg ${currentLegIndex + 1} / ${legs.length}` : '—'}
+                </span>
+                {remainingMin != null && (
+                  <span className="t-caption">{t('cockpit.remaining_min').replace('{min}', remainingMin)}</span>
+                )}
+                {lastLeg?.arrival_time && (
+                  <span className="t-caption">
+                    {t('cockpit.arrive_at').replace('{time}', formatTime(lastLeg.arrival_time))}
+                  </span>
+                )}
+                <span className="t-caption">
+                  {formatTime(activeJourney.started_at ? activeJourney.started_at : null)}
+                  {activeJourney.started_at ? ` · ${t('journey.live')}` : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* 3 — full itinerary context + controls (collapsible on phones) */}
+            <div className="cockpit__extra">
+              {legs.length > 0 && (
+                <Card flat>
+                  <div className="row-between" style={{ marginBottom: 10 }}>
+                    <b style={{ fontSize: 14 }}>{t('journey.itinerary')}</b>
+                    <span className="t-caption">
+                      {legs.length} legs{activeJourney.started_at ? ` · ${t('journey.started_at').replace('{time}', formatTime(activeJourney.started_at))}` : ''}
+                    </span>
                   </div>
+                  <div className="route-timeline">
+                    {legs.map((leg, index) => {
+                      const isCurrent = index === currentLegIndex && !isDone
+                      const isPast = index < currentLegIndex
+                      return (
+                        <div
+                          key={leg.id || index}
+                          className={`tl-leg tl-leg--${leg.mode}${isCurrent ? ' tl-leg--current' : ''}${isPast ? ' tl-leg--done' : ''}`}
+                        >
+                          <span className="tl-leg__dot" aria-hidden>
+                            <LegGlyph mode={leg.mode} />
+                          </span>
+                          <div className="row-between">
+                            <div>
+                              <b style={{ fontSize: 13 }}>
+                                {modeLabel(t, leg.mode)}
+                                {leg.route_variant?.route?.short_name ? ` · ${leg.route_variant.route.short_name}` : ''}
+                              </b>
+                              <div className="t-caption">
+                                {leg.from_stop?.name || t('results.origin')} → {leg.to_stop?.name || t('results.destination')}
+                              </div>
+                              {isCurrent && (
+                                <span className="badge b-active" style={{ marginTop: 4 }}>{t('journey.in_progress')}</span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div className="t-caption t-num">{Math.round((leg.duration_sec || 0) / 60)} min</div>
+                              <div className="t-caption">{formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              )}
+
+              {/* GPS simulation (demo tool) */}
+              {!isDone && (
+                <Card flat style={{ background: 'var(--sand)', border: '1px solid var(--a100)' }}>
+                  <b style={{ fontSize: 13.5, color: 'var(--a800)', display: 'block', marginBottom: 6 }}>
+                    {t('journey.gps_demo')}
+                  </b>
+                  <p className="t-caption" style={{ marginBottom: 10 }}>
+                    {t('journey.gps_hint')}
+                  </p>
+                  <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={gpsSimulating}
+                      onClick={() =>
+                        userLocation
+                          ? handleSendLocation(userLocation.lat + 0.002, userLocation.lng + 0.002)
+                          : handleSendLocation(30.0423, 31.2315)
+                      }
+                    >
+                      {t('journey.ping_on')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      loading={gpsSimulating}
+                      onClick={handleSimulateDeviation}
+                    >
+                      {t('journey.sim_deviation')}
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {/* Actions */}
+              {!isDone && (
+                <div className="row" style={{ gap: 10 }}>
+                  <Button block variant="primary" loading={actionLoading} onClick={handleComplete}>
+                    {t('journey.complete')}
+                  </Button>
+                  <Button block variant="danger" loading={actionLoading} onClick={handleCancel}>
+                    {t('journey.cancel_trip')}
+                  </Button>
                 </div>
-              )
-            })}
+              )}
+            </div>
           </div>
-        </Card>
-      )}
+        </aside>
 
-      {/* GPS simulation (demo tool) */}
-      {!isDone && (
-        <Card flat style={{ background: 'var(--sand)', border: '1px solid var(--a100)' }}>
-          <b style={{ fontSize: 13.5, color: 'var(--a800)', display: 'block', marginBottom: 6 }}>
-            {t('journey.gps_demo')}
-          </b>
-          <p className="t-caption" style={{ marginBottom: 10 }}>
-            {t('journey.gps_hint')}
-          </p>
-          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={gpsSimulating}
-              onClick={() =>
-                userLocation
-                  ? handleSendLocation(userLocation.lat + 0.002, userLocation.lng + 0.002)
-                  : handleSendLocation(30.0423, 31.2315)
-              }
-            >
-              {t('journey.ping_on')}
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              loading={gpsSimulating}
-              onClick={handleSimulateDeviation}
-            >
-              {t('journey.sim_deviation')}
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Actions */}
-      {!isDone && (
-        <div className="row" style={{ gap: 10, marginTop: 8 }}>
-          <Button block variant="primary" loading={actionLoading} onClick={handleComplete}>
-            {t('journey.complete')}
-          </Button>
-          <Button block variant="danger" loading={actionLoading} onClick={handleCancel}>
-            {t('journey.cancel_trip')}
-          </Button>
-        </div>
-      )}
+        {/* Hidden panel -> floating reopen (never resets the camera) */}
+        {panelMode === 'hidden' && (
+          <button
+            type="button"
+            className="cockpit__reopen chip on"
+            onClick={() => setPanelMode('expanded')}
+            aria-label={t('cockpit.panel_show')}
+          >
+            <Icon name="recover" size={14} aria-hidden="true" />
+            {t('cockpit.panel_show')}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

@@ -34,3 +34,10 @@ docs/
 design-system/
 .playwright-mcp/
 
+
+# Local env overrides (never committed)
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local

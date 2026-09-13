@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { TextInput } from '../components/ui/Input'
 import { Alert } from '../components/ui/Alert'
 import { LogoMark } from '../components/ui/Logo'
+import { AuthLayout } from '../components/layout/AuthLayout'
 import { ApiError } from '../api/client'
 
 /** Login — POST /auth/login; 401 renders an inline error alert. */
@@ -47,6 +48,7 @@ export default function Login() {
   }
 
   return (
+    <AuthLayout>
     <div className="auth-shell">
       <div className="auth-brand">
         <div className="auth-brand__logo" aria-hidden="true">
@@ -93,5 +95,6 @@ export default function Login() {
         New to Wasel? <Link to="/register">{t('auth.register')}</Link>
       </p>
     </div>
+    </AuthLayout>
   )
 }

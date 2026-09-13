@@ -181,6 +181,35 @@ class JourneySearchTest extends TestCase
     }
 
     /** @test */
+    public function search_marks_exactly_one_recommended_option_at_the_best_index()
+    {
+        // Single-recommendation contract: the ranked candidate list stays
+        // internal; exactly the top-ranked plan is flagged recommended and
+        // reported as the primary journey for the planner UI.
+        $payload = $this->searchPayload(['alternatives' => 5]);
+
+        $response = $this->actingAs($this->user)->postJson('/api/v1/journeys/search', $payload);
+
+        $response->assertStatus(200);
+        $options = $response->json('data.options');
+
+        $this->assertNotEmpty($options);
+
+        $recommendedIndexes = array_keys(array_filter(
+            $options,
+            fn (array $option) => ($option['recommended'] ?? false) === true
+        ));
+        $this->assertSame([0], $recommendedIndexes, 'Exactly the first (best-scored) option must be recommended.');
+        $this->assertSame(0, $response->json('data.best_option_index'));
+
+        // Deterministic recommendation: the same input re-plans to the same
+        // primary journey.
+        $repeat = $this->actingAs($this->user)->postJson('/api/v1/journeys/search', $payload)->json('data.options.0');
+        $this->assertSame($options[0]['score'], $repeat['score']);
+        $this->assertSame(count($options[0]['legs']), count($repeat['legs']));
+    }
+
+    /** @test */
     public function search_returns_options_sorted_by_score()
     {
         // From Ramses to Garden City the planner produces both a walking and

@@ -9,6 +9,8 @@ import { AppErrorBoundary } from './components/ui/AppErrorBoundary'
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
+import './styles/product.css'
+import './styles/ai.css'
 
 // PWA: register the offline shell service worker (production + dev,
 // so the installability can be demoed locally). Browsers ignore

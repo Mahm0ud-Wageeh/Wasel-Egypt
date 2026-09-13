@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { JourneySearchPage } from '../pages/JourneySearch'
 import { JourneyResultsPage } from '../pages/JourneyResults'
 import * as client from '../api/client'
@@ -36,10 +36,9 @@ describe('Journey API Integration', () => {
       },
     })
 
-    const cards = screen.getAllByRole('button')
-    const optionCard = cards.find((c) => c.className.includes('journey-option'))
-    fireEvent.click(optionCard)
-    await screen.findByRole('dialog', { name: 'Journey details' })
+    // Single-best-route planner: details open from the hero's secondary action.
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
+    return screen.findByRole('dialog', { name: 'Journey details' })
   }
 
   it('calls searchJourneys with exact parameters matching the backend JourneySearchRequest', async () => {
@@ -110,9 +109,10 @@ describe('Journey API Integration', () => {
       data: { id: 99, status: 'planned' },
     })
 
-    await openDetails()
+    const dialog = await openDetails()
 
-    fireEvent.click(screen.getByRole('button', { name: /save journey/i }))
+    // Scoped to the drawer: the hero outside it shows the same actions.
+    fireEvent.click(within(dialog).getByRole('button', { name: /save journey/i }))
 
     await waitFor(() => {
       expect(getDataSpy).toHaveBeenCalledWith(
@@ -136,12 +136,12 @@ describe('Journey API Integration', () => {
       data: { id: 99, status: 'planned' },
     })
 
-    await openDetails()
+    const dialog = await openDetails()
 
-    const saveBtn = screen.getByRole('button', { name: /save journey/i })
+    const saveBtn = within(dialog).getByRole('button', { name: /save journey/i })
     fireEvent.click(saveBtn)
     await waitFor(() => {
-      expect(screen.getByText(/Saved to your trips/i)).toBeInTheDocument()
+      expect(within(dialog).getByText(/Saved to your trips/i)).toBeInTheDocument()
     })
 
     // second click (button is now disabled, but assert the API was called once)
@@ -161,14 +161,14 @@ describe('Journey API Integration', () => {
       data: { id: 7, status: 'active', journey: { id: 99 } },
     })
 
-    await openDetails()
+    const dialog = await openDetails()
 
-    fireEvent.click(screen.getByRole('button', { name: /save journey/i }))
+    fireEvent.click(within(dialog).getByRole('button', { name: /save journey/i }))
     await waitFor(() => {
-      expect(screen.getByText(/Saved to your trips/i)).toBeInTheDocument()
+      expect(within(dialog).getByText(/Saved to your trips/i)).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /start journey/i }))
+    fireEvent.click(within(dialog).getByRole('button', { name: /start journey/i }))
 
     await waitFor(() => {
       expect(apiRequestSpy).toHaveBeenCalledWith(

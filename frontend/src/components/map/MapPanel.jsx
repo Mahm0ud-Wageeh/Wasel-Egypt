@@ -5,14 +5,20 @@ import { StopPanel } from '../ui/StopPanel'
 import { useI18n } from '../../i18n/LanguageContext'
 import { apiRequest } from '../../api/client'
 import { endpoints } from '../../api/endpoints'
+import {
+  BASEMAPS,
+  getPreferredLayer,
+  setPreferredLayer,
+  onMapCommand,
+} from '../../map/basemaps'
 
 /**
  * Production map panel built on MapLibre GL JS.
  *
  * Data sources (real only — no decorative geometry):
- * - Base raster tiles: OpenStreetMap standard (ODbL) — the previous
- *   Stamen endpoint moved behind an API key and returned 401, leaving
- *   the map blank. VITE_MAP_TILES_URL can still override the provider.
+ * - Base raster tiles: configurable basemap layers (satellite default,
+ *   streets, dark) — see src/map/basemaps.js; satellite gracefully falls
+ *   back to streets when its tiles fail.
  * - Route polylines: leg.geometry (variant polyline / OSRM walk
  *   geometry) with straight-line fallbacks between leg endpoints.
  * - Stops: leg from/to stops + (optionally) nearby network stops
@@ -20,24 +26,22 @@ import { endpoints } from '../../api/endpoints'
  * - Markers: origin (ring), destination (dot), current location
  *   (halo + dot), deviation (severity-colored).
  *
- * UX: grouped controls with tooltips (zoom / recenter / locate /
- * stops toggle), a compact legend, selected-place chip, and an honest
- * loading / failure state. No invented data: when the backend returns
- * nothing, the map shows the base network only.
+ * UX: grouped controls with tooltips (zoom / recenter / locate / stops
+ * toggle / layer switcher), a compact legend, selected-place chip, and
+ * an honest loading / failure state. No invented data: when the backend
+ * returns nothing, the map shows the base network only.
  *
  * Coordinates in props are [lat, lng]; converted to [lng, lat] for MapLibre.
  */
 
 // NOTE: MapLibre raster sources do not expand Leaflet's {r} retina token —
 // it gets requested literally and 404s. 256px standard tiles only.
-// OSM standard tiles require a valid UA; browsers always send one.
-const TILE_URL =
-  import.meta.env.VITE_MAP_TILES_URL ||
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+// Satellite/dark layers need brighter, higher-contrast overlay paint;
+// the OSM-standard palette stays for the light streets layer.
 
 // Resolved hex values (MapLibre paint properties cannot read CSS variables).
+// A satellite/dark base needs brighter overlays than the light streets
+// palette — layer-aware variants keep every basemap readable.
 const C = {
   primary: '#1a6bb0',
   primaryDark: '#14558b',
@@ -46,6 +50,17 @@ const C = {
   walking: '#6b7280',
   surface: '#FFFFFF',
   ink: '#16222e',
+}
+
+// Brighter marker/stroke tones that stay legible over satellite imagery
+// without repainting the light-layer palette.
+const C_SAT = {
+  ...C,
+  primary: '#4da3e8',
+  primaryDark: '#9dc9ef',
+  accent: '#ffc94d',
+  walking: '#c3ccd6',
+  surface: '#FFFFFF',
 }
 
 const MODE_COLORS = {
@@ -57,8 +72,48 @@ const MODE_COLORS = {
   walking: C.walking,
 }
 
+const DARK_MODE_COLORS = {
+  metro: '#ff7043',
+  bus: '#64b5f6',
+  minibus: '#ffb74d',
+  microbus: '#4dd0c4',
+  rail: '#b39ddb',
+  walking: '#c3ccd6',
+}
+
+// Module-level constant: the dark palette must keep ONE stable object
+// identity across renders. Building it inline per render (satellite/dark
+// basemaps) made every zoom-badge re-render change this effect dependency,
+// re-running the layer effect and yanking the camera back with fitBounds —
+// rejecting the user's zoom after a location focus.
+const MODE_COLORS_DARK = { ...MODE_COLORS, ...DARK_MODE_COLORS }
+
 const lng = (p) => [p.lng ?? p[1], p.lat ?? p[0]]
+
+/** Draw the live-navigation arrow (points north; rotated by icon-rotate). */
+function makeNavigationArrow(color) {
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  ctx.beginPath()
+  ctx.moveTo(size / 2, 6)
+  ctx.lineTo(size - 10, size - 8)
+  ctx.lineTo(size / 2, size - 20)
+  ctx.lineTo(10, size - 8)
+  ctx.closePath()
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.lineWidth = 5
+  ctx.strokeStyle = '#FFFFFF'
+  ctx.lineJoin = 'round'
+  ctx.stroke()
+  return ctx.getImageData(0, 0, size, size)
+}
+
 const isFinitePoint = (p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])
+const validPin = (p) => Boolean(p) && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))
 
 /**
  * Build the full route GeoJSON for one itinerary: transit legs from
@@ -135,6 +190,11 @@ export function MapPanel({
   stops = [], // [{lat,lng,name,id}] — explicit stop set (route stops)
   userLocation = null, // {lat,lng,accuracy?}
   deviation = null, // {lat,lng,severity}
+  currentLegIndex = null, // journey progress: completed legs render de-emphasized
+  highlightStop = null, // {lat,lng} — visually emphasized stop (e.g. next stop)
+  userHeading = null, // device heading in degrees (null = unknown, never faked)
+  follow = false, // follow-me: gently keep the live position centered
+  onFollowInterrupt = null, // user panned away — caller leaves follow mode
   height = 260,
   fitTo = 'route', // 'route' | 'origin' | 'user'
   showControls = true,
@@ -156,6 +216,20 @@ export function MapPanel({
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedStopId, setSelectedStopId] = useState(null)
   const [legendOpen, setLegendOpen] = useState(false)
+  const [layerId, setLayerId] = useState(getPreferredLayer)
+  const [layerMenuOpen, setLayerMenuOpen] = useState(false)
+  // Compact "Map credits" control: legally required attribution stays
+  // accessible one tap away without competing with the journey UI.
+  const [creditsOpen, setCreditsOpen] = useState(false)
+  // Satellite tiles failing (offline / provider limit) → one-time fallback
+  // to streets with an honest notice; the user may still switch back.
+  const [tileFallback, setTileFallback] = useState(false)
+  const tileErrorCountRef = useRef(0)
+  const tileFallbackRef = useRef(false)
+
+  const activeLayer = tileFallback && layerId === 'satellite' ? BASEMAPS.streets : BASEMAPS[layerId]
+  const palette = activeLayer.dark ? C_SAT : C
+  const modeColors = activeLayer.dark ? MODE_COLORS_DARK : MODE_COLORS
 
   // Stable stop object for the panel: an inline literal would get a fresh
   // identity on every MapPanel render (e.g. zoom state), refetching the
@@ -195,32 +269,73 @@ export function MapPanel({
           /* fall back to MapLibre's default resolution */
         }
 
+        // All basemap layers ship in the initial style; switching is a
+        // visibility toggle (instant, no source rebuild, no refetch bugs).
+        // Only the visible layer's tiles are ever requested.
+        const preferredInit = BASEMAPS[getPreferredLayer()] ?? BASEMAPS.streets
+        const visibility = (id) => (id === preferredInit.id ? 'visible' : 'none')
+
         const map = new maplibre.Map({
           container: mapContainerRef.current,
           style: {
             version: 8,
             sources: {
-              osm: {
+              'bm-satellite': {
                 type: 'raster',
-                tiles: [TILE_URL],
+                tiles: [BASEMAPS.satellite.url],
                 tileSize: 256,
-                attribution: TILE_ATTRIBUTION,
+                attribution: BASEMAPS.satellite.attribution,
+                maxzoom: 18,
+              },
+              'bm-streets': {
+                type: 'raster',
+                tiles: [BASEMAPS.streets.url],
+                tileSize: 256,
+                attribution: BASEMAPS.streets.attribution,
                 maxzoom: 19,
+              },
+              'bm-dark': {
+                type: 'raster',
+                tiles: [BASEMAPS.dark.url],
+                tileSize: 256,
+                attribution: BASEMAPS.dark.attribution,
+                maxzoom: 16, // Esri Dark Gray Canvas tops out at z16; MapLibre overzooms gracefully
               },
             },
             layers: [
-              { id: 'background', type: 'background', paint: { 'background-color': '#E8ECEF' } },
-              { id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 24 },
+              {
+                id: 'background',
+                type: 'background',
+                paint: { 'background-color': preferredInit.dark ? '#101418' : '#E8ECEF' },
+              },
+              { id: 'bm-satellite-layer', type: 'raster', source: 'bm-satellite', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('satellite') } },
+              { id: 'bm-streets-layer', type: 'raster', source: 'bm-streets', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('streets') } },
+              { id: 'bm-dark-layer', type: 'raster', source: 'bm-dark', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('dark') } },
             ],
           },
           center: [31.2357, 30.0444], // Cairo
           zoom: 11,
-          attributionControl: { compact: true },
+          // Attribution is rendered by the in-product "Map credits" control
+          // (compact, toggle-accessible) instead of MapLibre's expanded strip,
+          // so provider credit never competes with route-critical UI.
+          attributionControl: false,
         })
 
         map.on('error', (e) => {
           // Tile errors are routine (offline); engine errors disable the map.
-          if (e?.error?.message && !/Failed to fetch|NetworkError/i.test(e.error.message)) {
+          // Repeated basemap tile failures while satellite is active trigger
+          // an automatic, honest fallback to streets.
+          if (e?.error?.message && /Failed to fetch|NetworkError/i.test(e.error.message)) {
+            if (getPreferredLayer() === 'satellite' && !tileFallbackRef.current) {
+              tileErrorCountRef.current += 1
+              if (tileErrorCountRef.current >= 6) {
+                tileFallbackRef.current = true
+                setTileFallback(true)
+              }
+            }
+            return
+          }
+          if (e?.error?.message) {
             console.error('MapLibre error:', e.error.message)
           }
         })
@@ -273,6 +388,76 @@ export function MapPanel({
     }
   }, [])
 
+  // ---------- basemap layer switching (visibility toggle, no rebuild) ----------
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+
+    for (const id of ['satellite', 'streets', 'dark']) {
+      if (!map.getLayer(`bm-${id}-layer`)) continue
+      map.setLayoutProperty(`bm-${id}-layer`, 'visibility', id === activeLayer.id ? 'visible' : 'none')
+    }
+    // Repaint the background under transparent tile areas to match.
+    if (map.getLayer('background')) {
+      map.setPaintProperty('background', 'background-color', activeLayer.dark ? '#101418' : '#E8ECEF')
+    }
+  }, [activeLayer, ready])
+
+  // ---------- external map commands (AI assistant actions) ----------
+  useEffect(() => {
+    if (!ready) return undefined
+    return onMapCommand((command) => {
+      const map = mapRef.current
+      if (!map) return
+      if (command?.type === 'switch_map_layer' && BASEMAPS[command.layer]) {
+        setPreferredLayer(command.layer)
+        setTileFallback(false)
+        tileFallbackRef.current = false
+        tileErrorCountRef.current = 0
+        setLayerId(command.layer)
+      } else if (command?.type === 'focus_map_location'
+        && Number.isFinite(command.lat) && Number.isFinite(command.lng)) {
+        map.flyTo({
+          center: [command.lng, command.lat],
+          zoom: Number.isFinite(command.zoom) ? command.zoom : Math.max(map.getZoom(), 14.5),
+          duration: 900,
+        })
+      }
+    })
+  }, [ready])
+
+  // ---------- follow-me (gentle recenter on live fixes) ----------
+  // Only pans — never zooms, never fits, never touches the fit contract.
+  // A user drag leaves follow mode (dragstart fires only for real gestures).
+  const followRef = useRef(follow)
+  followRef.current = follow
+  const followInterruptRef = useRef(onFollowInterrupt)
+  followInterruptRef.current = onFollowInterrupt
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return undefined
+    const interrupt = () => {
+      if (followRef.current) followInterruptRef.current?.()
+    }
+    map.on('dragstart', interrupt)
+    map.on('zoomstart', interrupt) // pinch/wheel zoom also signals manual control
+    return () => {
+      map.off('dragstart', interrupt)
+      map.off('zoomstart', interrupt)
+    }
+  }, [ready])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!follow || !map || !ready || !userLocation) return
+    if (!Number.isFinite(Number(userLocation.lat)) || !Number.isFinite(Number(userLocation.lng))) return
+    map.easeTo({
+      center: [Number(userLocation.lng), Number(userLocation.lat)],
+      duration: 800,
+    })
+  }, [follow, ready, userLocation])
+
   // ---------- nearby stops (public endpoint, view-bounded) ----------
   const fetchNearbyStops = useCallback(async (center, currentZoom) => {
     if (currentZoom < 12) return // too wide — would fetch half the network
@@ -300,10 +485,10 @@ export function MapPanel({
   const clearDynamic = useCallback((map) => {
     const style = map.getStyle()
     ;(style?.layers ?? [])
-      .filter((l) => !['background', 'osm-tiles'].includes(l.id))
+      .filter((l) => !['background', 'bm-satellite-layer', 'bm-streets-layer', 'bm-dark-layer'].includes(l.id))
       .forEach((l) => map.getLayer(l.id) && map.removeLayer(l.id))
     Object.keys(style?.sources ?? {})
-      .filter((id) => id !== 'osm')
+      .filter((id) => !['bm-satellite', 'bm-streets', 'bm-dark'].includes(id))
       .forEach((id) => map.getSource(id) && map.removeSource(id))
   }, [])
 
@@ -342,9 +527,9 @@ export function MapPanel({
         source: 'nearby-stops',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 16, 5],
-          'circle-color': C.surface,
+          'circle-color': palette.surface,
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#9db2c4',
+          'circle-stroke-color': activeLayer.dark ? '#7d93a8' : '#9db2c4',
         },
       })
     }
@@ -374,6 +559,17 @@ export function MapPanel({
         data: { type: 'FeatureCollection', features },
       })
 
+      // Journey-progress styling: completed legs fade back, the current leg
+      // keeps full strength, remaining legs stay clearly visible. Cosmetic
+      // only — progress must never move or reset the camera (fitKey is
+      // geometry-based and excludes progress entirely).
+      const legOpacity = currentLegIndex == null
+        ? 1.0
+        : ['case',
+            ['<', ['get', 'index'], currentLegIndex], 0.3,
+            ['==', ['get', 'index'], currentLegIndex], 1.0,
+            0.9]
+
       // Walking segments: dashed, muted.
       map.addLayer({
         id: 'selected-walk',
@@ -381,9 +577,10 @@ export function MapPanel({
         source: 'selected-route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': C.walking,
+          'line-color': palette.walking,
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 16, 4],
           'line-dasharray': [1.5, 1.5],
+          'line-opacity': legOpacity,
         },
         filter: ['==', ['get', 'legType'], 'walking'],
       })
@@ -395,7 +592,7 @@ export function MapPanel({
         source: 'selected-route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': C.surface,
+          'line-color': palette.surface,
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 11],
           'line-opacity': 0.85,
         },
@@ -412,13 +609,14 @@ export function MapPanel({
           'line-color': [
             'match',
             ['get', 'mode'],
-            'metro', MODE_COLORS.metro,
-            'minibus', MODE_COLORS.minibus,
-            'microbus', MODE_COLORS.microbus,
-            'rail', MODE_COLORS.rail,
-            MODE_COLORS.bus,
+            'metro', modeColors.metro,
+            'minibus', modeColors.minibus,
+            'microbus', modeColors.microbus,
+            'rail', modeColors.rail,
+            modeColors.bus,
           ],
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 16, 8],
+          'line-opacity': legOpacity,
         },
         filter: ['==', ['get', 'legType'], 'transit'],
       })
@@ -444,15 +642,52 @@ export function MapPanel({
         source: 'stops',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 3.5, 16, 7],
-          'circle-color': C.surface,
+          'circle-color': palette.surface,
           'circle-stroke-width': 2.5,
-          'circle-stroke-color': C.primaryDark,
+          'circle-stroke-color': palette.primaryDark,
+        },
+      })
+    }
+
+    // -- emphasized stop (e.g. the journey's next stop) --
+    // Presentational only: deliberately excluded from the camera-fit inputs
+    // so progress updates can never re-frame the view.
+    const validHighlight =
+      highlightStop && Number.isFinite(Number(highlightStop.lat)) && Number.isFinite(Number(highlightStop.lng))
+    if (validHighlight) {
+      map.addSource('highlight-stop', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Point', coordinates: [Number(highlightStop.lng), Number(highlightStop.lat)] },
+        },
+      })
+      map.addLayer({
+        id: 'highlight-stop-ring',
+        type: 'circle',
+        source: 'highlight-stop',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 9, 16, 18],
+          'circle-color': 'rgba(0,0,0,0)',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': palette.accent,
+        },
+      })
+      map.addLayer({
+        id: 'highlight-stop-dot',
+        type: 'circle',
+        source: 'highlight-stop',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 5, 16, 8],
+          'circle-color': palette.accent,
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': palette.surface,
         },
       })
     }
 
     // -- origin / destination --
-    const validPin = (p) => p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))
     const pinSource = (id, color, coords) => {
       map.addSource(id, { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: coords } } })
       map.addLayer({
@@ -461,38 +696,42 @@ export function MapPanel({
         source: id,
         paint: {
           'circle-radius': 7,
-          'circle-color': C.surface,
+          'circle-color': palette.surface,
           'circle-stroke-width': 3.5,
           'circle-stroke-color': color,
         },
       })
     }
-    if (validPin(origin)) pinSource('origin-pin', C.primary, lng(origin))
-    if (validPin(destination)) pinSource('destination-pin', C.accent, lng(destination))
+    if (validPin(origin)) pinSource('origin-pin', palette.primary, lng(origin))
+    if (validPin(destination)) pinSource('destination-pin', palette.accent, lng(destination))
 
     // -- user location --
+    // Live navigation marker: a device-heading arrow when the device reports
+    // a heading, falling back to a stable non-directional marker otherwise.
+    // Heading is NEVER fabricated — it only comes from the GPS payload.
     const validUser =
       userLocation && Number.isFinite(Number(userLocation.lat)) && Number.isFinite(Number(userLocation.lng))
     if (validUser) {
       const accuracyM = Number(userLocation.accuracy) || 0
+      const headingVal = userHeading != null && Number.isFinite(Number(userHeading)) ? Number(userHeading) : null
       const sourceData = {
         type: 'Feature',
-        properties: {},
+        properties: { heading: headingVal },
         geometry: { type: 'Point', coordinates: lng(userLocation) },
       }
       map.addSource('user', { type: 'geojson', data: sourceData })
       if (accuracyM > 0) {
-        map.addLayer({
-          id: 'user-accuracy',
-          type: 'circle',
-          source: 'user',
-          paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, Math.max(8, Math.sqrt(accuracyM) * 0.28), 16, Math.max(24, Math.sqrt(accuracyM) * 0.6)],
-            'circle-color': 'rgba(26,107,176,0.14)',
-            'circle-stroke-width': 1,
-            'circle-stroke-color': 'rgba(26,107,176,0.35)',
-          },
-        })
+      map.addLayer({
+        id: 'user-accuracy',
+        type: 'circle',
+        source: 'user',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, Math.max(8, Math.sqrt(accuracyM) * 0.28), 16, Math.max(24, Math.sqrt(accuracyM) * 0.6)],
+          'circle-color': 'rgba(26,107,176,0.14)',
+          'circle-stroke-width': 1,
+          'circle-stroke-color': 'rgba(26,107,176,0.35)',
+        },
+      })
       }
       map.addLayer({
         id: 'user-halo',
@@ -505,17 +744,38 @@ export function MapPanel({
           'circle-stroke-color': 'rgba(26,107,176,0.5)',
         },
       })
-      map.addLayer({
-        id: 'user-dot',
-        type: 'circle',
-        source: 'user',
-        paint: {
-          'circle-radius': 7,
-          'circle-color': C.primary,
-          'circle-stroke-width': 2.5,
-          'circle-stroke-color': C.surface,
-        },
-      })
+      if (headingVal != null && maplibreRef.current) {
+        // Directional navigation arrow (rotates with device heading).
+        if (!map.hasImage('wasel-nav-arrow')) {
+          map.addImage('wasel-nav-arrow', makeNavigationArrow(palette.primary), { pixelRatio: 2 })
+        }
+        map.addLayer({
+          id: 'user-arrow',
+          type: 'symbol',
+          source: 'user',
+          filter: ['!=', ['get', 'heading'], ['literal', null]],
+          layout: {
+            'icon-image': 'wasel-nav-arrow',
+            'icon-size': 0.42,
+            'icon-rotate': ['get', 'heading'],
+            'icon-rotation-alignment': 'map',
+            'icon-pitch-alignment': 'map',
+            'icon-allow-overlap': true,
+          },
+        })
+      } else {
+        map.addLayer({
+          id: 'user-dot',
+          type: 'circle',
+          source: 'user',
+          paint: {
+            'circle-radius': 7,
+            'circle-color': palette.primary,
+            'circle-stroke-width': 2.5,
+            'circle-stroke-color': palette.surface,
+          },
+        })
+      }
     }
 
     // -- deviation marker --
@@ -532,15 +792,31 @@ export function MapPanel({
         source: 'deviation',
         paint: {
           'circle-radius': 11,
-          'circle-color': deviation.severity === 'high' ? C.danger : C.accent,
+          'circle-color': deviation.severity === 'high' ? C.danger : palette.accent,
           'circle-stroke-width': 3,
-          'circle-stroke-color': C.surface,
+          'circle-stroke-color': palette.surface,
         },
       })
     }
 
-    // -- fit bounds (only finite coordinates are usable) --
+    // NOTE: the camera fit lives in its own effect below — deliberately NOT
+    // here. Rebuilding layers on a palette/basemap change must never move the
+    // camera, and re-running this effect from cosmetic re-renders (zoom
+    // badge, panel toggles) must never re-apply the last focus.
+  }, [ready, itinerary, alternatives, origin, destination, stops, userLocation, userHeading, deviation, currentLegIndex, highlightStop, clearDynamic, stopsLayerOn, nearby, activeLayer, palette, modeColors])
+
+  // ---------- camera fit (explicit plotted-data changes only) ----------
+  // The camera belongs to the user once the focus animation finishes. It is
+  // fitted here ONLY when the plotted data genuinely changes: fitKey is a
+  // signature of the actual coordinates, so equal-value prop churn (inline
+  // literals in parent pages), zoom-badge re-renders, basemap switches and
+  // panel toggles can never re-apply the previous focus or reject a zoom.
+  const fitPoints = useMemo(() => {
     const points = []
+    const validUser =
+      userLocation && Number.isFinite(Number(userLocation.lat)) && Number.isFinite(Number(userLocation.lng))
+    const validDeviation =
+      deviation && Number.isFinite(Number(deviation.lat)) && Number.isFinite(Number(deviation.lng))
     if (fitTo === 'user' && validUser) points.push(lng(userLocation))
     if (fitTo === 'origin' && validPin(origin)) points.push(lng(origin))
     if (itinerary?.legs) {
@@ -559,14 +835,34 @@ export function MapPanel({
       if (validUser) points.push(lng(userLocation))
       if (validDeviation) points.push(lng(deviation))
     }
+    return points.filter(isFinitePoint)
+  }, [fitTo, itinerary, origin, destination, stops, userLocation, deviation])
 
-    const usable = points.filter(isFinitePoint)
-    if (usable.length > 0) {
-      const bounds = new maplibre.LngLatBounds()
-      usable.forEach((p) => bounds.extend(p))
-      map.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 600 })
-    }
-  }, [ready, itinerary, alternatives, origin, destination, stops, userLocation, deviation, fitTo, clearDynamic, stopsLayerOn, nearby])
+  const fitKey = useMemo(
+    () => fitPoints.map((p) => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join('|'),
+    [fitPoints],
+  )
+
+  useEffect(() => {
+    const map = mapRef.current
+    const maplibre = maplibreRef.current
+    if (!map || !maplibre || !ready || fitPoints.length === 0) return
+    const bounds = new maplibre.LngLatBounds()
+    fitPoints.forEach((p) => bounds.extend(p))
+    map.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 600 })
+    // fitKey — not fitPoints identity — decides: equal coordinates must not refit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, fitKey])
+
+  const selectLayer = useCallback((id) => {
+    if (!BASEMAPS[id]) return
+    setPreferredLayer(id)
+    setTileFallback(false)
+    tileFallbackRef.current = false
+    tileErrorCountRef.current = 0
+    setLayerId(id)
+    setLayerMenuOpen(false)
+  }, [])
 
   // ---------- controls ----------
   const recenter = useCallback(() => {
@@ -657,6 +953,36 @@ export function MapPanel({
             >
               <Icon name={stopsLayerOn ? 'layers' : 'layers'} size={17} aria-hidden="true" />
             </button>
+            <div className="map-layer-switch" style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="map-ctl"
+                onClick={() => setLayerMenuOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={layerMenuOpen}
+                aria-label={t('map.switch_layer')}
+                title={t('map.switch_layer')}
+              >
+                <Icon name="globe" size={17} aria-hidden="true" />
+              </button>
+              {layerMenuOpen && (
+                <div className="map-layer-menu" role="menu" aria-label={t('map.switch_layer')}>
+                  {Object.values(BASEMAPS).map((layer) => (
+                    <button
+                      key={layer.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={layerId === layer.id && !tileFallback}
+                      className={`map-layer-menu__item${layerId === layer.id && !tileFallback ? ' is-active' : ''}`}
+                      onClick={() => selectLayer(layer.id)}
+                    >
+                      <Icon name={layer.id === 'satellite' ? 'globe' : layer.id === 'dark' ? 'moon' : 'map'} size={14} aria-hidden="true" />
+                      {t(`map.layer_${layer.id}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button type="button" className="map-ctl" onClick={recenter} aria-label={t('map.recenter')} title={t('map.recenter')}>
               <Icon name="crosshair" size={17} aria-hidden="true" />
             </button>
@@ -666,6 +992,13 @@ export function MapPanel({
             <span className="map-zoom-badge" aria-hidden>
               {zoom}
             </span>
+          )}
+
+          {tileFallback && layerId === 'satellite' && (
+            <div className="map-fallback-note" role="status">
+              <Icon name="info" size={13} aria-hidden="true" />
+              {t('map.satellite_fallback')}
+            </div>
           )}
 
           {/* Legend — collapsed by default; relevant only with route data */}
@@ -744,6 +1077,38 @@ export function MapPanel({
             </div>
           )}
         </>
+      )}
+
+      {/* Compact, compliant provider credits — one tap to the full text.
+          Rendered whenever the map is ready (independent of showControls)
+          so attribution is always accessible. */}
+      {ready && (
+        <div className="map-credits">
+          {creditsOpen && (
+            <div className="map-credits__panel" role="note" aria-label={t('map.credits')}>
+              {Object.values(BASEMAPS).map((layer) => (
+                <div key={layer.id} className="map-credits__row">
+                  <b>{t(`map.layer_${layer.id}`)}</b>
+                  <span dangerouslySetInnerHTML={{ __html: layer.attribution }} />
+                </div>
+              ))}
+              <div className="map-credits__row">
+                <b>OSRM</b>
+                <span>© OpenStreetMap contributors (routing)</span>
+              </div>
+            </div>
+          )}
+          <button
+            type="button"
+            className="map-credits__btn"
+            onClick={() => setCreditsOpen((v) => !v)}
+            aria-expanded={creditsOpen}
+            aria-label={t('map.credits')}
+            title={t('map.credits')}
+          >
+            <Icon name="info" size={12} aria-hidden="true" />
+          </button>
+        </div>
       )}
 
       {children}

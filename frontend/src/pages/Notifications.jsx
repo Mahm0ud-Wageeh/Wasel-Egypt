@@ -127,7 +127,7 @@ export default function Notifications() {
   return (
     <div className="app-shell__page">
       {/* Header */}
-      <div className="row-between" style={{ flexWrap: 'wrap', gap: 12 }}>
+      <div className="row-between page-head" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div className="row" style={{ gap: 8 }}>
             <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('notifications.title')} </h1>
@@ -201,7 +201,7 @@ export default function Notifications() {
           />
         </Card>
       ) : (
-        <div className="stack">
+        <div className="notif-list">
           {notifications.map((item) => {
             const isUnread = !item.read_at
             const payload = item.data_payload || {}

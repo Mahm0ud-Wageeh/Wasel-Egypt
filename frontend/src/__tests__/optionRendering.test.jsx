@@ -6,8 +6,10 @@ import * as journeyApi from '../api/journeys'
 import { renderWithProviders, mockJourneyPlan } from '../test/test-utils'
 
 /**
- * Journey option rendering: full metric surface, route strip, badges,
- * disruption status, details timeline, score explanation, map sync.
+ * Single-best-route planning: the planner exposes exactly ONE recommended
+ * journey — metric surface, route strip, honesty labels, disruption status,
+ * details timeline, score explanation, map sync — and never a comparison
+ * carousel of alternatives.
  */
 describe('Journey Option Rendering', () => {
   const defaultSearchParams = {
@@ -31,40 +33,63 @@ describe('Journey Option Rendering', () => {
 
   const openDetails = async () => {
     renderResults()
-    const cards = screen.getAllByRole('button')
-    const optionCard = cards.find((c) => c.className.includes('journey-option'))
-    fireEvent.click(optionCard)
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
     return screen.findByRole('dialog', { name: 'Journey details' }, { timeout: 2500 })
   }
+
+  const hero = () => document.querySelector('.bestroute')
 
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.spyOn(journeyApi, 'searchPublicStops').mockResolvedValue([])
   })
 
-  it('renders options with duration, departure-arrival, walking, fare, and score', () => {
+  it('renders ONE best route with duration, departure-arrival, walking, and fare', () => {
     renderResults()
 
-    // Option 1: 1200 sec = 20 min, direct, 250m walking, 8 EGP, score 1.05
+    // Best option: 1200 sec = 20 min, direct, 250m walking, 8 EGP.
     expect(screen.getByText('20 min')).toBeInTheDocument()
     expect(screen.getByText('Direct')).toBeInTheDocument()
     expect(screen.getByText(/250 m walking/)).toBeInTheDocument()
     expect(screen.getByText(/8 EGP/)).toBeInTheDocument()
     // departure → arrival line (jsdom formats in local TZ — assert the shape)
     expect(screen.getAllByText(/→\s*\d{1,2}:\d{2}/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/score 1\.05|score 1\.85/).length).toBeGreaterThan(0)
+  })
+
+  it('exposes only the recommended journey — no secondary route cards or option counts', () => {
+    renderResults(mockJourneyPlan.options)
+
+    // The second ranked option (30 min) must NOT be rendered anywhere.
+    expect(screen.queryByText('30 min')).not.toBeInTheDocument()
+    expect(screen.queryByText(/options available/i)).not.toBeInTheDocument()
+    expect(document.querySelectorAll('.journey-option')).toHaveLength(0)
+    // No language that implies other routes exist.
+    expect(screen.queryByText(/route 2/i)).not.toBeInTheDocument()
+    // The single hero carries the recommendation badges (page header + badge).
+    expect(screen.getAllByText('Best route').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Recommended for you')).toBeInTheDocument()
+    // One strong primary action.
+    expect(screen.getByRole('button', { name: /start journey/i })).toBeInTheDocument()
+  })
+
+  it('is deterministic: the same input renders the same single hero', () => {
+    const first = renderResults(mockJourneyPlan.options)
+    const firstDuration = hero().textContent
+    first.unmount()
+
+    const second = renderResults(mockJourneyPlan.options)
+    expect(hero().textContent).toBe(firstDuration)
+    second.unmount()
   })
 
   const datedMetroFare = { amount: 8, currency: 'EGP', source: 'tfc_metro_fares_2024', as_of: '2024-10' }
   const attribution = 'Fare: Cairo Metro, recorded Oct 2024 (TfC via Mobility Database)'
-  const optionCards = () => screen.getAllByRole('button').filter((c) => c.className.includes('journey-option'))
 
-  it('attributes every visible metro fare in the card and details, including the score', () => {
+  it('attributes every visible metro fare in the hero and details, including the score', async () => {
     renderResults([{ ...mockJourneyPlan.options[0], fare: datedMetroFare }])
-    const card = optionCards()[0]
-    expect(within(card).getByText(/8 EGP/)).toBeInTheDocument()
-    expect(within(card).getByText(attribution)).toBeInTheDocument()
-    fireEvent.click(card)
+    expect(within(hero()).getByText(/8 EGP/)).toBeInTheDocument()
+    expect(within(hero()).getByText(attribution)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
     const dialog = screen.getByRole('dialog', { name: 'Journey details' })
     expect(within(dialog).getAllByText('8 EGP')).toHaveLength(2)
     expect(within(dialog).getAllByText(attribution)).toHaveLength(2)
@@ -76,7 +101,7 @@ describe('Journey Option Rendering', () => {
     renderResults([ground])
     expect(document.body).not.toHaveTextContent('EGP')
     expect(document.body).not.toHaveTextContent(attribution)
-    fireEvent.click(optionCards()[0])
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
     expect(document.body).not.toHaveTextContent('EGP')
     expect(document.body).not.toHaveTextContent('Fare: Cairo Metro')
   })
@@ -85,9 +110,9 @@ describe('Journey Option Rendering', () => {
     localStorage.setItem('wasel.lang', 'ar')
     renderResults([{ ...mockJourneyPlan.options[0], fare: datedMetroFare }])
     const arabic = 'الأجرة: مترو القاهرة، مسجلة في أكتوبر ٢٠٢٤ (نقل للقاهرة عبر قاعدة بيانات التنقل)'
-    expect(within(optionCards()[0]).getByText(arabic)).toBeInTheDocument()
-    expect(within(optionCards()[0]).getByText(/8 EGP/)).toBeInTheDocument()
-    fireEvent.click(optionCards()[0])
+    expect(within(hero()).getByText(arabic)).toBeInTheDocument()
+    expect(within(hero()).getByText(/8 EGP/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /عرض التفاصيل/i }))
     expect(within(screen.getByRole('dialog')).getAllByText(arabic)).toHaveLength(2)
     expect(document.documentElement.dir).toBe('rtl')
     expect(document.body).not.toHaveTextContent('journey.fare_attribution_metro')
@@ -105,8 +130,8 @@ describe('Journey Option Rendering', () => {
     renderResults([{ ...mockJourneyPlan.options[0], fare: { ...datedMetroFare, as_of } }])
     const generic = 'Fare: Cairo Metro (TfC via Mobility Database)'
     expect(screen.getByText(/8 EGP/)).toBeInTheDocument()
-    expect(within(optionCards()[0]).getByText(generic)).toBeInTheDocument()
-    fireEvent.click(optionCards()[0])
+    expect(within(hero()).getByText(generic)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
     expect(within(screen.getByRole('dialog')).getAllByText(generic)).toHaveLength(2)
     expect(document.body).not.toHaveTextContent('recorded')
     expect(document.body).not.toHaveTextContent('2024')
@@ -123,7 +148,7 @@ describe('Journey Option Rendering', () => {
   it('does not misattribute an unknown source', () => {
     renderResults([{ ...mockJourneyPlan.options[0], fare: { ...datedMetroFare, source: 'unknown' } }])
     expect(screen.getByText(/8 EGP/)).toBeInTheDocument()
-    fireEvent.click(optionCards()[0])
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
     expect(document.body).not.toHaveTextContent('Fare: Cairo Metro')
   })
 
@@ -132,35 +157,33 @@ describe('Journey Option Rendering', () => {
     renderResults([{ ...mockJourneyPlan.options[0], fare: { ...datedMetroFare, as_of: null } }])
     const generic = 'الأجرة: مترو القاهرة (نقل للقاهرة عبر قاعدة بيانات التنقل)'
     expect(screen.getByText(generic)).toBeInTheDocument()
-    fireEvent.click(optionCards()[0])
+    fireEvent.click(screen.getByRole('button', { name: /عرض التفاصيل/i }))
     expect(within(screen.getByRole('dialog')).getAllByText(generic)).toHaveLength(2)
     expect(document.body).not.toHaveTextContent('journey.fare_attribution')
     expect(document.body).not.toHaveTextContent('{date}')
     expect(document.body).not.toHaveTextContent('أكتوبر')
   })
 
-  it('renders the recommended badge on the top option', () => {
+  it('renders the Best route recommendation header on the single hero', () => {
     renderResults()
-    expect(screen.getByText('Recommended')).toBeInTheDocument()
+    // The hero badge (page header shows the same title — both are intended).
+    expect(within(hero()).getByText('Best route')).toBeInTheDocument()
+    expect(within(hero()).getByText('Recommended for you')).toBeInTheDocument()
   })
 
-  it('renders a semantic route strip (no emoji) on every option card', () => {
+  it('renders a semantic route strip (no emoji) on the recommended journey', () => {
     renderResults()
 
     const strips = screen.getAllByRole('img', { name: /Route: Origin →/ })
-    expect(strips.length).toBe(mockJourneyPlan.options.length)
+    expect(strips.length).toBe(1) // one journey, one strip
     expect(strips[0].getAttribute('aria-label')).toMatch(/→ Destination/)
     const bodyText = document.body.textContent
     expect(bodyText.match(/[\u{1F300}-\u{1FAFF}\u2300-\u27BF]/gu)).toBeNull()
   })
 
-  it('shows the disruption banner for a disrupted option', () => {
-    const disrupted = mockJourneyPlan.options.map((o, i) =>
-      i === 1
-        ? { ...o, disrupted: true, alerts: [{ id: 3, header_text: 'Signal maintenance on Line 1' }] }
-        : o
-    )
-    renderResults(disrupted)
+  it('shows the disruption banner for a disrupted recommended route', () => {
+    const disrupted = { ...mockJourneyPlan.options[0], disrupted: true, alerts: [{ id: 3, header_text: 'Signal maintenance on Line 1' }] }
+    renderResults([disrupted])
 
     expect(screen.getByText('Service alert on this route')).toBeInTheDocument()
     expect(screen.getByText(/Signal maintenance on Line 1/)).toBeInTheDocument()
@@ -187,7 +210,7 @@ describe('Journey Option Rendering', () => {
     }
   })
 
-  it('syncs the map with the itinerary (map mounts beside the list)', () => {
+  it('syncs the map with the recommended journey (map mounts beside the hero)', () => {
     renderResults()
 
     expect(screen.getByLabelText('Map')).toBeInTheDocument()

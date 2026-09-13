@@ -29,6 +29,11 @@ class DatabaseSeeder extends Seeder
             TransitOperatorSeeder::class,
         ]);
 
+        // Published fares: real TfC metro tiers + clearly-labeled demo/estimated rows
+        $this->call([
+            FareSeeder::class,
+        ]);
+
         // Create or update an admin user so SystemConfig can reference it
         $adminUser = User::updateOrCreate(
             ['email' => 'admin@example.com'],
@@ -51,6 +56,13 @@ class DatabaseSeeder extends Seeder
         $this->call([
             GovernorateSeeder::class,
             SystemConfigSeeder::class,
+        ]);
+
+        // Fayoum expansion pack: REAL administrative geography + DEMO-ESTIMATED
+        // corridor scaffolding (honestly labeled; fares remain UNKNOWN until a
+        // verified source exists). See FayoumTransportPackSeeder docblock.
+        $this->call([
+            FayoumTransportPackSeeder::class,
         ]);
     }
 }

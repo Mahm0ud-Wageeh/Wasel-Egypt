@@ -3,6 +3,7 @@ import { ProtectedRoute, GuestRoute, RoleRoute } from './guards'
 import { PassengerLayout } from '../components/layout/PassengerLayout'
 import AdminLayout from '../components/layout/AdminLayout'
 import { JourneyProvider } from '../contexts/JourneyContext'
+import { AssistantShell } from './AssistantShell'
 import Landing from '../pages/Landing'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
@@ -21,6 +22,9 @@ import AdminDashboard from '../pages/AdminDashboard'
 import AdminAnalytics from '../pages/AdminAnalytics'
 import AdminModeration from '../pages/AdminModeration'
 import AdminUsers from '../pages/AdminUsers'
+import AdminFares from '../pages/AdminFares'
+import AdminNetwork from '../pages/AdminNetwork'
+import Fares from '../pages/Fares'
 import Forbidden from '../pages/Forbidden'
 import NotFound from '../pages/NotFound'
 
@@ -45,88 +49,102 @@ function JourneyArea() {
 }
 
 export const router = createBrowserRouter([
-  /* ─── Landing (journey-aware: hero planner shares JourneyProvider
-         state with /search via sessionStorage persistence) ─── */
-  { path: '/', element: <JourneyProvider><Landing /></JourneyProvider> },
-
-  /* ─── Guest-only auth screens ─── */
+  /* ─── App-wide AI assistant shell (inside the router so assistant
+         actions can navigate; renders launcher + drawer on every page) ─── */
   {
-    element: <GuestRoute />,
+    element: <AssistantShell />,
     children: [
-      { path: '/login', element: <Login /> },
-      { path: '/register', element: <Register /> },
-      { path: '/forgot-password', element: <ForgotPassword /> },
-      { path: '/reset-password', element: <ResetPassword /> },
-    ],
-  },
+      /* ─── Landing (journey-aware: hero planner shares JourneyProvider
+             state with /search via sessionStorage persistence) ─── */
+      { path: '/', element: <JourneyProvider><Landing /></JourneyProvider> },
 
-  /* ─── Public home (guests allowed) ─── */
-  {
-    element: <PassengerLayout />,
-    children: [
-      { path: '/home', element: <Home /> },
-      // Line information — public endpoints only (route detail, stops,
-      // variant geometry), so guests can browse the network too.
-      { path: '/routes/:id', element: <RouteDetail /> },
-    ],
-  },
-
-  /* ─── Protected passenger area ─── */
-  {
-    element: <ProtectedRoute />,
-    children: [
+      /* ─── Guest-only auth screens ─── */
       {
-        element: <JourneyArea />,
+        element: <GuestRoute />,
+        children: [
+          { path: '/login', element: <Login /> },
+          { path: '/register', element: <Register /> },
+          { path: '/forgot-password', element: <ForgotPassword /> },
+          { path: '/reset-password', element: <ResetPassword /> },
+        ],
+      },
+
+      /* ─── Public home (guests allowed) ─── */
+      {
+        element: <PassengerLayout />,
+        children: [
+          // Home owns a planner instance for the hero + map preview; like
+          // Landing it gets its own provider (sessionStorage-backed, shared
+          // shape with the protected journey area).
+          { path: '/home', element: <JourneyProvider><Home /></JourneyProvider> },
+          // Line information — public endpoints only (route detail, stops,
+          // variant geometry), so guests can browse the network too.
+          { path: '/routes/:id', element: <RouteDetail /> },
+          // Public fare information — honestly labeled real vs demo/estimated.
+          { path: '/fares', element: <Fares /> },
+        ],
+      },
+
+      /* ─── Protected passenger area ─── */
+      {
+        element: <ProtectedRoute />,
         children: [
           {
-            element: <PassengerLayout />,
+            element: <JourneyArea />,
             children: [
-              { path: '/search', element: <Search /> },
-              { path: '/journeys/results', element: <JourneyResults /> },
-              { path: '/active-journey', element: <ActiveJourney /> },
-              { path: '/active-journeys/:id', element: <ActiveJourney /> },
-              { path: '/active-journeys/:id/deviation', element: <Deviation /> },
-              { path: '/reports', element: <Reports /> },
-              { path: '/notifications', element: <Notifications /> },
-              { path: '/profile', element: <Profile /> },
+              {
+                element: <PassengerLayout />,
+                children: [
+                  { path: '/search', element: <Search /> },
+                  { path: '/journeys/results', element: <JourneyResults /> },
+                  { path: '/active-journey', element: <ActiveJourney /> },
+                  { path: '/active-journeys/:id', element: <ActiveJourney /> },
+                  { path: '/active-journeys/:id/deviation', element: <Deviation /> },
+                  { path: '/reports', element: <Reports /> },
+                  { path: '/notifications', element: <Notifications /> },
+                  { path: '/profile', element: <Profile /> },
+                ],
+              },
             ],
           },
         ],
       },
-    ],
-  },
 
-  /* ─── Admin Area (admin role) ─── */
-  {
-    element: <RoleRoute roles={['admin']} />,
-    children: [
+      /* ─── Admin Area (admin role) ─── */
       {
-        element: <AdminLayout />,
+        element: <RoleRoute roles={['admin']} />,
         children: [
-          { path: '/admin', element: <AdminDashboard /> },
-          { path: '/admin/analytics', element: <AdminAnalytics /> },
-          { path: '/admin/users', element: <AdminUsers /> },
+          {
+            element: <AdminLayout />,
+            children: [
+              { path: '/admin', element: <AdminDashboard /> },
+              { path: '/admin/analytics', element: <AdminAnalytics /> },
+              { path: '/admin/users', element: <AdminUsers /> },
+              { path: '/admin/fares', element: <AdminFares /> },
+              { path: '/admin/network', element: <AdminNetwork /> },
+            ],
+          },
         ],
       },
-    ],
-  },
 
-  /* ─── Moderation Area (moderator or admin) ─── */
-  {
-    element: <RoleRoute roles={['moderator', 'admin']} />,
-    children: [
+      /* ─── Moderation Area (moderator or admin) ─── */
       {
-        element: <AdminLayout />,
+        element: <RoleRoute roles={['moderator', 'admin']} />,
         children: [
-          { path: '/admin/moderation', element: <AdminModeration /> },
+          {
+            element: <AdminLayout />,
+            children: [
+              { path: '/admin/moderation', element: <AdminModeration /> },
+            ],
+          },
         ],
       },
+
+      /* ─── Errors ─── */
+      { path: '/forbidden', element: <Forbidden /> },
+      { path: '*', element: <NotFound /> },
     ],
   },
-
-  /* ─── Errors ─── */
-  { path: '/forbidden', element: <Forbidden /> },
-  { path: '*', element: <NotFound /> },
 ])
 
 export { Link }

@@ -181,7 +181,7 @@ export default function Profile() {
   return (
     <div className="app-shell__page">
       {/* Header */}
-      <div>
+      <div className="page-head">
         <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('profile.account_title')} </h1>
         <p className="t-caption" style={{ marginTop: 2 }}> {t('profile.subtitle')} </p>
       </div>
@@ -199,7 +199,7 @@ export default function Profile() {
       )}
 
       {/* Identity Card */}
-      <Card flat style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Card flat className="profile-identity" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div className="row-between">
           <div className="row" style={{ gap: 12 }}>
             <div

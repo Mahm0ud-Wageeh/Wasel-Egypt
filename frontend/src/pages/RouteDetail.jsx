@@ -158,13 +158,13 @@ export default function RouteDetail() {
   return (
     <div className="stack" style={{ gap: 'var(--sp-4)' }}>
       {/* ---- Identity header ---- */}
-      <Card flat className="row" style={{ gap: 'var(--sp-4)', flexWrap: 'wrap' }}>
+      <Card flat className="row route-identity" style={{ gap: 'var(--sp-4)', flexWrap: 'wrap' }}>
         <ModeDot mode={MODE_DOT[modeName] ?? 'bus'} />
         <div className="grow">
           <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-            <b style={{ fontSize: 19, color: 'var(--ink900)' }}>
+            <h1 style={{ fontSize: 19, margin: 0, fontWeight: 700, color: 'var(--ink900)', letterSpacing: '-0.01em' }}>
               {route.short_name || route.name}
-            </b>
+            </h1>
             {lineColor && (
               <span aria-hidden="true" style={{
                 inlineSize: 14, blockSize: 14, borderRadius: 4,

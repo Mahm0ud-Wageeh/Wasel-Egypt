@@ -53,6 +53,14 @@ import {
   Crosshair,
   Layers,
   LoaderCircle,
+  Moon,
+  Map as MapIcon,
+  SendHorizonal,
+  MessageSquareText,
+  Wallet,
+  History,
+  BadgeCheck,
+  FlaskConical,
 } from 'lucide-react'
 
 /**
@@ -109,6 +117,14 @@ const ICONS = {
   crosshair: Crosshair,
   layers: Layers,
   spinner: LoaderCircle,
+  moon: Moon,
+  map: MapIcon,
+  send: SendHorizonal,
+  botMessage: MessageSquareText,
+  wallet: Wallet,
+  history: History,
+  badgeCheck: BadgeCheck,
+  flaskConical: FlaskConical,
 
   // status
   success: CircleCheck,

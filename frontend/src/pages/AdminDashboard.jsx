@@ -8,6 +8,7 @@ import { Alert } from '../components/ui/Alert'
 import { Skeleton, StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
 import { getAdminDashboard } from '../api/admin'
+import { getData as apiGetData } from '../api/client'
 
 export default function AdminDashboard() {
   const { t } = useI18n()
@@ -36,8 +37,14 @@ export default function AdminDashboard() {
     }
   }, [from, to])
 
+  const [health, setHealth] = useState(null)
+
   useEffect(() => {
     fetchDashboard()
+    // Control-center health strip: real network + AI snapshot (admin-gated).
+    apiGetData('/admin/analytics/system-health')
+      .then((res) => setHealth(res))
+      .catch(() => setHealth(null))
   }, [fetchDashboard])
 
   return (
@@ -68,6 +75,41 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* System health — real values only (network / freshness / AI / alerts) */}
+      {health && (
+        <Card flat style={{ marginBottom: 'var(--sp-4)' }}>
+          <div className="row-between" style={{ marginBottom: 8 }}>
+            <b style={{ fontSize: 14 }}>{t('admin.health_title')}</b>
+            <span className={`badge ${health?.ai?.available ? 'b-verified' : 'b-rerouted'}`}>
+              {t('admin.health_ai')}: {health?.ai?.provider}{health?.ai?.available ? ' ✓' : ' ✕'}
+            </span>
+          </div>
+          <div className="admin-health-grid">
+            {[
+              [t('admin.net_stops'), health?.network?.stops],
+              [t('admin.net_routes'), health?.network?.routes],
+              [t('admin.net_variants'), health?.network?.active_variants],
+              [`${t('results.metric_fare')} ✓`, health?.network?.fares?.real],
+              [`${t('results.metric_fare')} ~`, health?.network?.fares?.demo_estimated],
+              [t('admin.health_alerts'), health?.alerts_active],
+            ].map(([label, value]) => (
+              <div key={label} className="admin-health-cell">
+                <div className="t-caption">{label}</div>
+                <b className="t-num" style={{ fontSize: 18, color: 'var(--p900)' }}>{value ?? '—'}</b>
+              </div>
+            ))}
+          </div>
+          {(health?.data_freshness?.latest_imports ?? []).length > 0 && (
+            <div className="t-caption" style={{ marginTop: 8 }}>
+              {t('admin.health_freshness')}:{' '}
+              {health.data_freshness.latest_imports
+                .map((imp) => `${imp.source} (${imp.imported_at?.slice(0, 10)})`)
+                .join(' · ')}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Date Filter Bar */}
       <Card flat style={{ padding: '10px 14px' }}>

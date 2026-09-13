@@ -40,14 +40,21 @@ export function JourneySearchPage() {
   // "Plan from <stop>" on the line page / stop panel navigates here with
   // a prefillStop (+ optional prefillTarget). An explicit prefill wins
   // over stale stored params; live user typing afterwards is never
-  // overwritten (mount-time initial state only).
+  // overwritten (mount-time initial state only). The AI assistant sends
+  // both fields at once via secondPrefillStop (origin+destination).
   const prefill = location.state?.prefillStop ?? null
   const prefillTarget = location.state?.prefillTarget === 'destination' ? 'destination' : 'origin'
+  const secondPrefill = location.state?.secondPrefillStop ?? null
+  const aiDeparture = location.state?.aiDeparture ?? null
 
   const planner = useJourneyPlanner({
     initial: {
-      originStop: (prefillTarget === 'origin' ? prefill : null) ?? searchParams?.originStop ?? null,
-      destinationStop: (prefillTarget === 'destination' ? prefill : null) ?? searchParams?.destinationStop ?? null,
+      originStop: (prefillTarget === 'origin' ? prefill : null)
+        ?? (prefillTarget === 'destination' && secondPrefill ? secondPrefill : null)
+        ?? searchParams?.originStop ?? null,
+      destinationStop: (prefillTarget === 'destination' ? prefill : null)
+        ?? (prefillTarget === 'origin' && secondPrefill ? secondPrefill : null)
+        ?? searchParams?.destinationStop ?? null,
     },
   })
 
@@ -55,7 +62,9 @@ export function JourneySearchPage() {
   // datetime-local rejects (it needs naive wall time); slice keeps the
   // wall clock the backend planned against.
   const [departure, setDeparture] = useState(
-    searchParams?.requested_at ? String(searchParams.requested_at).slice(0, 16) : cairoWallTime())
+    aiDeparture
+      ? String(aiDeparture).slice(0, 16)
+      : searchParams?.requested_at ? String(searchParams.requested_at).slice(0, 16) : cairoWallTime())
   const [maxTransfers, setMaxTransfers] = useState(searchParams?.max_transfers ?? 1)
   const [maxWalk, setMaxWalk] = useState(searchParams?.max_walk_distance_per_leg ?? 1000)
   const [alternatives, setAlternatives] = useState(searchParams?.alternatives ?? 3)

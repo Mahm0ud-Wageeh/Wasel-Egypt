@@ -83,12 +83,16 @@ Route::prefix('v1')->group(function () {
 
         // Permission management
         Route::apiResource('permissions', App\Http\Controllers\Api\V1\PermissionController::class)->except(['show']);
+
+        // Fare management (real + demo/estimated rows editable by admins)
+        Route::apiResource('fares', App\Http\Controllers\Api\V1\Admin\FareAdminController::class)->except(['show']);
     });
 });
 
 // Admin analytics (admin-only)
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('v1/admin/analytics')->group(function () {
     Route::get('dashboard', [App\Http\Controllers\Api\V1\Admin\AnalyticsController::class, 'dashboard']);
+    Route::get('system-health', App\Http\Controllers\Api\V1\Admin\SystemHealthController::class);
     Route::get('journeys', [App\Http\Controllers\Api\V1\Admin\AnalyticsController::class, 'journeys']);
     Route::get('deviations', [App\Http\Controllers\Api\V1\Admin\AnalyticsController::class, 'deviations']);
     Route::get('usage', [App\Http\Controllers\Api\V1\Admin\AnalyticsController::class, 'usage']);
@@ -196,4 +200,16 @@ Route::prefix('v1')->group(function () {
     // Public schedules
     Route::get('public-schedules', [App\Http\Controllers\Api\V1\Transit\ScheduleController::class, 'publicIndex']);
     Route::get('public-schedules/{id}', [App\Http\Controllers\Api\V1\Transit\ScheduleController::class, 'publicShow']);
+
+    // AI transport assistant (public, heavily throttled; actions are
+    // server-validated against the safe whitelist before returning).
+    Route::get('ai/status', [App\Http\Controllers\Api\V1\AiChatController::class, 'status']);
+    Route::post('ai/chat', [App\Http\Controllers\Api\V1\AiChatController::class, 'chat'])->middleware('throttle:20,1');
+
+    // Verified network snapshot (landing page metrics) — real DB values only.
+    Route::get('network/stats', [App\Http\Controllers\Api\V1\Transit\NetworkController::class, 'stats']);
+
+    // Public fare information, honestly labeled real vs demo/estimated.
+    Route::get('fares', [App\Http\Controllers\Api\V1\Transit\FareController::class, 'index']);
+    Route::get('fares/estimate', [App\Http\Controllers\Api\V1\Transit\FareController::class, 'estimate']);
 });

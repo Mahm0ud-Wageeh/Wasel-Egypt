@@ -49,9 +49,8 @@ describe('Responsive Behavior & Layout Integrity', () => {
       }
     )
 
-    const cards = screen.getAllByRole('button')
-    const optionCard = cards.find((c) => c.className.includes('journey-option'))
-    fireEvent.click(optionCard)
+    // Single-best-route planner: details open from the hero's secondary action.
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
 
     // Details render as a modal sheet over the split layout
     const drawer = await screen.findByRole('dialog', { name: 'Journey details' })

@@ -53,6 +53,18 @@ export const endpoints = {
     placesSearch: '/places/search',
     publicReports: '/community-reports',
     publicReport: (id) => `/community-reports/${id}`,
+    // Verified network snapshot (landing/dashboard metrics — real DB values).
+    networkStats: '/network/stats',
+    // Published fares, honestly labeled real vs demo/estimated.
+    fares: '/fares',
+    fareEstimate: (originId, destinationId) =>
+      `/fares/estimate?origin=${originId}&destination=${destinationId}`,
+  },
+
+  // ---- AI transport assistant (public; actions are server-validated) ----
+  ai: {
+    status: '/ai/status',
+    chat: '/ai/chat',
   },
 
   // ---- Journey planning ----

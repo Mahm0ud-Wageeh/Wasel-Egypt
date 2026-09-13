@@ -5,6 +5,20 @@ import Deviation from '../pages/Deviation'
 import * as activeApi from '../api/activeJourneys'
 import { renderWithProviders } from '../test/test-utils'
 
+/**
+ * Deviation & recovery — an incident state of the Journey Cockpit.
+ * Map-first (current position + original route + recovery route), fully
+ * i18n-ized incident facts, and a singular recommended recovery option.
+ */
+
+let mapProps = null
+vi.mock('../components/map/LazyMapPanel', () => ({
+  MapPanel: (props) => {
+    mapProps = props
+    return <div data-testid="map-stub" aria-label="Map" />
+  },
+}))
+
 describe('Deviation & Recovery Module', () => {
   const mockDeviations = [
     {
@@ -48,48 +62,84 @@ describe('Deviation & Recovery Module', () => {
     },
   ]
 
+  const renderDeviation = () =>
+    renderWithProviders(<Deviation />, {
+      route: '/active-journeys/55/deviation',
+      user: { id: 1 },
+    })
+
   beforeEach(() => {
     vi.restoreAllMocks()
+    mapProps = null
     vi.spyOn(activeApi, 'getActiveJourneyById').mockResolvedValue({ id: 55, status: 'deviated' })
     vi.spyOn(activeApi, 'getJourneyDeviations').mockResolvedValue({ data: mockDeviations })
     vi.spyOn(activeApi, 'listRecoveryOptions').mockResolvedValue({ data: mockRecoveryOptions })
   })
 
-  it('renders deviation alert, severity, description, and expected stop', async () => {
-    renderWithProviders(<Deviation />, {
-      route: '/active-journeys/55/deviation',
-      user: { id: 1 },
-    })
+  it('renders the incident summary: type, severity label, off-route distance, expected stop', async () => {
+    renderDeviation()
 
     await waitFor(() => {
-      expect(screen.getByText('Route Deviation')).toBeInTheDocument()
-      expect(screen.getByText(/Vehicle drifted 450m away/i)).toBeInTheDocument()
-      expect(screen.getByText(/Dokki Station/i)).toBeInTheDocument()
-      expect(screen.getByText(/Safe to resume without reroute/i)).toBeInTheDocument()
+      expect(screen.getByText('Route deviation')).toBeInTheDocument()
+      expect(screen.getByText('We detected that you left the planned route')).toBeInTheDocument()
+      expect(screen.getByText('Moderate deviation')).toBeInTheDocument()
+      expect(screen.getByText(/Off route by 450 m/i)).toBeInTheDocument()
+      expect(screen.getByText(/Expected stop: Dokki Station/i)).toBeInTheDocument()
+      expect(screen.getByText(/Safe to continue on the original route/i)).toBeInTheDocument()
+      // No raw backend English or technical severity values leak into the UI.
+      expect(document.body).not.toHaveTextContent('planned bus corridor')
+      expect(document.body).not.toHaveTextContent(/(^|\s)high(\s|$)/)
     })
   })
 
-  it('resumes journey when resume button is clicked', async () => {
-    const resumeSpy = vi.spyOn(activeApi, 'resumeJourney').mockResolvedValue({ success: true })
-
-    renderWithProviders(<Deviation />, {
-      route: '/active-journeys/55/deviation',
-      user: { id: 1 },
-    })
+  it('previews the recovery route map-first and keeps deviation position on the map', async () => {
+    renderDeviation()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /resume original plan/i })).toBeInTheDocument()
+      expect(mapProps).not.toBeNull()
+      // The recommended recovery legs are the primary itinerary…
+      expect(mapProps.itinerary.legs[0].from_lat).toBe(30.0378)
+      // …with the deviation pin and live position…
+      expect(mapProps.deviation).toMatchObject({ lat: 30.0378, lng: 31.2205, severity: 'medium' })
+      expect(mapProps.userLocation).toMatchObject({ lat: 30.0378, lng: 31.2205 })
+      // …and the fit contract untouched (no per-ping camera inputs).
+      expect(mapProps.fitTo).toBe('route')
+    })
+  })
+
+  it('resumes journey when the resume action is clicked', async () => {
+    const resumeSpy = vi.spyOn(activeApi, 'resumeJourney').mockResolvedValue({ success: true })
+
+    renderDeviation()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /continue on original route/i })).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /resume original plan/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue on original route/i }))
 
     await waitFor(() => {
       expect(resumeSpy).toHaveBeenCalledWith(55)
-      expect(screen.getByText('Journey resumed on original plan!')).toBeInTheDocument()
+      expect(screen.getByText('Journey resumed on the original route')).toBeInTheDocument()
     })
   })
 
-  it('generates recovery reroute options and accepts a new route', async () => {
+  it('blocks resume by severity with an honest reason', async () => {
+    vi.spyOn(activeApi, 'getJourneyDeviations').mockResolvedValue({
+      data: [{ ...mockDeviations[0], severity: 'high', can_continue: false }],
+    })
+
+    renderDeviation()
+
+    await waitFor(() => {
+      expect(screen.getByText('Severe deviation')).toBeInTheDocument()
+      const blocked = screen.getByRole('button', { name: /continuing is not available/i })
+      expect(blocked).toBeDisabled()
+      expect(screen.getByText(/Rerouting required/i)).toBeInTheDocument()
+    })
+  })
+
+  it('generates recovery reroute options and accepts the recommended route', async () => {
     const genSpy = vi.spyOn(activeApi, 'generateRecoveryOptions').mockResolvedValue({
       data: mockRecoveryOptions,
     })
@@ -98,29 +148,43 @@ describe('Deviation & Recovery Module', () => {
       message: 'Journey rerouted successfully',
     })
 
-    renderWithProviders(<Deviation />, {
-      route: '/active-journeys/55/deviation',
-      user: { id: 1 },
-    })
+    renderDeviation()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /find new routes/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /find a new route/i })).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /find new routes/i }))
+    fireEvent.click(screen.getByRole('button', { name: /find a new route/i }))
 
     await waitFor(() => {
       expect(genSpy).toHaveBeenCalledWith(55, 3)
-      expect(screen.getByText('Recovery Option #1')).toBeInTheDocument()
+      // Singular recommendation: the top-sorted option is labeled Recommended.
+      expect(screen.getByText('Recommended')).toBeInTheDocument()
       expect(screen.getByText('+7 min delay')).toBeInTheDocument()
     })
 
-    const acceptBtn = screen.getByRole('button', { name: /use this route/i })
-    fireEvent.click(acceptBtn)
+    // Exact-name match: the selectable card is itself a button whose
+    // accessible name contains this text — only the inner action accepts.
+    fireEvent.click(screen.getByRole('button', { name: 'Use this route' }))
 
     await waitFor(() => {
       expect(acceptSpy).toHaveBeenCalledWith(55, 201)
-      expect(screen.getByText(/New route plan accepted!/i)).toBeInTheDocument()
+      expect(screen.getByText(/Recovery route accepted/i)).toBeInTheDocument()
+    })
+  })
+
+  it('shows the honest empty state when no alternatives can be calculated', async () => {
+    vi.spyOn(activeApi, 'generateRecoveryOptions').mockResolvedValue({ data: [] })
+
+    renderDeviation()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /find a new route/i })).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /find a new route/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/No recovery alternatives could be calculated/i)).toBeInTheDocument()
     })
   })
 })

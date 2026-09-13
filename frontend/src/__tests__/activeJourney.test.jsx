@@ -82,7 +82,9 @@ describe('Active Journey & Live Tracking Module', () => {
       expect(screen.getByText('Trip #55')).toBeInTheDocument()
       expect(screen.getByText('45%')).toBeInTheDocument()
       expect(screen.getByText(/Leg 1 \/ 2/)).toBeInTheDocument()
-      expect(screen.getByText(/Sadat Station/i)).toBeInTheDocument()
+      // The next stop appears in the cockpit hero AND the itinerary timeline.
+      expect(screen.getAllByText(/Sadat Station/i).length).toBeGreaterThan(0)
+      expect(screen.getByText(/Next stop: Giza Station/i)).toBeInTheDocument()
       expect(screen.getByText('Itinerary')).toBeInTheDocument()
       expect(screen.getByLabelText('Map')).toBeInTheDocument()
       expect(screen.getByRole('progressbar', { name: /journey progress/i })).toBeInTheDocument()

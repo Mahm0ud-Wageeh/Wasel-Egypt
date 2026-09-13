@@ -23,6 +23,9 @@ class JourneyPlanResource extends JsonResource
             'reliability' => $this->resource['reliability'] ?? null,
             'fare' => $this->resource['fare'] ?? null,
             'matches_saved' => $this->resource['matches_saved'] ?? null,
+            // Single-recommendation contract: exactly the top-ranked plan is
+            // flagged recommended; the initial planner UI surfaces only it.
+            'recommended' => (bool) ($this->resource['recommended'] ?? false),
             'disrupted' => $this->resource['disrupted'] ?? false,
             'alerts' => $this->resource['alerts'] ?? [],
             'legs' => collect($this->resource['legs'])->map(fn (array $leg) => [

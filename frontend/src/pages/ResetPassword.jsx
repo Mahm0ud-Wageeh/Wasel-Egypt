@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button'
 import { TextInput } from '../components/ui/Input'
 import { Alert } from '../components/ui/Alert'
 import { Icon } from '../components/ui/Icon'
+import { AuthLayout } from '../components/layout/AuthLayout'
 import { resetPassword } from '../api/auth'
 import { ApiError } from '../api/client'
 
@@ -44,6 +45,7 @@ export default function ResetPassword() {
 
   if (done) {
     return (
+      <AuthLayout>
       <div className="auth-shell">
         <div className="auth-brand">
           <div className="auth-brand__logo" aria-hidden="true"><Icon name="success" size={22} /></div>
@@ -56,10 +58,12 @@ export default function ResetPassword() {
           <Link to="/login">Go to login</Link>
         </p>
       </div>
+      </AuthLayout>
     )
   }
 
   return (
+    <AuthLayout>
     <div className="auth-shell">
       <div className="auth-brand">
         <div className="auth-brand__logo" aria-hidden="true"><Icon name="key" size={22} /></div>
@@ -104,5 +108,6 @@ export default function ResetPassword() {
         </Button>
       </form>
     </div>
+    </AuthLayout>
   )
 }

@@ -39,7 +39,8 @@ describe('Journey Navigation & Layout', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /find journeys/i }))
     await waitFor(() => {
-      expect(screen.getByText('Search results')).toBeInTheDocument()
+      // Page header + hero badge both carry the title.
+      expect(screen.getAllByText('Best route').length).toBeGreaterThanOrEqual(1)
     })
   }
 
@@ -48,7 +49,10 @@ describe('Journey Navigation & Layout', () => {
 
     await searchViaCoordinates()
 
-    expect(screen.getByText('2 options available')).toBeInTheDocument()
+    // Single-best-route planner: the results page presents the one
+    // recommended journey — never an option count.
+    expect(screen.getAllByText('Best route').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText(/options available/i)).not.toBeInTheDocument()
   })
 
   it('redirects from /journeys/results to /search when searchParams are missing', async () => {
@@ -104,7 +108,7 @@ describe('Journey Navigation & Layout', () => {
     })
   })
 
-  it('selecting an option opens the journey details dialog (details entry point)', async () => {
+  it('opening the details entry point shows the journey details dialog', async () => {
     renderWithProviders(<TestApp />, {
       route: '/journeys/results',
       journeyState: {
@@ -118,8 +122,8 @@ describe('Journey Navigation & Layout', () => {
       },
     })
 
-    fireEvent.click(screen.getAllByRole('button', { name: /minibus \+ bus|metro/i })[0]
-      ?? screen.getAllByRole('button', { name: /1 transfer|Direct/i })[0])
+    // The hero's "View details" secondary action is the details entry point.
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Journey details' })).toBeInTheDocument()

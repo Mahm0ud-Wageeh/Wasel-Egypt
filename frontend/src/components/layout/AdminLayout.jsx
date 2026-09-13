@@ -8,11 +8,33 @@ import { Logo } from '../ui/Logo'
  * the passenger tab bar remains the navigation (admin on mobile is a
  * fallback, not the target experience).
  */
-const SECTIONS = [
-  { to: '/admin', label: 'Dashboard', icon: 'plan', end: true },
-  { to: '/admin/analytics', label: 'Analytics', icon: 'track' },
-  { to: '/admin/moderation', label: 'Moderation', icon: 'shield' },
-  { to: '/admin/users', label: 'Users', icon: 'community' },
+/**
+ * Control-center sections, grouped by domain (the rail renders group labels).
+ * Every target is server-authorized independently (role/permission gates).
+ */
+const GROUPS = [
+  {
+    label: 'Overview',
+    items: [{ to: '/admin', label: 'Dashboard', icon: 'plan', end: true }],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { to: '/admin/analytics', label: 'Analytics', icon: 'track' },
+      { to: '/admin/moderation', label: 'Moderation', icon: 'shield' },
+    ],
+  },
+  {
+    label: 'Data & network',
+    items: [
+      { to: '/admin/fares', label: 'Fares', icon: 'wallet' },
+      { to: '/admin/network', label: 'Network', icon: 'layers' },
+    ],
+  },
+  {
+    label: 'People',
+    items: [{ to: '/admin/users', label: 'Users & roles', icon: 'community' }],
+  },
 ]
 
 export default function AdminLayout() {
@@ -23,16 +45,21 @@ export default function AdminLayout() {
           <Logo size={24} subtitle="Admin" />
         </div>
         <nav className="admin-rail__nav">
-          {SECTIONS.map((s) => (
-            <NavLink
-              key={s.to}
-              to={s.to}
-              end={s.end}
-              className={({ isActive }) => `admin-rail__link${isActive ? ' is-active' : ''}`}
-            >
-              <Icon name={s.icon} size={17} aria-hidden="true" />
-              <span>{s.label}</span>
-            </NavLink>
+          {GROUPS.map((group) => (
+            <div key={group.label} className="admin-rail__group">
+              <span className="admin-rail__group-label">{group.label}</span>
+              {group.items.map((s) => (
+                <NavLink
+                  key={s.to}
+                  to={s.to}
+                  end={s.end}
+                  className={({ isActive }) => `admin-rail__link${isActive ? ' is-active' : ''}`}
+                >
+                  <Icon name={s.icon} size={17} aria-hidden="true" />
+                  <span>{s.label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <NavLink to="/home" className="admin-rail__link admin-rail__link--exit">

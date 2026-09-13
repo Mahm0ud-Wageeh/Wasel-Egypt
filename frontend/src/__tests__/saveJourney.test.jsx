@@ -36,9 +36,8 @@ describe('Save Journey Flow', () => {
       },
     })
 
-    const cards = screen.getAllByRole('button')
-    const optionCard = cards.find((c) => c.className.includes('journey-option'))
-    fireEvent.click(optionCard)
+    // Single-best-route planner: details open from the hero's secondary action.
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
     return screen.findByRole('dialog', { name: 'Journey details' }, { timeout: 2500 })
   }
 
@@ -50,8 +49,10 @@ describe('Save Journey Flow', () => {
     const dialog = await renderAndOpenDetails()
 
     expect(within(dialog).getByRole('button', { name: /save journey/i })).toBeInTheDocument()
-    // start is gated until the journey is saved
-    expect(within(dialog).getByRole('button', { name: /start journey/i })).toBeDisabled()
+    // Start Journey is one confident action: it auto-saves when needed, so
+    // it is enabled immediately (the auto-save wire contract is covered in
+    // bestRouteCockpit.test.jsx).
+    expect(within(dialog).getByRole('button', { name: /start journey/i })).toBeEnabled()
   })
 
   it('successfully saves the selected journey and shows the saved state', async () => {

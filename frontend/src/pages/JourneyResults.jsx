@@ -1,33 +1,16 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useJourneyContext } from '../contexts/JourneyContext'
 import { useI18n } from '../i18n/LanguageContext'
 import { saveJourney, startSavedJourney } from '../api/journeys'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { ModeDot, Badge } from '../components/ui/Badge'
+import { ModeDot } from '../components/ui/Badge'
 import { Alert } from '../components/ui/Alert'
 import { StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
 import { MapPanel } from '../components/map/LazyMapPanel'
-
-function formatDuration(sec) {
-  const mins = Math.round(sec / 60)
-  if (mins < 60) return `${mins} min`
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  return m ? `${h}h ${m}m` : `${h}h`
-}
-
-function formatDistance(m) {
-  if (m >= 1000) return `${(m / 1000).toFixed(1)} km`
-  return `${m} m`
-}
-
-function formatTime(iso) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
+import { formatDuration, formatDistance, formatTime } from '../utils/format'
 
 const MODE_LABEL_KEYS = {
   walking: 'journey.walk',
@@ -98,12 +81,18 @@ function RouteStrip({ option }) {
 /** Use API metadata only; unknown dates never inherit a date from the source ID. */
 function FareAttribution({ fare }) {
   const { t, language } = useI18n()
-  if (fare?.amount == null || typeof fare.source !== 'string'
-    || !/^tfc_metro_fares(?:_\d{4})?$/.test(fare.source)) return null
+  // data_status is the generic honesty signal the backend now attaches;
+  // source regex remains the specific TfC attribution for metro rows.
+  const isReal = fare?.data_status ? fare.data_status === 'real'
+    : (typeof fare?.source === 'string' && /^tfc_metro_fares(?:_\d{4})?$/.test(fare.source))
+  if (fare?.amount == null || !isReal) return null
 
   const hasDate = typeof fare.as_of === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(fare.as_of)
-  // Only the identified Mobility Database source receives that specific credit.
-  const key = fare.source === 'tfc_metro_fares_2024'
+  // Only the identified Mobility Database source receives that specific
+  // credit; other verified sources fall back to the generic (TfC) form.
+  // Undated rows never guess a date or distributor.
+  const isIdentifiedSource = typeof fare.source === 'string' && /^tfc_metro_fares_\d{4}$/.test(fare.source)
+  const key = isIdentifiedSource
     ? (hasDate ? 'journey.fare_attribution_metro' : 'journey.fare_attribution_metro_undated')
     : (hasDate ? 'journey.fare_attribution_tfc_dated' : 'journey.fare_attribution_tfc')
   const date = hasDate ? new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : 'en', {
@@ -117,101 +106,8 @@ function FareAttribution({ fare }) {
   )
 }
 
-/** One journey option card. */
-function JourneyOptionCard({ option, isSelected, isBest, isFastest, isFewestTransfers, onSelect, saved }) {
-  const { t } = useI18n()
-  const firstLeg = option.legs?.[0]
-  const lastLeg = option.legs?.[option.legs.length - 1]
-  const reliabilityPct = option.reliability != null ? Math.round(option.reliability * 100) : null
-
-  return (
-    <li>
-      <Card
-        interactive
-        className={`journey-option${isSelected ? ' journey-option--selected' : ''}${isBest ? ' journey-option--best' : ''}`}
-        onClick={() => onSelect(option)}
-        aria-pressed={isSelected}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onSelect(option)
-          }
-        }}
-      >
-        <div className="row-between">
-          <div className="row" style={{ gap: 6 }}>
-            {isBest && (
-              <span className="badge b-verified" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="shield" size={12} aria-hidden="true" /> {t('results.recommended')}
-              </span>
-            )}
-            {isFastest && !isBest && (
-              <span className="badge b-active" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="track" size={12} aria-hidden="true" /> {t('results.fastest')}
-              </span>
-            )}
-            {isFewestTransfers && !isBest && !isFastest && (
-              <span className="badge b-active" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Icon name="recover" size={12} aria-hidden="true" /> {t('results.fewest_transfers')}
-              </span>
-            )}
-            {isSelected && !isBest && !isFastest && !isFewestTransfers && (
-              <span className="badge b-active">{t('results.selected')}</span>
-            )}
-            <span className="t-num" style={{ fontSize: 20, fontWeight: 700 }}>
-              {formatDuration(option.total_duration_sec)}
-            </span>
-          </div>
-          <span className={`badge ${option.total_transfers === 0 ? 'b-active' : 'b-rerouted'}`}>
-            {option.total_transfers === 0
-              ? t('results.direct')
-              : option.total_transfers === 1
-                ? t('results.one_transfer')
-                : t('results.transfers').replace('{count}', option.total_transfers)}
-          </span>
-        </div>
-
-        <div className="row" style={{ marginTop: 6, gap: 10 }}>
-          <span className="t-num" style={{ fontSize: 13, color: 'var(--ink900)' }}>
-            {formatTime(firstLeg?.departure_time)} → {formatTime(lastLeg?.arrival_time)}
-          </span>
-          {reliabilityPct != null && (
-            <span className="t-caption" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Icon name="shield" size={12} aria-hidden="true" style={{ color: reliabilityPct >= 70 ? 'var(--s800)' : 'var(--w800)' }} />
-              {t('results.reliability').replace('{pct}', reliabilityPct)}
-            </span>
-          )}
-        </div>
-
-        <RouteStrip option={option} />
-
-        <div className="t-caption" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          <span>{formatDistance(option.walk_distance_meters)} {t('results.metric_walking').toLowerCase()}</span>
-          {option.fare && <span> · {option.fare.amount} {option.fare.currency}</span>}
-          {option.score !== undefined && <span> · score {option.score.toFixed(2)}</span>}
-        </div>
-        <FareAttribution fare={option.fare} />
-
-        {option.disrupted && (
-          <div className="alert alert--error" style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }} role="status">
-            <Icon name="detect" size={16} aria-hidden="true" />
-            <div>
-              <div style={{ fontWeight: 600 }}>{t('results.alert_on_route')}</div>
-              <div className="t-caption">
-                {(option.alerts ?? []).map((a) => a.header_text).join(' · ') || 'Disruption reported.'}
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
-    </li>
-  )
-}
-
 /**
- * Explainable scoring: the normalized components behind the ranking
+ * Explainable scoring: the normalized components behind the recommendation
  * (weights from JourneyScoringService: time .40, walk .20, transfers .20,
  * fare .10, reliability .10).
  */
@@ -260,9 +156,9 @@ function ScoreExplanation({ option }) {
 
 /**
  * Journey details drawer: full vertical timeline (Origin → legs → transfers
- * → Destination), score explanation, save + start actions.
+ * → Destination) and the score explanation behind the recommendation.
  */
-function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchParams }) {
+function JourneyDetails({ option, onClose, onSave, onStart, saveState }) {
   const { t } = useI18n()
   const legs = option.legs ?? []
   const firstLeg = legs[0]
@@ -319,7 +215,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
               : 0
             const showWait = idx > 0 && waitSec > 120
             return (
-              <>
+              <Fragment key={`leg-frag-${idx}`}>
                 {showWait && (
                   <div key={`wait-${idx}`} className="jtl__row jtl__row--transfer" style={{ marginBlock: 2 }}>
                     <span className="jtl__dot jtl__dot--ghost" aria-hidden="true"><Icon name="clock" size={11} /></span>
@@ -328,7 +224,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
                     </span>
                   </div>
                 )}
-                <div key={idx} className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}`}>
+                <div className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}`}>
                   <span className="jtl__dot" style={{ background: legColor(leg) }} aria-hidden="true">
                     <Icon name={isWalk ? 'modeWalking' : (MODE_ICONS[leg.mode] ?? 'navigate')} size={12} />
                   </span>
@@ -356,7 +252,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
                     )}
                   </div>
                 </div>
-              </>
+              </Fragment>
             )
           })}
 
@@ -387,6 +283,8 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
           <span className="badge b-rerouted">score {option.score?.toFixed(2)}</span>
         </div>
 
+        <DurationBreakdown option={option} />
+
         <FareAttribution fare={option.fare} />
 
         <ScoreExplanation option={option} />
@@ -403,27 +301,163 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, searchPar
               <><Icon name="success" size={16} aria-hidden="true" /> {t('results.saved')}</>
             ) : t('results.save')}
           </Button>
-          <Button
-            block
-            variant="primary"
-            disabled={!saveState.saved || saveState.starting}
-            loading={saveState.starting}
-            onClick={onStart}
-          >
+          <Button block variant="primary" loading={saveState.starting} onClick={onStart}>
             {t('results.start')}
           </Button>
         </div>
-        {!saveState.saved && (
-          <p className="t-caption" style={{ marginTop: 6 }}>
-            {t('results.save_first')}
-          </p>
-        )}
       </div>
     </div>
   )
 }
 
-/** Results page — ranked options, map sync, details drawer, save + start. */
+/**
+ * Honest duration breakdown from real leg data: walking / waiting / transit.
+ * Waiting is derived (total − walking − transit) so schedule and transfer
+ * waits are explicit — a 4h journey reads as "mostly waiting", never as
+ * "geographically extremely long".
+ */
+function DurationBreakdown({ option }) {
+  const { t } = useI18n()
+  const legs = option.legs ?? []
+  const sumSec = (pred) => legs.filter(pred).reduce((sum, l) => sum + (Number(l.duration_sec) || 0), 0)
+  const walkSec = sumSec((l) => l.type === 'walking')
+  const transitSec = sumSec((l) => l.type !== 'walking')
+  const totalSec = Number(option.total_duration_sec) || 0
+  const waitSec = Math.max(0, totalSec - walkSec - transitSec)
+
+  return (
+    <div className="bestroute__breakdown" role="list" aria-label={t('results.breakdown')}>
+      <span className="t-label">{t('results.breakdown')}</span>
+      <span role="listitem">{t('results.metric_walking')} · {formatDuration(walkSec)}</span>
+      <span role="listitem">{t('results.waiting')} · {formatDuration(waitSec)}</span>
+      <span role="listitem">{t('results.transit')} · {formatDuration(transitSec)}</span>
+      <span role="listitem">{t('results.metric_transfers')} · {option.total_transfers}</span>
+    </div>
+  )
+}
+
+/**
+ * The single recommended journey. The planner exposes ONE confident answer —
+ * never a comparison carousel — with the summary that matters (time, walking,
+ * transfers, fare honesty, arrival) and one strong primary action.
+ */
+function BestRouteHero({ option, onStart, starting, saveState, onSave, onOpenDetails, onModifySearch }) {
+  const { t } = useI18n()
+  const legs = option.legs ?? []
+  const firstLeg = legs[0]
+  const lastLeg = legs[legs.length - 1]
+  const reliabilityPct = option.reliability != null ? Math.round(option.reliability * 100) : null
+  const modes = [...new Set(legs.filter((l) => l.type !== 'walking').map((l) => l.mode))]
+
+  return (
+    <Card className="bestroute" flat>
+      <div className="bestroute__head">
+        <span className="badge b-verified bestroute__badge">
+          <Icon name="shield" size={13} aria-hidden="true" /> {t('results.best_title')}
+        </span>
+        <span className="t-caption">{t('results.recommended_for_you')}</span>
+      </div>
+
+      <div className="row-between" style={{ alignItems: 'flex-start', marginBlockStart: 8 }}>
+        <b className="t-num bestroute__duration">{formatDuration(option.total_duration_sec)}</b>
+        <span className={`badge ${option.total_transfers === 0 ? 'b-active' : 'b-rerouted'}`}>
+          {option.total_transfers === 0
+            ? t('results.direct')
+            : option.total_transfers === 1
+              ? t('results.one_transfer')
+              : t('results.transfers').replace('{count}', option.total_transfers)}
+        </span>
+      </div>
+      <div className="row" style={{ gap: 10, marginBlockStart: 2 }}>
+        <span className="t-num" style={{ fontSize: 13, color: 'var(--ink900)' }}>
+          {formatTime(firstLeg?.departure_time)} → {formatTime(lastLeg?.arrival_time)}
+        </span>
+        {reliabilityPct != null && (
+          <span className="t-caption" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="shield" size={12} aria-hidden="true" style={{ color: reliabilityPct >= 70 ? 'var(--s800)' : 'var(--w800)' }} />
+            {t('results.reliability').replace('{pct}', reliabilityPct)}
+          </span>
+        )}
+      </div>
+
+      <div style={{ marginBlockStart: 10 }}>
+        <RouteStrip option={option} />
+      </div>
+
+      {/* Honest duration breakdown — schedule waits are explicit, so a long
+          total never reads as a geographically enormous route. */}
+      <DurationBreakdown option={option} />
+
+      {/* Trip summary: the facts a rider decides with — honest labels kept. */}
+      <div className="bestroute__summary">
+        <span className="chip">
+          <Icon name="modeWalking" size={13} aria-hidden="true" />
+          {formatDistance(option.walk_distance_meters)} {t('results.metric_walking').toLowerCase()}
+        </span>
+        {option.fare && (
+          <span className="chip">
+            {option.fare.amount} {option.fare.currency}
+            {option.fare.data_status === 'real' ? ' · ✓' : ' · ~'}
+          </span>
+        )}
+        <span className="chip">
+          <Icon name="clock" size={13} aria-hidden="true" />
+          {t('results.arrive')} {formatTime(lastLeg?.arrival_time)}
+        </span>
+        {modes.map((m) => (
+          <span key={m} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <ModeDot mode={m} />
+            {(() => {
+              const key = MODE_LABEL_KEYS[m]
+              const translated = key ? t(key) : m
+              return translated === key ? m : translated
+            })()}
+          </span>
+        ))}
+      </div>
+      {option.fare && <FareAttribution fare={option.fare} />}
+
+      {option.disrupted && (
+        <div className="alert alert--error" style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }} role="status">
+          <Icon name="detect" size={16} aria-hidden="true" />
+          <div>
+            <div style={{ fontWeight: 600 }}>{t('results.alert_on_route')}</div>
+            <div className="t-caption">
+              {(option.alerts ?? []).map((a) => a.header_text).join(' · ') || 'Disruption reported.'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <p className="t-caption bestroute__note">{t('results.best_note')}</p>
+
+      {/* One strong primary action; everything else is secondary. */}
+      <div className="bestroute__actions">
+        <Button block size="lg" variant="primary" loading={starting} onClick={onStart}>
+          <Icon name="navigate" size={17} aria-hidden="true" />
+          {t('results.start')}
+        </Button>
+        <div className="row" style={{ gap: 8, marginTop: 8 }}>
+          <Button block variant="secondary" loading={saveState.saving} disabled={saveState.saved} onClick={onSave}>
+            {saveState.saved
+              ? <><Icon name="success" size={15} aria-hidden="true" /> {t('results.saved')}</>
+              : t('results.save')}
+          </Button>
+          <Button block variant="ghost" onClick={onOpenDetails}>{t('results.view_details')}</Button>
+        </div>
+        <button type="button" className="bestroute__modify" onClick={onModifySearch}>
+          <Icon name="search" size={14} aria-hidden="true" />
+          {t('results.modify_search')}
+        </button>
+      </div>
+    </Card>
+  )
+}
+
+/**
+ * Results page — ONE best recommended journey, map-integrated, with the
+ * details drawer and save + start flows.
+ */
 export function JourneyResultsPage() {
   const { searchParams, searchResults, storeSaved, storeSearch } = useJourneyContext()
   const { t } = useI18n()
@@ -433,12 +467,15 @@ export function JourneyResultsPage() {
     ? searchResults
     : (Array.isArray(searchResults?.options) ? searchResults.options : [])
 
-  const [selected, setSelected] = useState(null)
+  // Single-recommendation contract: the ranked candidate list is internal;
+  // the product exposes exactly the top-ranked plan as the primary journey.
+  const best = options[0] ?? null
+
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [mobileMapOpen, setMobileMapOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [starting, setStarting] = useState(false)
-  const [savedMap, setSavedMap] = useState({}) // option index -> journey id
+  const [savedJourneyId, setSavedJourneyId] = useState(null)
   const [saveError, setSaveError] = useState(null)
   const [startError, setStartError] = useState(null)
 
@@ -458,62 +495,52 @@ export function JourneyResultsPage() {
     }
   }, [searchParams, navigate])
 
-  const selectedOptions = useMemo(() => {
-    if (options.length === 0) return { fastestSec: null, fewestTransfers: null }
-    return {
-      fastestSec: Math.min(...options.map((o) => o.total_duration_sec)),
-      fewestTransfers: Math.min(...options.map((o) => o.total_transfers)),
-    }
-  }, [options])
-
-  const handleSelect = (option) => {
-    setSelected(option)
-    setDetailsOpen(true)
-    setSaveError(null)
-    setStartError(null)
-  }
-
-  const optionIndex = selected ? Math.max(0, options.indexOf(selected)) : -1
-  const savedJourneyId = optionIndex >= 0 ? savedMap[optionIndex] : undefined
+  const searchPayload = useMemo(() => (searchParams ? {
+    origin_lat: searchParams.origin_lat,
+    origin_lng: searchParams.origin_lng,
+    destination_lat: searchParams.destination_lat,
+    destination_lng: searchParams.destination_lng,
+    requested_at: searchParams.requested_at,
+    max_transfers: searchParams.max_transfers,
+    max_walk_distance_per_leg: searchParams.max_walk_distance_per_leg,
+    preferred_modes: searchParams.preferred_modes,
+    avoided_modes: searchParams.avoided_modes,
+    alternatives: searchParams.alternatives,
+  } : null), [searchParams])
 
   const handleSave = useCallback(async () => {
-    if (!selected || !searchParams) return
-    if (savedMap[optionIndex] || saving) return // dedup: no duplicate saves
-
+    if (!best || !searchPayload || saving || savedJourneyId) return
     setSaving(true)
     setSaveError(null)
-
-    const searchPayload = {
-      origin_lat: searchParams.origin_lat,
-      origin_lng: searchParams.origin_lng,
-      destination_lat: searchParams.destination_lat,
-      destination_lng: searchParams.destination_lng,
-      requested_at: searchParams.requested_at,
-      max_transfers: searchParams.max_transfers,
-      max_walk_distance_per_leg: searchParams.max_walk_distance_per_leg,
-      preferred_modes: searchParams.preferred_modes,
-      avoided_modes: searchParams.avoided_modes,
-      alternatives: searchParams.alternatives,
-    }
-
     try {
-      const saved = await saveJourney({ searchPayload, optionIndex })
+      // optionIndex 0 — the backend re-plans the same search deterministically
+      // and persists the best (recommended) option.
+      const saved = await saveJourney({ searchPayload, optionIndex: 0 })
       const journey = saved?.data ?? saved
       storeSaved(journey)
-      setSavedMap((prev) => ({ ...prev, [optionIndex]: journey?.id ?? journey?.journey?.id ?? true }))
+      setSavedJourneyId(journey?.id ?? journey?.journey?.id ?? true)
     } catch (error) {
       setSaveError(error.message || 'Could not save your journey.')
     } finally {
       setSaving(false)
     }
-  }, [selected, optionIndex, options, searchParams, storeSaved, savedMap, saving])
+  }, [best, searchPayload, saving, savedJourneyId, storeSaved])
 
+  // Start Journey: one confident action — persists the recommended route if
+  // needed, activates it, and enters the live Journey Cockpit.
   const handleStart = useCallback(async () => {
-    const journeyId = savedMap[optionIndex]
-    if (!journeyId || journeyId === true || starting) return
+    if (!best || !searchPayload || starting) return
     setStarting(true)
     setStartError(null)
     try {
+      let journeyId = savedJourneyId
+      if (!journeyId || journeyId === true) {
+        const saved = await saveJourney({ searchPayload, optionIndex: 0 })
+        const journey = saved?.data ?? saved
+        storeSaved(journey)
+        journeyId = journey?.id ?? journey?.journey?.id
+        setSavedJourneyId(journeyId ?? true)
+      }
       const active = await startSavedJourney(journeyId)
       navigate(`/active-journeys/${active?.id ?? active?.data?.id ?? ''}`)
     } catch (error) {
@@ -521,28 +548,19 @@ export function JourneyResultsPage() {
     } finally {
       setStarting(false)
     }
-  }, [optionIndex, savedMap, starting, navigate])
+  }, [best, searchPayload, starting, savedJourneyId, storeSaved, navigate])
 
   if (!searchParams) return null
 
-  const saveStateForDetails = {
-    saved: Boolean(savedJourneyId),
-    saving,
-    starting,
-  }
+  const saveState = { saved: Boolean(savedJourneyId), saving, starting }
 
   // Memoized map inputs: fresh array identities every render would tear
   // down and rebuild all map layers on each parent render.
-  const activeOption = selected ?? options[0]
-  const alternativeOptions = useMemo(
-    () => options.filter((o) => o !== activeOption),
-    [options, activeOption]
-  )
   const routeStops = useMemo(
-    () => activeOption?.legs?.flatMap((leg) =>
+    () => best?.legs?.flatMap((leg) =>
       [leg.from_stop, leg.to_stop].filter((s) => s && s.lat != null)
     ) ?? [],
-    [activeOption]
+    [best]
   )
   const endpointOrigin = searchParams ? { lat: searchParams.origin_lat, lng: searchParams.origin_lng } : null
   const endpointDestination = searchParams ? { lat: searchParams.destination_lat, lng: searchParams.destination_lng } : null
@@ -569,7 +587,7 @@ export function JourneyResultsPage() {
 
   return (
     <>
-      <div className="row-between" style={{ marginBottom: 'var(--sp-4)' }}>
+      <div className="row-between page-head" style={{ marginBottom: 'var(--sp-4)' }}>
         <div className="row" style={{ gap: 8, alignItems: 'center' }}>
           <button
             type="button"
@@ -581,8 +599,12 @@ export function JourneyResultsPage() {
             <Icon name="arrowLeft" size={18} aria-hidden="true" />
           </button>
           <div>
-            <b style={{ fontSize: 17 }}>{t('results.title')}</b>
-            <div className="t-caption">{t('results.options').replace('{count}', options.length)}</div>
+            <b style={{ fontSize: 17 }}>{t('results.best_title')}</b>
+            {searchParams?.originStop?.name && searchParams?.destinationStop?.name && (
+              <div className="t-caption">
+                {searchParams.originStop.name} → {searchParams.destinationStop.name}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -598,7 +620,7 @@ export function JourneyResultsPage() {
         </Alert>
       )}
 
-      {options.length === 0 ? (
+      {!best ? (
         <Card flat>
           <StateBlock
             icon={<Icon name="search" size={26} aria-hidden="true" />}
@@ -621,8 +643,7 @@ export function JourneyResultsPage() {
                 <Button size="sm" variant="ghost" onClick={() => setMobileMapOpen(false)}>{t('results.close_map')}</Button>
               </div>
               <MapPanel
-                itinerary={activeOption}
-                alternatives={alternativeOptions}
+                itinerary={best}
                 origin={endpointOrigin}
                 destination={endpointDestination}
                 height="100%"
@@ -631,8 +652,7 @@ export function JourneyResultsPage() {
           ) : (
             <div className="results-split__map">
               <MapPanel
-                itinerary={activeOption}
-                alternatives={alternativeOptions}
+                itinerary={best}
                 origin={endpointOrigin}
                 destination={endpointDestination}
                 stops={routeStops}
@@ -652,35 +672,26 @@ export function JourneyResultsPage() {
               {t('results.view_map')}
             </button>
 
-            <ul className="stack-sm" style={{ listStyle: 'none', padding: 0, margin: 0, flex: 1 }}>
-              {options.map((option, idx) => (
-                <JourneyOptionCard
-                  key={idx}
-                  option={option}
-                  isBest={idx === 0}
-                  isFastest={option.total_duration_sec === selectedOptions.fastestSec}
-                  isFewestTransfers={option.total_transfers === selectedOptions.fewestTransfers && option.total_transfers > 0}
-                  isSelected={selected === option}
-                  onSelect={handleSelect}
-                />
-              ))}
-            </ul>
-
-            <p className="t-caption" style={{ marginTop: 10, textAlign: 'center' }}>
-              {t('results.select_hint')}
-            </p>
+            <BestRouteHero
+              option={best}
+              onStart={handleStart}
+              starting={starting}
+              saveState={saveState}
+              onSave={handleSave}
+              onOpenDetails={() => setDetailsOpen(true)}
+              onModifySearch={() => navigate('/search')}
+            />
           </div>
         </div>
       )}
 
-      {selected && detailsOpen && (
+      {best && detailsOpen && (
         <JourneyDetails
-          option={selected}
+          option={best}
           onClose={() => setDetailsOpen(false)}
           onSave={handleSave}
           onStart={handleStart}
-          saveState={saveStateForDetails}
-          searchParams={searchParams}
+          saveState={saveState}
         />
       )}
     </>

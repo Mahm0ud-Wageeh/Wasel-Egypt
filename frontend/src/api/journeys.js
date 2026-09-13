@@ -33,6 +33,15 @@ export async function startSavedJourney(journeyId) {
 }
 
 /**
+ * Saved journeys for the authenticated user (Home "recent plans").
+ * GET /journeys?per_page=n → { data: [...], meta } (JourneyResource).
+ */
+export async function getSavedJourneys(perPage = 4) {
+  const response = await apiRequest(`${endpoints.journeys.list}?per_page=${perPage}`)
+  return response.data ?? response
+}
+
+/**
  * Current time as a Cairo wall-clock `datetime-local` value ("YYYY-MM-DDTHH:mm").
  *
  * Time-frame contract with the backend: GTFS static times are Cairo

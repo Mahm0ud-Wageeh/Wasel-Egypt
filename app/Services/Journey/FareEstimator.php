@@ -74,6 +74,39 @@ class FareEstimator
             'currency' => 'EGP',
             'source' => self::TFC_FARES_KEY . ($fareData['as_of'] !== null ? '_' . substr($fareData['as_of'], 0, 4) : ''),
             'as_of' => $fareData['as_of'],
+            'data_status' => 'real',
+        ];
+    }
+
+    /**
+     * Price a single stop-to-stop pair from the TfC matrix when both stops
+     * belong to it. Used by the public fares surface so published pair
+     * pricing and journey pricing come from the exact same verified data.
+     *
+     * @return array|null ['amount' => float, 'currency' => string, 'source' => string, 'as_of' => ?string, 'data_status' => string]
+     */
+    public function estimateForStops(int $fromStopId, int $toStopId): ?array
+    {
+        $fareData = $this->loadMetroFareMatrix();
+        if ($fareData === null) {
+            return null;
+        }
+
+        // Pairs are keyed by the TfC-imported stop ids recorded in the matrix.
+        $legFare = $fareData['matrix'][(string) $fromStopId][(string) $toStopId]
+            ?? $fareData['matrix'][$fromStopId][$toStopId]
+            ?? null;
+
+        if ($legFare === null) {
+            return null;
+        }
+
+        return [
+            'amount' => round((float) $legFare, 2),
+            'currency' => 'EGP',
+            'source' => self::TFC_FARES_KEY . ($fareData['as_of'] !== null ? '_' . substr($fareData['as_of'], 0, 4) : ''),
+            'as_of' => $fareData['as_of'],
+            'data_status' => 'real',
         ];
     }
 

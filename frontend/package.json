@@ -8,7 +8,7 @@
     "predev": "npm run sync:map-worker",
     "dev": "vite",
     "prebuild": "npm run sync:map-worker",
-    "build": "vite build",
+    "build": "vite build && node scripts/publish-to-laravel.mjs",
     "preview": "vite preview",
     "pretest": "npm run sync:map-worker",
     "test": "vitest run"

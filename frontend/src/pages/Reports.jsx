@@ -205,7 +205,7 @@ export default function Reports() {
   return (
     <div className="app-shell__page">
       {/* Header / Intro */}
-      <div className="row-between" style={{ flexWrap: 'wrap', gap: 12 }}>
+      <div className="row-between page-head" style={{ flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 className="t-h1" style={{ color: 'var(--p900)', margin: 0 }}> {t('reports.title')} </h1>
           <p className="t-caption" style={{ marginTop: 2 }}> {t('reports.subtitle')} </p>
@@ -224,7 +224,7 @@ export default function Reports() {
       </div>
 
       {/* Tabs */}
-      <div className="row" style={{ borderBottom: '1px solid var(--line)', paddingBottom: 8, gap: 16 }}>
+      <div className="row reports-tabs" style={{ borderBottom: '1px solid var(--line)', paddingBottom: 8, gap: 16 }}>
         <button
           type="button"
           onClick={() => setActiveTab('feed')}
