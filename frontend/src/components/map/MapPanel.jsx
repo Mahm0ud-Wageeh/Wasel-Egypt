@@ -11,6 +11,7 @@ import {
   setPreferredLayer,
   onMapCommand,
 } from '../../map/basemaps'
+import { forwardOffsetLocation } from '../../utils/geo/navigationMath'
 
 /**
  * Production map panel built on MapLibre GL JS.
@@ -90,25 +91,51 @@ const MODE_COLORS_DARK = { ...MODE_COLORS, ...DARK_MODE_COLORS }
 
 const lng = (p) => [p.lng ?? p[1], p.lat ?? p[0]]
 
-/** Draw the live-navigation arrow (points north; rotated by icon-rotate). */
+/** Draw the Google Maps-grade live navigation puck with radiant forward beam. */
 function makeNavigationArrow(color) {
-  const size = 64
+  const size = 96
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
   const ctx = canvas.getContext('2d')
+
+  // 1. Forward radiant light beam cone (Google Maps style)
+  const beamGrad = ctx.createRadialGradient(size / 2, size / 2, 10, size / 2, size / 2, 46)
+  beamGrad.addColorStop(0, 'rgba(26, 107, 176, 0.45)')
+  beamGrad.addColorStop(1, 'rgba(26, 107, 176, 0)')
   ctx.beginPath()
-  ctx.moveTo(size / 2, 6)
-  ctx.lineTo(size - 10, size - 8)
-  ctx.lineTo(size / 2, size - 20)
-  ctx.lineTo(10, size - 8)
+  ctx.moveTo(size / 2, size / 2)
+  ctx.arc(size / 2, size / 2, 46, (-65 * Math.PI) / 180, (-115 * Math.PI) / 180, true)
   ctx.closePath()
+  ctx.fillStyle = beamGrad
+  ctx.fill()
+
+  // 2. High-contrast white outer casing ring with drop shadow
+  ctx.beginPath()
+  ctx.arc(size / 2, size / 2, 14, 0, 2 * Math.PI)
+  ctx.fillStyle = '#FFFFFF'
+  ctx.shadowColor = 'rgba(0,0,0,0.32)'
+  ctx.shadowBlur = 6
+  ctx.shadowOffsetY = 2
+  ctx.fill()
+  ctx.shadowColor = 'transparent'
+
+  // 3. Vibrant transit blue inner puck
+  ctx.beginPath()
+  ctx.arc(size / 2, size / 2, 11, 0, 2 * Math.PI)
   ctx.fillStyle = color
   ctx.fill()
-  ctx.lineWidth = 5
-  ctx.strokeStyle = '#FFFFFF'
-  ctx.lineJoin = 'round'
-  ctx.stroke()
+
+  // 4. Directional forward pointer/arrow tip
+  ctx.beginPath()
+  ctx.moveTo(size / 2, size / 2 - 18)
+  ctx.lineTo(size / 2 + 7, size / 2 - 4)
+  ctx.lineTo(size / 2, size / 2 - 8)
+  ctx.lineTo(size / 2 - 7, size / 2 - 4)
+  ctx.closePath()
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fill()
+
   return ctx.getImageData(0, 0, size, size)
 }
 
@@ -193,8 +220,11 @@ export function MapPanel({
   currentLegIndex = null, // journey progress: completed legs render de-emphasized
   highlightStop = null, // {lat,lng} — visually emphasized stop (e.g. next stop)
   userHeading = null, // device heading in degrees (null = unknown, never faked)
+  userSpeed = 0, // speed in m/s (used for adaptive zoom and forward offset)
   follow = false, // follow-me: gently keep the live position centered
   onFollowInterrupt = null, // user panned away — caller leaves follow mode
+  onRecenter = null, // user clicked floating recenter FAB
+  navigationMode = false, // live active navigation with forward offset & adaptive zoom
   height = 260,
   fitTo = 'route', // 'route' | 'origin' | 'user'
   showControls = true,
@@ -210,6 +240,8 @@ export function MapPanel({
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
   const [zoom, setZoom] = useState(null)
+  const [headingUp, setHeadingUp] = useState(false)
+  const [pitch3D, setPitch3D] = useState(false)
   const [nearby, setNearby] = useState([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [stopsLayerOn, setStopsLayerOn] = useState(showNearbyStops)
@@ -427,8 +459,8 @@ export function MapPanel({
   }, [ready])
 
   // ---------- follow-me (gentle recenter on live fixes) ----------
-  // Only pans — never zooms, never fits, never touches the fit contract.
-  // A user drag leaves follow mode (dragstart fires only for real gestures).
+  // In navigationMode: centers ahead of user along heading, rotates if headingUp, tilts if pitch3D, adapts zoom.
+  // In standard mode: centers on user position.
   const followRef = useRef(follow)
   followRef.current = follow
   const followInterruptRef = useRef(onFollowInterrupt)
@@ -442,21 +474,45 @@ export function MapPanel({
     }
     map.on('dragstart', interrupt)
     map.on('zoomstart', interrupt) // pinch/wheel zoom also signals manual control
+    map.on('pitchstart', interrupt)
+    map.on('rotatestart', interrupt)
     return () => {
       map.off('dragstart', interrupt)
       map.off('zoomstart', interrupt)
+      map.off('pitchstart', interrupt)
+      map.off('rotatestart', interrupt)
     }
   }, [ready])
 
   useEffect(() => {
     const map = mapRef.current
     if (!follow || !map || !ready || !userLocation) return
-    if (!Number.isFinite(Number(userLocation.lat)) || !Number.isFinite(Number(userLocation.lng))) return
-    map.easeTo({
-      center: [Number(userLocation.lng), Number(userLocation.lat)],
-      duration: 800,
-    })
-  }, [follow, ready, userLocation])
+    const uLat = Number(userLocation.lat)
+    const uLng = Number(userLocation.lng)
+    if (!Number.isFinite(uLat) || !Number.isFinite(uLng)) return
+
+    if (navigationMode) {
+      const offsetDist = Number(userSpeed) > 6 ? 45 : 24
+      const [fLat, fLng] = forwardOffsetLocation(uLat, uLng, userHeading ?? 0, offsetDist)
+      const targetCenter = [fLng, fLat]
+      const targetBearing = headingUp && Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0
+      const targetPitch = pitch3D ? 38 : 0
+      const targetZoom = Number(userSpeed) > 10 ? 15.5 : Number(userSpeed) > 3 ? 16.5 : 17.2
+
+      map.easeTo({
+        center: targetCenter,
+        bearing: targetBearing,
+        pitch: targetPitch,
+        zoom: Math.max(map.getZoom(), targetZoom),
+        duration: 800,
+      })
+    } else {
+      map.easeTo({
+        center: [uLng, uLat],
+        duration: 800,
+      })
+    }
+  }, [follow, ready, userLocation, navigationMode, userHeading, userSpeed, headingUp, pitch3D])
 
   // ---------- nearby stops (public endpoint, view-bounded) ----------
   const fetchNearbyStops = useCallback(async (center, currentZoom) => {
@@ -843,16 +899,20 @@ export function MapPanel({
     [fitPoints],
   )
 
+  const hasInitialFitRef = useRef(false)
   useEffect(() => {
     const map = mapRef.current
     const maplibre = maplibreRef.current
     if (!map || !maplibre || !ready || fitPoints.length === 0) return
+    if (navigationMode && hasInitialFitRef.current) return
+    hasInitialFitRef.current = true
+
     const bounds = new maplibre.LngLatBounds()
     fitPoints.forEach((p) => bounds.extend(p))
     map.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 600 })
     // fitKey — not fitPoints identity — decides: equal coordinates must not refit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, fitKey])
+  }, [ready, fitKey, navigationMode])
 
   const selectLayer = useCallback((id) => {
     if (!BASEMAPS[id]) return
@@ -875,8 +935,24 @@ export function MapPanel({
       (valid(userLocation) && lng(userLocation)) ||
       (valid(origin) && lng(origin)) ||
       null
-    if (target) map.flyTo({ center: target, zoom: Math.max(map.getZoom(), 15), duration: 500 })
-  }, [userLocation, origin])
+    if (target) {
+      if (navigationMode && valid(userLocation)) {
+        const uLat = Number(userLocation.lat)
+        const uLng = Number(userLocation.lng)
+        const offsetDist = Number(userSpeed) > 6 ? 45 : 24
+        const [fLat, fLng] = forwardOffsetLocation(uLat, uLng, userHeading ?? 0, offsetDist)
+        map.flyTo({
+          center: [fLng, fLat],
+          zoom: Math.max(map.getZoom(), 16.8),
+          bearing: headingUp && Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0,
+          pitch: pitch3D ? 38 : 0,
+          duration: 700,
+        })
+      } else {
+        map.flyTo({ center: target, zoom: Math.max(map.getZoom(), 15), duration: 500 })
+      }
+    }
+  }, [userLocation, origin, navigationMode, userHeading, userSpeed, headingUp, pitch3D])
 
   const zoomBy = useCallback((delta) => {
     mapRef.current?.easeTo({ zoom: (mapRef.current?.getZoom() ?? 11) + delta, duration: 250 })
@@ -983,10 +1059,51 @@ export function MapPanel({
                 </div>
               )}
             </div>
+            {navigationMode && (
+              <>
+                <span className="map-ctl__divider" aria-hidden="true" />
+                <button
+                  type="button"
+                  className={`map-ctl${headingUp ? ' is-on' : ''}`}
+                  onClick={() => setHeadingUp((v) => !v)}
+                  aria-pressed={headingUp}
+                  aria-label={headingUp ? t('cockpit.heading_up') || 'Heading up' : t('cockpit.north_up') || 'North up'}
+                  title={headingUp ? t('cockpit.heading_up') || 'Heading up' : t('cockpit.north_up') || 'North up'}
+                >
+                  <Icon name="compass" size={17} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`map-ctl${pitch3D ? ' is-on' : ''}`}
+                  onClick={() => setPitch3D((v) => !v)}
+                  aria-pressed={pitch3D}
+                  aria-label={pitch3D ? '2D perspective' : '3D perspective'}
+                  title={pitch3D ? '2D perspective' : '3D perspective'}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 700 }}>{pitch3D ? '2D' : '3D'}</span>
+                </button>
+              </>
+            )}
             <button type="button" className="map-ctl" onClick={recenter} aria-label={t('map.recenter')} title={t('map.recenter')}>
               <Icon name="crosshair" size={17} aria-hidden="true" />
             </button>
           </div>
+
+          {navigationMode && !follow && ready && (
+            <button
+              type="button"
+              className="map-recenter-fab"
+              onClick={() => {
+                onRecenter?.()
+                recenter()
+              }}
+              aria-label={t('cockpit.recenter') || 'Re-center'}
+              title={t('cockpit.recenter') || 'Re-center'}
+            >
+              <Icon name="crosshair" size={16} aria-hidden="true" />
+              <span>{t('cockpit.recenter') || 'Re-center'}</span>
+            </button>
+          )}
 
           {zoom != null && (
             <span className="map-zoom-badge" aria-hidden>

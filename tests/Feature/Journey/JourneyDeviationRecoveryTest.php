@@ -416,12 +416,16 @@ class JourneyDeviationRecoveryTest extends TestCase
             ->postJson("/api/v1/active-journeys/{$activeId}/recovery-options/{$options[0]['id']}/accept")
             ->assertStatus(200);
 
-        // Re-board on the rerouted plan. Recovery re-plans from the deviation
-        // point with a wider walk radius, so the alternative boards at
-        // Tahrir (stop A) rather than the original boarding stop.
+        // Re-board on the rerouted plan at its actual transit boarding stop.
+        $activeJourney = ActiveJourney::find($activeId);
+        $reroutedBoardingStop = $activeJourney->journey->journeyLegs
+            ->sortBy('sequence')
+            ->first(fn ($leg) => $leg->transit_stop_from_id !== null)
+            ?->transitStopFrom ?? $this->stopA;
+
         $this->sendLocation($activeId, [
-            'latitude' => (float) $this->stopA->latitude,
-            'longitude' => (float) $this->stopA->longitude,
+            'latitude' => (float) $reroutedBoardingStop->latitude,
+            'longitude' => (float) $reroutedBoardingStop->longitude,
             'recorded_at' => Carbon::today()->setTime(7, 55)->format('Y-m-d\TH:i'),
         ]);
         $deviated = $this->sendLocation($activeId, [

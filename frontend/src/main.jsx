@@ -12,6 +12,10 @@ import './styles/components.css'
 import './styles/product.css'
 import './styles/ai.css'
 
+import { initGA } from './utils/analytics'
+
+initGA()
+
 // PWA: register the offline shell service worker (production + dev,
 // so the installability can be demoed locally). Browsers ignore
 // registration on unsupported schemes automatically.

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useI18n } from '../i18n/LanguageContext'
 import { useLiveJourneyTracking } from '../hooks/useLiveJourneyTracking'
+import { useNavigationEngine } from '../hooks/useNavigationEngine'
 import { Card } from '../components/ui/Card'
 import { Badge, ModeDot } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -17,6 +18,7 @@ import {
   completeJourney,
   cancelJourney,
 } from '../api/activeJourneys'
+import { trackEvent } from '../utils/analytics'
 
 const PANEL_STORAGE_KEY = 'wasel.cockpit.panel'
 
@@ -164,10 +166,46 @@ export default function ActiveJourney() {
     if (live.status === 'live') setFollowOn(true)
   }, [live.status])
 
+  // ── Navigation Engine (high-precision GPS + route matching) ──
+  // Derived values for the engine must be declared here (before the hook call)
+  // because the hook needs itinerary and currentLegIndex.
+  const _legs = activeJourney?.journey?.legs ?? activeJourney?.journey?.journey_legs ?? []
+  const _tracking = activeJourney?.tracking ?? {}
+  const _currentLegIndex = _tracking.current_leg_index ?? activeJourney?.current_leg_index ?? 0
+
+  const navItinerary = useMemo(
+    () => ({
+      legs: _legs.map((leg) => ({
+        ...leg,
+        from_lat: Number(leg.from_lat),
+        from_lng: Number(leg.from_lng),
+        to_lat: Number(leg.to_lat),
+        to_lng: Number(leg.to_lng),
+        geometry: Array.isArray(leg.geometry) ? leg.geometry.map((p) => [Number(p[0]), Number(p[1])]) : null,
+      })),
+    }),
+    [_legs]
+  )
+
+  const navEngine = useNavigationEngine({
+    enabled: liveOn,
+    itinerary: navItinerary,
+    currentLegIndex: _currentLegIndex,
+    onLocationUpdate: postFix,
+    onDeviationDetected: null,
+  })
+
+  // Arms follow-me when navigation engine goes live too.
+  useEffect(() => {
+    if (navEngine.status === 'live') setFollowOn(true)
+  }, [navEngine.status])
+
   const handleSendLocation = async (lat, lng) => {
     if (!activeJourney) return
     setGpsSimulating(true)
     setError(null)
+    // Feed the simulated position into the navigation engine for visual snapping
+    navEngine.simulateLocation(lat, lng)
     try {
       const updated = await updateJourneyLocation(activeJourney.id, {
         latitude: lat,
@@ -212,6 +250,7 @@ export default function ActiveJourney() {
     setError(null)
     try {
       const res = await completeJourney(activeJourney.id)
+      trackEvent('journey_completed', { journey_id: activeJourney.id })
       setActiveJourney(res.data ?? res)
       setActionSuccess(t('journey.completed_toast'))
       setTimeout(() => navigate('/home'), 1800)
@@ -228,6 +267,7 @@ export default function ActiveJourney() {
     setError(null)
     try {
       const res = await cancelJourney(activeJourney.id)
+      trackEvent('journey_cancelled', { journey_id: activeJourney.id })
       setActiveJourney(res.data ?? res)
       setActionSuccess(t('journey.cancelled_toast'))
       setTimeout(() => navigate('/home'), 1400)
@@ -249,6 +289,25 @@ export default function ActiveJourney() {
   const isDeviated = status === 'deviated'
   const isRerouted = status === 'rerouted'
   const isDone = status === 'completed' || status === 'cancelled'
+
+  useEffect(() => {
+    if (activeJourney?.id) {
+      trackEvent('journey_started', {
+        journey_id: activeJourney.id,
+        legs_count: legs.length,
+        status: status,
+      })
+    }
+  }, [activeJourney?.id])
+
+  useEffect(() => {
+    if (isDeviated) {
+      trackEvent('deviation_detected', {
+        journey_id: activeJourney?.id,
+        severity: tracking?.deviation?.severity,
+      })
+    }
+  }, [isDeviated, activeJourney?.id])
 
   const currentLeg = legs[currentLegIndex]
   const nextLeg = legs[currentLegIndex + 1]
@@ -283,12 +342,16 @@ export default function ActiveJourney() {
     return near?.latitude != null ? near : null
   }, [activeJourney])
 
-  // Live GPS fix wins when present; otherwise fall back to recorded pings.
-  const userLocation = live.position
+  // Navigation engine snapped position wins → old live position → recorded pings.
+  const userLocation = navEngine.visualPosition
+    ?? live.position
     ?? (latestPing?.latitude
       ? { lat: Number(latestPing.latitude), lng: Number(latestPing.longitude) }
       : null)
-  const userHeading = liveOn ? live.heading : null
+  const userHeading = liveOn
+    ? (navEngine.heading ?? live.heading)
+    : null
+  const userSpeed = navEngine.speed ?? 0
 
   // Deviation pin from the tracking payload (deviated journeys only).
   const deviationPin = isDeviated && tracking?.deviation
@@ -373,6 +436,14 @@ export default function ActiveJourney() {
     )
   }
 
+  // Navigation engine status: use navEngine if active, else fall back to old live
+  const navActive = navEngine.status === 'live'
+  const liveActive = liveOn && (navActive || live.status === 'live')
+
+  // Navigation HUD data from the route matcher
+  const navManeuver = navEngine.routeMatch?.nextManeuver ?? null
+  const navOffRoute = navEngine.isOffRoute
+
   return (
     <div className="app-shell__page app-shell__page--cockpit">
       <div className={`cockpit${isDeviated ? ' cockpit--deviated' : ''}${isRerouted ? ' cockpit--rerouted' : ''}`}>
@@ -388,11 +459,60 @@ export default function ActiveJourney() {
               : null}
             currentLegIndex={isDone ? null : currentLegIndex}
             userHeading={userHeading}
+            userSpeed={userSpeed}
+            navigationMode={liveActive && !isDone}
             follow={followOn}
             onFollowInterrupt={() => setFollowOn(false)}
+            onRecenter={() => setFollowOn(true)}
             height="100%"
             fitTo="route"
           />
+
+          {/* ── Navigation HUD overlay (maneuver card + off-route) ── */}
+          {liveActive && !isDone && (navManeuver || navOffRoute) && (
+            <div className="cockpit__nav-overlay">
+              {navManeuver && (
+                <div className="nav-hud-card" role="status" aria-live="polite">
+                  <div className="nav-hud-card__icon">
+                    <Icon
+                      name={navManeuver.type === 'walking' ? 'modeWalking' : 'circleDot'}
+                      size={22}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <div className="nav-hud-card__content">
+                    <span className="nav-hud-card__dist">
+                      {formatDistance(navManeuver.distanceMeters)}
+                    </span>
+                    <p className="nav-hud-card__instruction">
+                      {navManeuver.instruction}
+                    </p>
+                    {navManeuver.targetStop && (
+                      <span className="nav-hud-card__sub">
+                        → {navManeuver.targetStop}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {navOffRoute && (
+                <div className="nav-offroute-alert" role="alert">
+                  <span>
+                    <Icon name="detect" size={14} aria-hidden="true" style={{ verticalAlign: 'middle', marginInlineEnd: 6 }} />
+                    {t('deviation.off_route_alert')}
+                  </span>
+                  <button
+                    type="button"
+                    className="chip on"
+                    style={{ fontSize: 12, padding: '4px 10px' }}
+                    onClick={() => navigate(`/active-journeys/${activeJourney.id}/deviation`)}
+                  >
+                    {t('deviation.recalculate')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Floating header over the map */}
           <div className="cockpit__topbar">
@@ -418,15 +538,15 @@ export default function ActiveJourney() {
           <div className="cockpit__chips">
             <button
               type="button"
-              className={`chip${liveOn && live.status === 'live' ? ' on' : ''}`}
+              className={`chip${liveActive ? ' on' : ''}`}
               aria-pressed={liveOn}
-              disabled={live.status === 'starting'}
+              disabled={live.status === 'starting' || navEngine.status === 'starting'}
               onClick={() => setLiveOn((v) => !v)}
             >
-              <Icon name={live.status === 'live' ? 'track' : 'locate'} size={13} aria-hidden="true" />
-              {live.status === 'live' ? t('cockpit.live_on') : t('cockpit.live_tracking')}
+              <Icon name={liveActive ? 'track' : 'locate'} size={13} aria-hidden="true" />
+              {liveActive ? t('cockpit.live_on') : t('cockpit.live_tracking')}
             </button>
-            {liveOn && live.status === 'live' && (
+            {liveActive && (
               <button
                 type="button"
                 className={`chip${followOn ? ' on' : ''}`}
@@ -521,52 +641,95 @@ export default function ActiveJourney() {
               </Alert>
             )}
 
-            {/* 1 — the next action, top of the hierarchy */}
-            <div className="cockpit__next" aria-live="polite">
-              <span className="t-caption" style={{ fontWeight: 700, color: 'var(--p600)' }}>
-                {t('cockpit.next_action')}
-              </span>
-              {nextAction ? (
-                <>
-                  <b className="cockpit__next-main">
-                    <Icon name={nextAction.icon} size={16} aria-hidden="true" />
-                    {nextAction.main}
-                  </b>
-                  {nextAction.sub && (
-                    <div className="cockpit__next-sub">
-                      <span className="row" style={{ gap: 6 }}>
-                        <ModeDot mode={currentLeg?.mode ?? 'walking'} />
-                        <b style={{ fontSize: 13 }}>
-                          {currentLeg?.route_variant?.route?.short_name
-                            ? `Line ${currentLeg.route_variant.route.short_name}`
-                            : modeLabel(t, currentLeg?.mode)}
-                        </b>
-                      </span>
-                      {nextAction.sub.board && (
-                        <span className="t-caption">
-                          {t('cockpit.board_at').replace('{stop}', nextAction.sub.board)}
-                          {' → '}
-                          {t('cockpit.alight_at').replace('{stop}', nextAction.sub.alight ?? '—')}
+            {/* 1 — NOW / NEXT / LATER (THEN) Navigation Hierarchy */}
+            <div className="cockpit__hierarchy" aria-live="polite">
+              {/* NOW: What am I doing right now? */}
+              <div className="cockpit__step cockpit__step--now" style={{ padding: '10px 12px', background: 'var(--surface)', borderRadius: 'var(--rad-sm)', border: '1.5px solid var(--p600)', marginBottom: 8 }}>
+                <div className="row-between" style={{ marginBottom: 4 }}>
+                  <span className="badge b-active" style={{ fontSize: 10.5, fontWeight: 700 }}>
+                    {t('cockpit.now')}
+                  </span>
+                  <span className="t-caption" style={{ fontWeight: 700, color: 'var(--p700)' }}>
+                    {currentLeg ? `${currentLegIndex + 1}/${legs.length}` : '—'}
+                  </span>
+                </div>
+                {nextAction ? (
+                  <>
+                    <b className="cockpit__next-main" style={{ fontSize: 14 }}>
+                      <Icon name={nextAction.icon} size={16} aria-hidden="true" />
+                      {nextAction.main}
+                    </b>
+                    {nextAction.sub && (
+                      <div className="cockpit__next-sub" style={{ marginTop: 4 }}>
+                        <span className="row" style={{ gap: 6 }}>
+                          <ModeDot mode={currentLeg?.mode ?? 'walking'} />
+                          <b style={{ fontSize: 12.5 }}>
+                            {currentLeg?.route_variant?.route?.short_name
+                              ? `Line ${currentLeg.route_variant.route.short_name}`
+                              : modeLabel(t, currentLeg?.mode)}
+                          </b>
                         </span>
-                      )}
-                      {nextAction.sub.transferHint && (
-                        <span className="badge b-rerouted" style={{ marginTop: 2 }}>
-                          <Icon name="recover" size={11} aria-hidden="true" /> {nextAction.sub.transferHint}
-                          {nextLeg?.route_variant?.route?.short_name
-                            ? ` · ${nextLeg.route_variant.route.short_name}`
-                            : ''}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <b className="cockpit__next-main">—</b>
+                        {nextAction.sub.board && (
+                          <span className="t-caption" style={{ fontSize: 11.5 }}>
+                            {t('cockpit.board_at').replace('{stop}', nextAction.sub.board)}
+                            {' → '}
+                            {t('cockpit.alight_at').replace('{stop}', nextAction.sub.alight ?? '—')}
+                          </span>
+                        )}
+                        {nextAction.sub.transferHint && (
+                          <span className="badge b-rerouted" style={{ marginTop: 3 }}>
+                            <Icon name="recover" size={11} aria-hidden="true" /> {nextAction.sub.transferHint}
+                            {nextLeg?.route_variant?.route?.short_name
+                              ? ` · ${nextLeg.route_variant.route.short_name}`
+                              : ''}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <b className="cockpit__next-main">—</b>
+                )}
+                {eta != null && (
+                  <span className="chip on" style={{ marginTop: 6, display: 'inline-flex', fontSize: 11 }}>
+                    ≈ {eta} {t('journey.min_walk')}
+                  </span>
+                )}
+              </div>
+
+              {/* NEXT: What happens next? */}
+              {nextLeg && (
+                <div className="cockpit__step cockpit__step--next" style={{ padding: '8px 12px', background: 'var(--sand)', borderRadius: 'var(--rad-sm)', border: '1px solid var(--line)', marginBottom: 6 }}>
+                  <div className="row-between" style={{ marginBottom: 2 }}>
+                    <span className="badge b-rerouted" style={{ fontSize: 10 }}>
+                      {t('cockpit.next')}
+                    </span>
+                    <span className="t-caption" style={{ fontSize: 11, color: 'var(--ink700)' }}>
+                      Leg {currentLegIndex + 2}
+                    </span>
+                  </div>
+                  <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+                    <Icon name={nextLeg.type === 'walking' ? 'modeWalking' : 'navigate'} size={14} aria-hidden="true" />
+                    <b style={{ fontSize: 12.5 }}>
+                      {nextLeg.type === 'walking'
+                        ? `${t('journey.walk')} ${formatDistance(nextLeg.distance_meters)} → ${nextLeg.to_stop?.name ?? t('results.destination')}`
+                        : `${t('cockpit.board_at').replace('{stop}', nextLeg.from_stop?.name ?? '—')} (${nextLeg.route_variant?.route?.short_name ? `Line ${nextLeg.route_variant.route.short_name}` : modeLabel(t, nextLeg.mode)})`}
+                    </b>
+                  </div>
+                </div>
               )}
-              {eta != null && (
-                <span className="chip on" style={{ marginTop: 6, display: 'inline-flex' }}>
-                  ≈ {eta} {t('journey.min_walk')}
-                </span>
+
+              {/* THEN / LATER: What remains? */}
+              {legs.length > currentLegIndex + 2 && (
+                <div className="cockpit__step cockpit__step--later" style={{ padding: '6px 12px', background: 'var(--bg)', borderRadius: 'var(--rad-sm)', border: '1px dashed var(--line)' }}>
+                  <div className="row-between">
+                    <span className="badge" style={{ fontSize: 9.5 }}>{t('cockpit.later')}</span>
+                    <span className="t-caption" style={{ fontSize: 11.5, color: 'var(--ink700)' }}>
+                      {lastLeg?.to_stop?.name ? `${t('results.arrive')} ${lastLeg.to_stop.name}` : t('results.destination')}
+                      {remainingMin != null ? ` · ≈ ${remainingMin} min` : ''}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 

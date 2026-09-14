@@ -2343,3 +2343,134 @@
 .admin-health-cell {
   border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
 }
+
+/* ============================================================
+   Google Maps-Grade Navigation HUD & Re-center FAB
+   ============================================================ */
+.map-recenter-fab {
+  position: absolute;
+  inset-block-end: 20px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--surface);
+  color: var(--p700);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  pointer-events: auto;
+}
+.map-recenter-fab:hover {
+  background: var(--surface-2);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+.map-recenter-fab:active {
+  transform: translateX(-50%) translateY(0);
+}
+[dir='rtl'] .map-recenter-fab {
+  transform: translateX(50%);
+}
+[dir='rtl'] .map-recenter-fab:hover {
+  transform: translateX(50%) translateY(-2px);
+}
+[dir='rtl'] .map-recenter-fab:active {
+  transform: translateX(50%) translateY(0);
+}
+
+.cockpit__nav-overlay {
+  position: absolute;
+  inset-block-start: 64px;
+  inset-inline: 10px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+@media (min-width: 900px) {
+  .cockpit__nav-overlay {
+    inset-inline-end: calc(min(390px, 42%) + 24px);
+    inset-inline-start: 16px;
+  }
+}
+
+.nav-hud-card {
+  position: relative;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.16);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+.nav-hud-card__icon {
+  inline-size: 44px;
+  block-size: 44px;
+  border-radius: 12px;
+  background: var(--p50);
+  color: var(--p700);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.nav-hud-card__content {
+  flex: 1;
+  min-inline-size: 0;
+}
+.nav-hud-card__dist {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p700);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.nav-hud-card__instruction {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+.nav-hud-card__sub {
+  font-size: 12px;
+  color: var(--ink500);
+}
+
+.nav-offroute-alert {
+  position: relative;
+  width: 100%;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: var(--sh-md);
+  pointer-events: auto;
+}
+.nav-offroute-alert span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #b78103;
+}
+
+

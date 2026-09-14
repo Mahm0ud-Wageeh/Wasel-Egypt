@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/LanguageContext'
 import { apiRequest } from '../api/client'
 import { endpoints } from '../api/endpoints'
 import { searchPublicStops } from '../api/journeys'
+import { trackEvent } from '../utils/analytics'
 
 /**
  * Public fares page — the honest fare information surface.
@@ -35,6 +36,7 @@ export default function Fares() {
 
   useEffect(() => {
     let active = true
+    trackEvent('fare_viewed')
     apiRequest(endpoints.public.fares, { auth: false })
       .then((res) => {
         if (active) setFares(Array.isArray(res?.data) ? res.data : [])

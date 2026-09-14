@@ -18,6 +18,7 @@ import {
   acceptRecoveryOption,
   cancelJourney,
 } from '../api/activeJourneys'
+import { trackEvent } from '../utils/analytics'
 
 /** Localized mode labels — raw mode ids never surface in the UI. */
 const MODE_LABEL_KEYS = {
@@ -115,6 +116,7 @@ export default function Deviation() {
   const handleGenerateOptions = async () => {
     setLoadingOptions(true)
     setError(null)
+    trackEvent('recovery_started', { journey_id: activeId })
     try {
       const res = await generateRecoveryOptions(activeId, 3)
       const list = Array.isArray(res) ? res : (res?.data ?? [])
@@ -134,6 +136,7 @@ export default function Deviation() {
     setError(null)
     try {
       await acceptRecoveryOption(activeId, recoveryId)
+      trackEvent('recovery_accepted', { journey_id: activeId, recovery_id: recoveryId })
       setSuccess(t('deviation.accepted_toast'))
       setTimeout(() => {
         navigate(`/active-journeys/${activeId}`)

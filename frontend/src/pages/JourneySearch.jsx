@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/LanguageContext'
 import { useJourneyContext } from '../contexts/JourneyContext'
 import { cairoWallTime } from '../api/journeys'
+import { trackEvent } from '../utils/analytics'
 import { Button } from '../components/ui/Button'
 import { SelectInput } from '../components/ui/Input'
 import { ModeChip } from '../components/ui/Badge'
@@ -82,6 +83,11 @@ export function JourneySearchPage() {
 
   const onSubmit = useCallback(async (e) => {
     if (e?.preventDefault) e.preventDefault()
+    trackEvent('planner_search_started', {
+      has_origin: Boolean(planner.originStop),
+      has_destination: Boolean(planner.destinationStop),
+      max_transfers: Number(maxTransfers),
+    })
     const result = await planner.submit({
       requested_at: departure,
       max_transfers: Number(maxTransfers),
@@ -89,7 +95,12 @@ export function JourneySearchPage() {
       alternatives: Number(alternatives),
       avoided_modes: avoidedModes,
     })
-    if (result) navigate('/journeys/results')
+    if (result) {
+      trackEvent('planner_search_success', {
+        routes_count: result?.data?.routes?.length || 0,
+      })
+      navigate('/journeys/results')
+    }
   }, [planner, departure, maxTransfers, maxWalk, alternatives, avoidedModes, navigate])
 
   const hasSelection = Boolean(planner.originStop || planner.destinationStop)

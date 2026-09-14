@@ -203,12 +203,25 @@ class JourneyPlannerService
         }
         unset($plan);
 
-        foreach ($unique as &$plan) {
+        // Filter candidate plans through Route Validity Gates
+        $validPlans = array_values(array_filter(
+            $unique,
+            fn (array $plan) => $this->isValidCandidatePlan($plan, $originLat, $originLng, $destinationLat, $destinationLng, $requestedAt, $maxWalk)
+        ));
+
+        if ($validPlans === []) {
+            $validPlans = $unique;
+        }
+
+        foreach ($validPlans as &$plan) {
             $plan['fare'] = $this->fares->estimate($plan);
         }
         unset($plan);
 
-        $ranked = $this->scorer->score($unique, $prefs);
+        // Apply Pareto-dominance and human-intuitive quality guardrails
+        $guardedPlans = $this->applyQualityGuardrails($validPlans);
+
+        $ranked = $this->scorer->score($guardedPlans, $prefs);
 
         // Disruption awareness: penalize and flag plans touching disrupted
         // variants/stops, then re-rank. Applied after base scoring so the
@@ -225,23 +238,38 @@ class JourneyPlannerService
             unset($plan);
         }
 
+        // Apply quality guardrail score penalties
+        foreach ($ranked as &$plan) {
+            if (isset($plan['score_penalty'])) {
+                $plan['score'] = round($plan['score'] * $plan['score_penalty'], 4);
+            }
+        }
+        unset($plan);
+
         // Canonical deterministic ordering for the single recommended journey:
         // identical inputs must always yield the identical best route, so the
         // tie-break chain is explicit end-to-end (independent of disruption
         // state or candidate generation order).
+        // Dominated candidates must NEVER beat non-dominated candidates.
         usort($ranked, fn (array $a, array $b) => [
+            !empty($a['is_dominated']) ? 1 : 0,
             $a['score'],
             $a['total_duration_sec'],
             $a['total_transfers'],
             $a['walk_distance_meters'],
             $a['legs'][0]['departure_time']->getTimestamp(),
         ] <=> [
+            !empty($b['is_dominated']) ? 1 : 0,
             $b['score'],
             $b['total_duration_sec'],
             $b['total_transfers'],
             $b['walk_distance_meters'],
             $b['legs'][0]['departure_time']->getTimestamp(),
         ]);
+
+        if ($ranked !== []) {
+            $ranked[0]['recommendation_reasons'] = $this->deriveRecommendationReasons($ranked[0], $ranked);
+        }
 
         return array_slice($ranked, 0, max(1, $optionCount));
     }
@@ -1320,4 +1348,242 @@ class JourneyPlannerService
 
         return array_slice($candidates, 0, self::MAX_STOP_CANDIDATES);
     }
+
+    /**
+     * Route validity gate: verify that candidate route is physically and
+     * temporally viable before scoring and ranking.
+     */
+    private function isValidCandidatePlan(
+        array $plan,
+        float $originLat,
+        float $originLng,
+        float $destinationLat,
+        float $destinationLng,
+        Carbon $requestedAt,
+        int $maxWalk
+    ): bool {
+        $legs = $plan['legs'] ?? [];
+        if ($legs === []) {
+            return false;
+        }
+
+        if (($plan['total_duration_sec'] ?? 0) <= 0) {
+            return false;
+        }
+
+        $directDist = GeoCalculator::distanceMeters($originLat, $originLng, $destinationLat, $destinationLng);
+        $totalWalk = (int) ($plan['walk_distance_meters'] ?? 0);
+
+        $isWalkingOnly = count($legs) === 1 && $legs[0]['type'] === 'walking';
+        if ($isWalkingOnly) {
+            return $totalWalk <= max($maxWalk, 2500);
+        }
+
+        $legCount = count($legs);
+        $transitCount = 0;
+
+        for ($i = 0; $i < $legCount; $i++) {
+            $leg = $legs[$i];
+
+            if (($leg['duration_sec'] ?? 0) < 0) {
+                return false;
+            }
+
+            if (!isset($leg['departure_time'], $leg['arrival_time'])) {
+                return false;
+            }
+
+            if ($leg['arrival_time']->lessThan($leg['departure_time'])) {
+                return false;
+            }
+
+            if ($leg['type'] === 'transit') {
+                $transitCount++;
+                if (empty($leg['from_stop']) || empty($leg['to_stop'])) {
+                    return false;
+                }
+                if (($leg['from_stop']['id'] ?? null) === ($leg['to_stop']['id'] ?? null)) {
+                    return false;
+                }
+                if (isset($leg['geometry']) && is_array($leg['geometry']) && count($leg['geometry']) < 2) {
+                    return false;
+                }
+            } elseif ($leg['type'] === 'walking') {
+                $legDist = $leg['distance_meters'] ?? 0;
+                if ($i > 0 && $i < $legCount - 1 && $legDist > 2000) {
+                    return false;
+                }
+            }
+
+            if ($i > 0) {
+                $prev = $legs[$i - 1];
+                if ($leg['departure_time']->lessThan($prev['arrival_time'])) {
+                    return false;
+                }
+
+                $prevToLat = (float) $prev['to_lat'];
+                $prevToLng = (float) $prev['to_lng'];
+                $currFromLat = (float) $leg['from_lat'];
+                $currFromLng = (float) $leg['from_lng'];
+
+                $gapMeters = GeoCalculator::distanceMeters($prevToLat, $prevToLng, $currFromLat, $currFromLng);
+                if ($prev['type'] === 'transit' && $leg['type'] === 'transit' && $gapMeters > 500) {
+                    return false;
+                }
+            }
+        }
+
+        if ($transitCount === 0 && !$isWalkingOnly) {
+            return false;
+        }
+
+        if ($directDist > 1000) {
+            $totalLegDistance = array_sum(array_column($legs, 'distance_meters'));
+            if ($totalLegDistance > max(4.0 * $directDist, 50000)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Quality guardrails: filter Pareto-dominated candidates and penalize
+     * disproportionate walk/wait configurations.
+     */
+    private function applyQualityGuardrails(array $plans): array
+    {
+        if (count($plans) <= 1) {
+            return $plans;
+        }
+
+        $guarded = [];
+
+        foreach ($plans as $index => $plan) {
+            $isDominated = false;
+
+            foreach ($plans as $otherIndex => $other) {
+                if ($index === $otherIndex) {
+                    continue;
+                }
+
+                $timeBetterOrEqual = $other['total_duration_sec'] <= $plan['total_duration_sec'];
+                $walkBetterOrEqual = $other['walk_distance_meters'] <= $plan['walk_distance_meters'];
+                $transfersBetterOrEqual = $other['total_transfers'] <= $plan['total_transfers'];
+                $relBetterOrEqual = ($other['reliability'] ?? 1.0) >= ($plan['reliability'] ?? 1.0);
+
+                $fareBetterOrEqual = true;
+                $otherFare = $other['fare']['amount'] ?? null;
+                $planFare = $plan['fare']['amount'] ?? null;
+                if ($otherFare !== null && $planFare !== null) {
+                    $fareBetterOrEqual = $otherFare <= $planFare;
+                } elseif ($otherFare !== null && $planFare === null) {
+                    $fareBetterOrEqual = true;
+                } elseif ($otherFare === null && $planFare !== null) {
+                    $fareBetterOrEqual = false;
+                }
+
+                $strictlyBetter = (
+                    $other['total_duration_sec'] < $plan['total_duration_sec'] ||
+                    $other['walk_distance_meters'] < $plan['walk_distance_meters'] ||
+                    $other['total_transfers'] < $plan['total_transfers'] ||
+                    ($otherFare !== null && $planFare !== null && $otherFare < $planFare) ||
+                    (($other['reliability'] ?? 1.0) > ($plan['reliability'] ?? 1.0))
+                );
+
+                if ($timeBetterOrEqual && $walkBetterOrEqual && $transfersBetterOrEqual && $relBetterOrEqual && $fareBetterOrEqual && $strictlyBetter) {
+                    $isDominated = true;
+                    break;
+                }
+            }
+
+            if ($isDominated) {
+                $plan['is_dominated'] = true;
+                $plan['score_penalty'] = ($plan['score_penalty'] ?? 1.0) * 2.0;
+            }
+
+            $guarded[] = $plan;
+        }
+
+        $pool = $guarded;
+
+        $minWalk = min(array_column($pool, 'walk_distance_meters'));
+        $minTime = min(array_column($pool, 'total_duration_sec'));
+
+        $filtered = [];
+        foreach ($pool as $p) {
+            $excessiveWalk = $p['walk_distance_meters'] > 2500 && ($p['walk_distance_meters'] - $minWalk > 1500);
+            $negligibleTimeSavings = ($p['total_duration_sec'] - $minTime) > -180;
+
+            if ($excessiveWalk && count($pool) > 1 && $minWalk <= 1200 && $negligibleTimeSavings) {
+                $p['score_penalty'] = 1.35;
+            }
+            $filtered[] = $p;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Derive human-readable recommendation reasons for why this best route won.
+     */
+    private function deriveRecommendationReasons(array $best, array $allCandidates): array
+    {
+        $reasons = [];
+
+        if ($best['total_transfers'] === 0) {
+            $reasons[] = 'direct_service';
+        } elseif ($best['total_transfers'] === 1) {
+            $reasons[] = 'single_transfer';
+        }
+
+        if (count($allCandidates) <= 1) {
+            if ($best['walk_distance_meters'] <= 800) {
+                $reasons[] = 'low_walking';
+            }
+            if (($best['reliability'] ?? 0) >= 0.8) {
+                $reasons[] = 'verified_reliability';
+            }
+            if (isset($best['fare']['amount']) && $best['fare']['amount'] > 0) {
+                $reasons[] = 'verified_fare';
+            }
+            $reasons[] = 'optimal_time';
+            return array_values(array_unique($reasons));
+        }
+
+        $allDurations = array_column($allCandidates, 'total_duration_sec');
+        $allWalks = array_column($allCandidates, 'walk_distance_meters');
+        $allTransfers = array_column($allCandidates, 'total_transfers');
+
+        $minDuration = min($allDurations);
+        $minWalk = min($allWalks);
+        $minTransfers = min($allTransfers);
+
+        if ($best['total_duration_sec'] <= $minDuration + 60) {
+            $reasons[] = 'fastest_travel_time';
+        } else {
+            $reasons[] = 'optimal_time';
+        }
+
+        if ($best['walk_distance_meters'] <= $minWalk + 100 || $best['walk_distance_meters'] <= 600) {
+            $reasons[] = 'lower_walking';
+        }
+
+        if ($best['total_transfers'] <= $minTransfers) {
+            $reasons[] = 'fewer_transfers';
+        }
+
+        if (($best['reliability'] ?? 0) >= 0.8) {
+            $reasons[] = 'verified_reliability';
+        }
+
+        if (isset($best['fare']['amount']) && ($best['fare']['data_status'] ?? '') === 'real') {
+            $reasons[] = 'verified_fare';
+        } elseif (isset($best['fare']['amount'])) {
+            $reasons[] = 'affordable_fare';
+        }
+
+        return array_values(array_unique($reasons));
+    }
 }
+

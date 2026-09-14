@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/ui/Icon'
 import { useAiAssistant } from './AiAssistantContext'
 import { useI18n } from '../i18n/LanguageContext'
+import { trackEvent } from '../utils/analytics'
 
 /**
  * Assistant chat drawer — the visible product surface of the AI layer.
@@ -26,6 +27,12 @@ export function AiAssistantDrawer() {
   const [appliedChips, setAppliedChips] = useState([])
   const listRef = useRef(null)
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (open) {
+      trackEvent('ai_opened')
+    }
+  }, [open])
 
   // Auto-scroll to the newest message; focus the composer when opened.
   useEffect(() => {
@@ -57,6 +64,10 @@ export function AiAssistantDrawer() {
     setAppliedChips([])
     const result = await send(text)
     if (result?.applied?.length) {
+      trackEvent('ai_action_executed', {
+        actions_count: result.applied.length,
+        action_names: result.applied.map((a) => a.action).join(','),
+      })
       setAppliedChips(result.applied)
     }
   }

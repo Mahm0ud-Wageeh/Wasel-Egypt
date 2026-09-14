@@ -11,6 +11,7 @@ import { StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
 import { MapPanel } from '../components/map/LazyMapPanel'
 import { formatDuration, formatDistance, formatTime } from '../utils/format'
+import { trackEvent } from '../utils/analytics'
 
 const MODE_LABEL_KEYS = {
   walking: 'journey.walk',
@@ -155,25 +156,92 @@ function ScoreExplanation({ option }) {
 }
 
 /**
- * Journey details drawer: full vertical timeline (Origin → legs → transfers
- * → Destination) and the score explanation behind the recommendation.
+ * Recommendation Explainability: displays human-readable reasons why this route won.
  */
-function JourneyDetails({ option, onClose, onSave, onStart, saveState }) {
+function RecommendationReasons({ option }) {
+  const { t } = useI18n()
+  const reasons = option?.recommendation_reasons
+
+  if (!Array.isArray(reasons) || reasons.length === 0) {
+    return null
+  }
+
+  const items = useMemo(() => {
+    const list = []
+    if (reasons.includes('fastest_travel_time') || reasons.includes('optimal_time')) {
+      list.push({ icon: 'clock', text: t('results.reason_fastest') })
+    }
+    if (reasons.includes('lower_walking')) {
+      list.push({ icon: 'modeWalking', text: t('results.reason_low_walk') })
+    }
+    if (reasons.includes('direct_service')) {
+      list.push({ icon: 'circleDot', text: t('results.reason_direct') })
+    } else if (reasons.includes('fewer_transfers') || reasons.includes('single_transfer')) {
+      list.push({ icon: 'circleDot', text: t('results.reason_fewer_transfers') })
+    }
+    if (reasons.includes('verified_reliability')) {
+      list.push({ icon: 'shield', text: t('results.reason_reliable') })
+    }
+    if (reasons.includes('verified_fare')) {
+      list.push({ icon: 'tag', text: t('results.reason_fare') })
+    }
+    if (list.length === 0) {
+      list.push({ icon: 'shield', text: t('results.reason_optimal_balance') })
+    }
+    return list
+  }, [reasons, t])
+
+  return (
+    <div className="bestroute__why" role="region" aria-label={t('results.why_recommended_title')}>
+      <span className="t-label" style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--p700)' }}>
+        <Icon name="shield" size={13} aria-hidden="true" /> {t('results.why_recommended_title')}
+      </span>
+      <ul className="bestroute__why-list" style={{ listStyle: 'none', padding: 0, margin: '6px 0 0 0', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {items.map((item, i) => (
+          <li key={i} className="row" style={{ gap: 7, alignItems: 'center', fontSize: 12.5, color: 'var(--ink900)' }}>
+            <span style={{ color: 'var(--p600)', display: 'inline-flex' }}>
+              <Icon name={item.icon} size={14} aria-hidden="true" />
+            </span>
+            <span>{item.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/**
+ * Journey details drawer: full vertical timeline (Origin → legs → transfers
+ * → Destination), honest metrics header, and map synchronization.
+ */
+function JourneyDetails({ option, onClose, onSave, onStart, saveState, selectedLegIndex, onSelectLeg }) {
   const { t } = useI18n()
   const legs = option.legs ?? []
   const firstLeg = legs[0]
   const lastLeg = legs[legs.length - 1]
+  const reliabilityPct = option.reliability != null ? Math.round(option.reliability * 100) : null
 
   return (
     <div className="details-drawer" role="dialog" aria-modal="true" aria-label={t('results.details')}>
       <div className="details-drawer__scrim" onClick={onClose} aria-hidden="true" />
       <div className="details-drawer__panel">
         <div className="details-drawer__handle" aria-hidden="true" />
-        <div className="row-between" style={{ marginBottom: 10 }}>
+
+        {/* 2A: Journey Summary Header */}
+        <div className="row-between" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
           <div>
-            <span className="t-caption">{t('results.details')}</span>
-            <div className="row" style={{ gap: 8 }}>
-              <b className="t-num" style={{ fontSize: 20 }}>{formatDuration(option.total_duration_sec)}</b>
+            <div className="row" style={{ gap: 6, alignItems: 'center', marginBottom: 4 }}>
+              <span className="badge b-verified" style={{ fontSize: 11 }}>
+                <Icon name="shield" size={12} aria-hidden="true" /> {t('results.best_title')}
+              </span>
+              <span className="t-caption" style={{ fontWeight: 600 }}>
+                {firstLeg?.from_stop?.name ?? t('results.origin')} → {lastLeg?.to_stop?.name ?? t('results.destination')}
+              </span>
+            </div>
+            <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
+              <b className="t-num" style={{ fontSize: 22, color: 'var(--p800)' }}>
+                {formatDuration(option.total_duration_sec)}
+              </b>
               <span className="t-num" style={{ fontSize: 13, color: 'var(--ink700)' }}>
                 {formatTime(firstLeg?.departure_time)} → {formatTime(lastLeg?.arrival_time)}
               </span>
@@ -184,18 +252,53 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState }) {
           </button>
         </div>
 
-        {/* Vertical route timeline */}
-        <div className="jtl">
+        {/* Quick Facts Summary Strip */}
+        <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+          <span className="chip" style={{ fontSize: 11.5 }}>
+            <Icon name="modeWalking" size={12} aria-hidden="true" />
+            {formatDistance(option.walk_distance_meters)}
+          </span>
+          <span className="chip" style={{ fontSize: 11.5 }}>
+            <Icon name="circleDot" size={12} aria-hidden="true" />
+            {option.total_transfers === 0
+              ? t('results.direct')
+              : option.total_transfers === 1
+                ? t('results.one_transfer')
+                : t('results.transfers').replace('{count}', option.total_transfers)}
+          </span>
+          {option.fare && (
+            <span className="chip" style={{ fontSize: 11.5 }}>
+              {option.fare.amount} {option.fare.currency}
+              {option.fare.data_status === 'real' ? ' · ✓' : ' · ~'}
+            </span>
+          )}
+          {reliabilityPct != null && (
+            <span className="chip" style={{ fontSize: 11.5 }}>
+              <Icon name="shield" size={12} aria-hidden="true" style={{ color: reliabilityPct >= 70 ? 'var(--s800)' : 'var(--w800)' }} />
+              {t('results.reliability').replace('{pct}', reliabilityPct)}
+            </span>
+          )}
+        </div>
+
+        {/* 2B: Highly Readable Vertical Journey Timeline */}
+        <div className="jtl" role="list" aria-label="Journey leg timeline">
+          {/* Origin */}
           <div className="jtl__row jtl__row--endpoint">
-            <span className="jtl__dot" style={{ background: 'var(--p600)' }} aria-hidden="true"><Icon name="pin" size={12} /></span>
+            <span className="jtl__dot" style={{ background: 'var(--p600)' }} aria-hidden="true">
+              <Icon name="pin" size={12} />
+            </span>
             <div>
               <b style={{ fontSize: 13 }}>{t('results.origin')}</b>
-              <div className="t-caption">{t('results.depart')} {formatTime(firstLeg?.departure_time)}</div>
+              <div className="t-caption">
+                {firstLeg?.from_stop?.name ? `${firstLeg.from_stop.name} · ` : ''}
+                {t('results.depart')} {formatTime(firstLeg?.departure_time)}
+              </div>
             </div>
           </div>
 
           {legs.map((leg, idx) => {
             const isWalk = leg.type === 'walking'
+            const isSelected = selectedLegIndex === idx
             const legModeLabel = isWalk
               ? t('journey.walk')
               : (() => {
@@ -204,16 +307,18 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState }) {
                   const translated = t(key)
                   return translated === key ? leg.mode : translated
                 })()
-            // Inter-leg wait (design QA): the gap between the previous leg's
-            // arrival and this leg's departure. Real data — the planner sets
-            // distinct departure/arrival times per leg, so a 5-hour overnight
-            // gap (metro closed) is shown honestly instead of an unexplained
-            // "5h 47m" total.
+
             const prev = legs[idx - 1]
             const waitSec = prev && leg.departure_time && prev.arrival_time
               ? (new Date(leg.departure_time).getTime() - new Date(prev.arrival_time).getTime()) / 1000
               : 0
             const showWait = idx > 0 && waitSec > 120
+
+            const lineName = leg.route?.short_name ?? leg.route?.long_name
+            const actionText = isWalk
+              ? t('results.action_walk_to').replace('{distance}', formatDistance(leg.distance_meters)).replace('{stop}', leg.to_stop?.name ?? t('results.destination'))
+              : t('results.action_board_at').replace('{line}', lineName ? `Line ${lineName}` : legModeLabel).replace('{stop}', leg.from_stop?.name ?? '—')
+
             return (
               <Fragment key={`leg-frag-${idx}`}>
                 {showWait && (
@@ -224,29 +329,51 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState }) {
                     </span>
                   </div>
                 )}
-                <div className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}`}>
+                <div
+                  className={`jtl__row${isWalk ? ' jtl__row--walk' : ''}${isSelected ? ' jtl__row--selected' : ''}`}
+                  onClick={() => onSelectLeg?.(idx)}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '6px 8px',
+                    borderRadius: 'var(--rad-sm)',
+                    background: isSelected ? 'var(--p50, #f0f7fc)' : 'transparent',
+                    border: isSelected ? '1px solid var(--p200, #a9d2f2)' : '1px solid transparent',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="Click to highlight on map"
+                >
                   <span className="jtl__dot" style={{ background: legColor(leg) }} aria-hidden="true">
                     <Icon name={isWalk ? 'modeWalking' : (MODE_ICONS[leg.mode] ?? 'navigate')} size={12} />
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div className="row-between">
-                      <b style={{ fontSize: 13 }}>
-                        {legModeLabel}
-                        {leg.route?.short_name ? ` · ${leg.route.short_name}` : ''}
-                      </b>
-                      <span className="t-caption t-num">
+                    <div className="row-between" style={{ alignItems: 'baseline' }}>
+                      <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+                        <span className="badge" style={{ fontSize: 10, padding: '1px 5px', background: 'var(--sand)' }}>
+                          {t('results.leg_label').replace('{n}', idx + 1)}
+                        </span>
+                        <b style={{ fontSize: 13 }}>
+                          {legModeLabel}
+                          {lineName ? ` · ${lineName}` : ''}
+                        </b>
+                      </div>
+                      <span className="t-caption t-num" style={{ fontSize: 11.5 }}>
                         {formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)} · {Math.round(leg.duration_sec / 60)} min
                       </span>
                     </div>
-                    <div className="t-caption" style={{ marginBlockStart: 2 }}>
-                      {leg.from_stop?.name ?? t('results.origin')} → {leg.to_stop?.name ?? t('results.destination')}
-                      {leg.distance_meters ? ` · ${formatDistance(leg.distance_meters)}` : ''}
+
+                    <div className="t-caption" style={{ marginBlockStart: 3, color: 'var(--ink800)' }}>
+                      {actionText}
                     </div>
-                    {!isWalk && leg.route?.long_name && (
-                      <div className="t-caption" style={{ fontSize: 11, color: 'var(--ink300)' }}>{leg.route.long_name}</div>
+
+                    {!isWalk && leg.to_stop?.name && (
+                      <div className="t-caption" style={{ fontSize: 11.5, color: 'var(--ink700)', marginBlockStart: 1 }}>
+                        {t('results.action_ride_to').replace('{stop}', leg.to_stop.name)}
+                        {leg.distance_meters ? ` · ${formatDistance(leg.distance_meters)}` : ''}
+                      </div>
                     )}
+
                     {isWalk && leg.walk_source === 'estimate' && (
-                      <div className="t-caption" style={{ fontSize: 11, color: 'var(--w800)' }}>
+                      <div className="t-caption" style={{ fontSize: 11, color: 'var(--w800)', marginBlockStart: 2 }}>
                         Walking distance estimated (routing engine unavailable)
                       </div>
                     )}
@@ -256,29 +383,25 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState }) {
             )
           })}
 
-          {(option.transfers ?? []).map((tr, idx) => (
-            <div key={`t-${idx}`} className="jtl__row jtl__row--transfer">
-              <span className="jtl__dot jtl__dot--ghost" aria-hidden="true"><Icon name="recover" size={11} /></span>
-              <div className="t-caption">
-                {tr.transfer_type === 'transfer_walk' ? t('results.transfer_walk') : t('results.transfer_wait')} ·{' '}
-                {Math.round((tr.transfer_duration_sec ?? 0) / 60)} min
-              </div>
-            </div>
-          ))}
-
+          {/* Destination */}
           <div className="jtl__row jtl__row--endpoint">
-            <span className="jtl__dot" style={{ background: 'var(--a600)' }} aria-hidden="true"><Icon name="navigate" size={12} /></span>
+            <span className="jtl__dot" style={{ background: 'var(--a600)' }} aria-hidden="true">
+              <Icon name="navigate" size={12} />
+            </span>
             <div>
               <b style={{ fontSize: 13 }}>{t('results.destination')}</b>
-              <div className="t-caption">{t('results.arrive')} {formatTime(lastLeg?.arrival_time)}</div>
+              <div className="t-caption">
+                {lastLeg?.to_stop?.name ? `${lastLeg.to_stop.name} · ` : ''}
+                {t('results.arrive')} {formatTime(lastLeg?.arrival_time)}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBlockStart: 12 }}>
           {option.fare && <span className="badge b-active">{option.fare.amount} {option.fare.currency}</span>}
-          {option.reliability != null && (
-            <span className="badge b-verified">{t('results.reliability').replace('{pct}', Math.round(option.reliability * 100))}</span>
+          {reliabilityPct != null && (
+            <span className="badge b-verified">{t('results.reliability').replace('{pct}', reliabilityPct)}</span>
           )}
           <span className="badge b-rerouted">score {option.score?.toFixed(2)}</span>
         </div>
@@ -384,6 +507,11 @@ function BestRouteHero({ option, onStart, starting, saveState, onSave, onOpenDet
         <RouteStrip option={option} />
       </div>
 
+      {/* 1D: Why Recommended Callout on the hero card */}
+      <div style={{ marginBlock: '10px 4px', padding: '10px 12px', background: 'var(--p50, #f0f7fc)', borderRadius: 'var(--rad-sm)', border: '1px solid var(--p100, #cde4f7)' }}>
+        <RecommendationReasons option={option} />
+      </div>
+
       {/* Honest duration breakdown — schedule waits are explicit, so a long
           total never reads as a geographically enormous route. */}
       <DurationBreakdown option={option} />
@@ -472,6 +600,7 @@ export function JourneyResultsPage() {
   const best = options[0] ?? null
 
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedLegIndex, setSelectedLegIndex] = useState(null)
   const [mobileMapOpen, setMobileMapOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [starting, setStarting] = useState(false)
@@ -494,6 +623,18 @@ export function JourneyResultsPage() {
       navigate('/search', { replace: true })
     }
   }, [searchParams, navigate])
+
+  useEffect(() => {
+    if (best) {
+      trackEvent('best_route_viewed', {
+        duration_seconds: best.duration,
+        walking_meters: best.walking_distance,
+        transfers: best.transfers,
+        fare: best.fare,
+        reliability: best.reliability,
+      })
+    }
+  }, [best])
 
   const searchPayload = useMemo(() => (searchParams ? {
     origin_lat: searchParams.origin_lat,
@@ -646,6 +787,7 @@ export function JourneyResultsPage() {
                 itinerary={best}
                 origin={endpointOrigin}
                 destination={endpointDestination}
+                currentLegIndex={selectedLegIndex}
                 height="100%"
               />
             </div>
@@ -656,6 +798,7 @@ export function JourneyResultsPage() {
                 origin={endpointOrigin}
                 destination={endpointDestination}
                 stops={routeStops}
+                currentLegIndex={selectedLegIndex}
                 onSelectStop={handleMapStopSelect}
               />
             </div>
@@ -692,6 +835,8 @@ export function JourneyResultsPage() {
           onSave={handleSave}
           onStart={handleStart}
           saveState={saveState}
+          selectedLegIndex={selectedLegIndex}
+          onSelectLeg={setSelectedLegIndex}
         />
       )}
     </>
