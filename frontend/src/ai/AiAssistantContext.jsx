@@ -57,7 +57,7 @@ export function AiAssistantProvider({ children }) {
   const { language, isRtl, t } = useI18n()
   const geo = useGeolocation()
 
-  const [open, setOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem(HISTORY_KEY)
@@ -74,7 +74,7 @@ export function AiAssistantProvider({ children }) {
   // "Near me" questions need a position: request it lazily once the
   // assistant panel is first opened (browser-gated, never forced).
   useEffect(() => {
-    if (open && geo.status === 'idle' && !devicePosition) {
+    if (isOpen && geo.status === 'idle' && !devicePosition) {
       // No-op prompt guard: only auto-locate when the browser already
       // granted permission for this origin (permission query API).
       navigator.permissions?.query?.({ name: 'geolocation' })
@@ -86,11 +86,11 @@ export function AiAssistantProvider({ children }) {
     if (geo.status === 'granted' && geo.position) {
       devicePosition = geo.position
     }
-  }, [open, geo.status, geo.position, geo.locate])
+  }, [isOpen, geo.status, geo.position, geo.locate])
 
   // Provider status (honest "unavailable" state) — checked on first open.
   useEffect(() => {
-    if (status !== null || !open) return
+    if (status !== null || !isOpen) return
     let active = true
     apiRequest(endpoints.ai.status, { auth: false })
       .then((res) => active && setStatus(res))
@@ -98,7 +98,7 @@ export function AiAssistantProvider({ children }) {
     return () => {
       active = false
     }
-  }, [open, status])
+  }, [isOpen, status])
 
   useEffect(() => {
     try {
@@ -236,8 +236,10 @@ export function AiAssistantProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      open,
-      setOpen,
+      open: isOpen,
+      setOpen: setIsOpen,
+      isOpen,
+      setIsOpen,
       messages,
       sending,
       status,
@@ -247,7 +249,7 @@ export function AiAssistantProvider({ children }) {
       journeyContext,
       setJourneyContext,
     }),
-    [open, messages, sending, status, send, clear, isRtl, journeyContext],
+    [isOpen, messages, sending, status, send, clear, isRtl, journeyContext],
   )
 
   return <AiAssistantContext.Provider value={value}>{children}</AiAssistantContext.Provider>
