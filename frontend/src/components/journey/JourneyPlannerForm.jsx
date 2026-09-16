@@ -139,8 +139,8 @@ export function useJourneyPlanner({ initial = null } = {}) {
   }, [originStop, destinationStop, t])
 
   const buildForm = useCallback((extraParams = {}) => {
-    const o = { lat: originStop.latitude ?? originStop.lat, lng: originStop.longitude ?? originStop.lng }
-    const d = { lat: destinationStop.latitude ?? destinationStop.lat, lng: destinationStop.longitude ?? destinationStop.lng }
+    const o = { lat: originStop?.latitude ?? originStop?.lat, lng: originStop?.longitude ?? originStop?.lng }
+    const d = { lat: destinationStop?.latitude ?? destinationStop?.lat, lng: destinationStop?.longitude ?? destinationStop?.lng }
     return {
       origin_lat: Number(o.lat),
       origin_lng: Number(o.lng),
@@ -157,9 +157,71 @@ export function useJourneyPlanner({ initial = null } = {}) {
 
   const submit = useCallback(async (extraParams = {}) => {
     if (submitting) return null
-    if (!validate()) return null
 
-    const form = buildForm(extraParams)
+    let curOrigin = originStop
+    let curDest = destinationStop
+
+    // Auto-resolve missing coordinates from place names if provided by AI or quick-entry
+    if (curOrigin && (curOrigin.latitude == null && curOrigin.lat == null) && curOrigin.name) {
+      try {
+        const r = await searchPlaces(curOrigin.name)
+        const match = r?.stops?.[0] || r?.places?.[0]
+        if (match) {
+          curOrigin = {
+            ...curOrigin,
+            latitude: Number(match.latitude ?? match.lat),
+            longitude: Number(match.longitude ?? match.lng),
+            id: match.id ?? match.stop_id ?? curOrigin.id,
+            name: match.name ?? curOrigin.name,
+          }
+          setOriginStop(curOrigin)
+        }
+      } catch {}
+    }
+
+    if (curDest && (curDest.latitude == null && curDest.lat == null) && curDest.name) {
+      try {
+        const r = await searchPlaces(curDest.name)
+        const match = r?.stops?.[0] || r?.places?.[0]
+        if (match) {
+          curDest = {
+            ...curDest,
+            latitude: Number(match.latitude ?? match.lat),
+            longitude: Number(match.longitude ?? match.lng),
+            id: match.id ?? match.stop_id ?? curDest.id,
+            name: match.name ?? curDest.name,
+          }
+          setDestinationStop(curDest)
+        }
+      } catch {}
+    }
+
+    const errors = {}
+    if (!curOrigin) errors.origin = [t('planner.err_origin')]
+    if (!curDest) errors.destination = [t('planner.err_destination')]
+    if (curOrigin && curDest
+      && curOrigin.latitude != null && curDest.latitude != null
+      && Number(curOrigin.latitude) === Number(curDest.latitude)
+      && Number(curOrigin.longitude) === Number(curDest.longitude)) {
+      errors.destination = [t('planner.err_same')]
+    }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return null
+
+    const o = { lat: curOrigin.latitude ?? curOrigin.lat, lng: curOrigin.longitude ?? curOrigin.lng }
+    const d = { lat: curDest.latitude ?? curDest.lat, lng: curDest.longitude ?? curDest.lng }
+    const form = {
+      origin_lat: Number(o.lat),
+      origin_lng: Number(o.lng),
+      destination_lat: Number(d.lat),
+      destination_lng: Number(d.lng),
+      requested_at: new Date().toISOString(),
+      max_transfers: 1,
+      max_walk_distance_per_leg: 1000,
+      alternatives: 3,
+      avoided_modes: [],
+      ...extraParams,
+    }
 
     setSubmitting(true)
     setSubmitError(null)
@@ -168,9 +230,9 @@ export function useJourneyPlanner({ initial = null } = {}) {
       const optionsList = Array.isArray(result)
         ? result
         : (result?.options ?? result?.data?.options ?? (Array.isArray(result?.data) ? result.data : []))
-      storeSearch({ ...form, originStop, destinationStop })
+      storeSearch({ ...form, originStop: curOrigin, destinationStop: curDest })
       storeResults(optionsList)
-      return { options: optionsList, params: { ...form, originStop, destinationStop } }
+      return { options: optionsList, params: { ...form, originStop: curOrigin, destinationStop: curDest } }
     } catch (error) {
       setSubmitError(
         error.isUnauthorized ? t('error.session_expired')
@@ -181,7 +243,7 @@ export function useJourneyPlanner({ initial = null } = {}) {
     } finally {
       setSubmitting(false)
     }
-  }, [originStop, destinationStop, submitting, validate, buildForm, storeSearch, storeResults, t])
+  }, [originStop, destinationStop, submitting, t, storeSearch, storeResults])
 
   // Validate + persist the params WITHOUT running the (protected) search
   // API — used for the guest hand-off: Landing → login → /search

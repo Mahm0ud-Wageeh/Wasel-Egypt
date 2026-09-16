@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Icon } from '../components/ui/Icon'
 import { useAiAssistant } from './AiAssistantContext'
 import { useI18n } from '../i18n/LanguageContext'
@@ -20,7 +21,98 @@ import { trackEvent } from '../utils/analytics'
 
 const MAX_HEIGHT_PHONE = '78vh'
 
+function formatInline(text) {
+  if (!text) return ''
+  const parts = String(text).split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={idx} className="ai-msg__bold">{part.slice(2, -2)}</strong>
+    }
+    return part
+  })
+}
+
+function FormattedMessage({ content, isAr, navigate, setOpen }) {
+  const lines = (content || '').split('\n')
+  const hasRouteIntent = /المسار|الرحلة|محطة|route|journey|planner|مخطط|اتجاه/i.test(content)
+
+  return (
+    <div className="ai-msg__content">
+      {lines.map((rawLine, i) => {
+        const line = rawLine.trim()
+        if (!line) {
+          return <div key={i} className="ai-msg__spacer" />
+        }
+
+        // Headers: ### Title or ## Title
+        if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('# ')) {
+          const headerText = line.replace(/^#+\s*/, '')
+          return (
+            <h4 key={i} className="ai-msg__h4">
+              {formatInline(headerText)}
+            </h4>
+          )
+        }
+
+        // Numbered steps: 1. or 2.
+        const numMatch = line.match(/^(\d+)\.\s+(.*)/)
+        if (numMatch) {
+          return (
+            <div key={i} className="ai-msg__step-row">
+              <span className="ai-msg__step-num">{numMatch[1]}</span>
+              <span className="ai-msg__step-text">{formatInline(numMatch[2])}</span>
+            </div>
+          )
+        }
+
+        // Bullet items: - or *
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+          const itemText = line.slice(2)
+          return (
+            <div key={i} className="ai-msg__bullet-row">
+              <span className="ai-msg__bullet-dot">•</span>
+              <span className="ai-msg__bullet-text">{formatInline(itemText)}</span>
+            </div>
+          )
+        }
+
+        // Highlight row for emoji indicators (📍, 🎯, 🚆, 🚌, ⏱️, 💰, 💡)
+        if (/^[📍🎯🚆🚌⏱️💰💡⚠️]/.test(line)) {
+          return (
+            <div key={i} className="ai-msg__highlight-row">
+              {formatInline(line)}
+            </div>
+          )
+        }
+
+        return (
+          <p key={i} className="ai-msg__p">
+            {formatInline(line)}
+          </p>
+        )
+      })}
+
+      {hasRouteIntent && (
+        <div className="ai-msg__actions-footer">
+          <button
+            type="button"
+            className="ai-msg__cta-btn"
+            onClick={() => {
+              setOpen(false)
+              navigate('/search')
+            }}
+          >
+            <Icon name="navigation" size={14} aria-hidden="true" />
+            <span>{isAr ? 'عرض مسار الرحلة على الخريطة والمخطط' : 'View Journey on Map & Planner'}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function AiAssistantDrawer() {
+  const navigate = useNavigate()
   const { open, setOpen, messages, sending, status, send, clear, isRtl, journeyContext } = useAiAssistant()
   const { t, language } = useI18n()
   const [draft, setDraft] = useState('')
@@ -57,8 +149,8 @@ export function AiAssistantDrawer() {
         ? ['ما هي محطتي التالية؟', 'كم من الوقت متبقي؟', 'هل أنا على المسار الصحيح؟', 'في تحذيرات على الشبكة؟']
         : ['What is my next stop?', 'How much time is left?', 'Am I on track?', 'Any service alerts?'])
     : (language === 'ar'
-        ? ['من التحرير إلى الجيزة', 'اعرض الخط الأول', 'تذكرة المترو بكام؟', 'في تحذيرات على الشبكة؟']
-        : ['From Tahrir to Giza', 'Show line 1', 'Metro ticket price?', 'Any service alerts?'])
+        ? ['عايز اروح من المعادي للتحرير', 'ازاي اروح محطة الشهداء؟', 'تذكرة المترو بكام؟', 'في تحذيرات على الشبكة؟']
+        : ['From Maadi to Tahrir', 'How to go to Shohadaa?', 'Metro ticket price?', 'Any service alerts?'])
 
   const onSubmit = async (e) => {
     e?.preventDefault?.()
@@ -68,25 +160,21 @@ export function AiAssistantDrawer() {
     setAppliedChips([])
     const result = await send(text)
     if (result?.applied?.length) {
-      trackEvent('ai_action_executed', {
-        actions_count: result.applied.length,
-        action_names: result.applied.map((a) => a.action).join(','),
-      })
       setAppliedChips(result.applied)
     }
   }
 
   const onSuggestion = (text) => {
-    setDraft('')
-    send(text).then((result) => {
-      setAppliedChips(result?.applied ?? [])
-    })
+    setDraft(text)
+    inputRef.current?.focus?.()
   }
 
   if (!open) return null
 
-  const providerLabel = status?.provider?.label
-  const isMock = status?.provider?.simulated
+  const isSimulated = status?.provider?.simulated ?? false
+  const providerLabel = isSimulated
+    ? t('ai.mock_note')
+    : (status?.provider?.label || 'AI Model')
 
   return (
     <div className="ai-drawer__scrim" onClick={() => setOpen(false)}>
@@ -107,11 +195,11 @@ export function AiAssistantDrawer() {
               <div className="ai-drawer__name">{t('ai.title')}</div>
               <div className="ai-drawer__sub">
                 {status === null && <span>{t('ai.checking')}</span>}
-                {status?.available === false && <span>{t('ai.unavailable')}</span>}
+                {status?.available === false && <span className="ai-status--down">{t('ai.unavailable')}</span>}
                 {status?.available && (
-                  <span>
+                  <span className={`ai-status--ok${isSimulated ? ' ai-status--simulated' : ''}`}>
+                    <span className="ai-status__dot" />
                     {providerLabel}
-                    {isMock ? ` · ${t('ai.mock_note')}` : ''}
                   </span>
                 )}
               </div>
@@ -159,11 +247,20 @@ export function AiAssistantDrawer() {
           {messages.map((m) => (
             <div key={m.id} className={`ai-msg ai-msg--${m.role}${m.isError ? ' ai-msg--error' : ''}`}>
               <div className="ai-msg__bubble">
-                {m.content.split('\n').map((line, i) => (
-                  <span key={i} style={{ display: 'block' }}>
-                    {line}
-                  </span>
-                ))}
+                {m.role === 'assistant' && !m.isError ? (
+                  <FormattedMessage
+                    content={m.content}
+                    isAr={isRtl}
+                    navigate={navigate}
+                    setOpen={setOpen}
+                  />
+                ) : (
+                  m.content.split('\n').map((line, i) => (
+                    <span key={i} style={{ display: 'block' }}>
+                      {line}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           ))}
@@ -220,7 +317,7 @@ export function AiAssistantDrawer() {
 
 /** Floating launcher button — rendered once at the app shell level. */
 export function AiAssistantLauncher() {
-  const { open, setOpen, status } = useAiAssistant()
+  const { open, setOpen } = useAiAssistant()
   const { t } = useI18n()
 
   if (open) return null
@@ -233,6 +330,7 @@ export function AiAssistantLauncher() {
       aria-label={t('ai.launch')}
       title={t('ai.launch')}
     >
+      <span className="ai-launcher__pulse" aria-hidden="true" />
       <Icon name="botMessage" size={20} aria-hidden="true" />
       <span className="ai-launcher__label">{t('ai.launch_label')}</span>
     </button>

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useI18n } from '../i18n/LanguageContext'
@@ -102,6 +102,19 @@ export function JourneySearchPage() {
       navigate('/journeys/results')
     }
   }, [planner, departure, maxTransfers, maxWalk, alternatives, avoidedModes, navigate])
+
+  const autoSubmit = location.state?.autoSubmit ?? false
+  const [autoSubmitted, setAutoSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (autoSubmit && !autoSubmitted && planner.originStop && planner.destinationStop) {
+      setAutoSubmitted(true)
+      const timer = setTimeout(() => {
+        onSubmit()
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [autoSubmit, autoSubmitted, planner.originStop, planner.destinationStop, onSubmit])
 
   const hasSelection = Boolean(planner.originStop || planner.destinationStop)
   const {

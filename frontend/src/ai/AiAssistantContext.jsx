@@ -26,6 +26,7 @@ export const AiAssistantContext = createContext(null)
 const CLIENT_ACTIONS = {
   navigate_home: ['home'],
   open_planner: ['home'],
+  plan_journey: ['origin', 'destination', 'origin_id', 'destination_id', 'auto_search'],
   set_origin: ['stop_id', 'name', 'latitude', 'longitude'],
   set_destination: ['stop_id', 'name', 'latitude', 'longitude'],
   set_departure_time: ['iso'],
@@ -257,14 +258,22 @@ export function AiAssistantProvider({ children }) {
 
 /** Shape a stop for the /search prefill contract ({lat,lng,name,id}). */
 function toPrefillStop(params) {
-  const lat = Number(params.latitude)
-  const lng = Number(params.longitude)
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  if (!params) return null
+  const lat = Number(params.latitude ?? params.lat)
+  const lng = Number(params.longitude ?? params.lng)
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng)
+  const name = params.name ?? params.query ?? ''
+  const id = Number.isFinite(Number(params.stop_id ?? params.id)) ? Number(params.stop_id ?? params.id) : undefined
+
+  if (!hasCoords && !name && !id) return null
+
   return {
-    id: Number.isFinite(Number(params.stop_id)) ? Number(params.stop_id) : undefined,
-    name: params.name ?? '',
-    lat,
-    lng,
+    id,
+    name,
+    latitude: hasCoords ? lat : undefined,
+    longitude: hasCoords ? lng : undefined,
+    lat: hasCoords ? lat : undefined,
+    lng: hasCoords ? lng : undefined,
   }
 }
 
@@ -280,6 +289,7 @@ function executeActions(actions, { navigate }) {
   // Collect origin/destination so one navigate carries both.
   let originStop = null
   let destinationStop = null
+  let autoSubmitFlag = false
 
   for (const action of actions.slice(0, 4)) {
     const type = action?.type
@@ -295,6 +305,15 @@ function executeActions(actions, { navigate }) {
       case 'open_planner':
         didApply = true // handled after the loop (single navigate below)
         break
+      case 'plan_journey': {
+        const oName = params.origin || ''
+        const dName = params.destination || ''
+        if (oName) originStop = toPrefillStop({ name: oName, stop_id: params.origin_id })
+        if (dName) destinationStop = toPrefillStop({ name: dName, stop_id: params.destination_id })
+        autoSubmitFlag = params.auto_search === true || params.auto_search === 'true' || Boolean(originStop && destinationStop)
+        didApply = Boolean(originStop || destinationStop)
+        break
+      }
       case 'set_origin':
         originStop = toPrefillStop(params)
         didApply = originStop !== null
@@ -386,11 +405,13 @@ function executeActions(actions, { navigate }) {
   // secondPrefillStop carries the OTHER field, per the /search contract.
   if (originStop || destinationStop) {
     const primaryIsDestination = Boolean(destinationStop)
+    const shouldAutoSubmit = autoSubmitFlag || Boolean(originStop && destinationStop)
     navigate('/search', {
       state: {
         prefillStop: primaryIsDestination ? destinationStop : originStop,
         prefillTarget: primaryIsDestination ? 'destination' : 'origin',
         secondPrefillStop: primaryIsDestination ? originStop : destinationStop,
+        autoSubmit: shouldAutoSubmit,
       },
     })
   }

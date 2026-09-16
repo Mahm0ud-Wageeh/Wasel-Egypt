@@ -22,14 +22,21 @@ class AiActionValidator
     public const REGISTRY = [
         'navigate_home' => [],
         'open_planner' => [],
+        'plan_journey' => [
+            'origin' => 'string',
+            'destination' => 'string',
+            'origin_id' => '?int',
+            'destination_id' => '?int',
+            'auto_search' => '?string',
+        ],
         'set_origin' => [
-            'stop_id' => 'int',
+            'stop_id' => '?int',
             'name' => '?string',
             'latitude' => '?float',
             'longitude' => '?float',
         ],
         'set_destination' => [
-            'stop_id' => 'int',
+            'stop_id' => '?int',
             'name' => '?string',
             'latitude' => '?float',
             'longitude' => '?float',
