@@ -86,7 +86,8 @@ describe('Journey Search — validation & pickers', () => {
       expect(screen.getByText(/Selected: Al-Shohadaa/)).toBeInTheDocument()
     })
     // server-side search hit the places endpoint with the typed query
-    expect(placesApi.searchPlaces).toHaveBeenCalledWith('Shohadaa', expect.anything())
+    // (3rd arg carries the AbortSignal for superseded-keystroke cancels)
+    expect(placesApi.searchPlaces).toHaveBeenCalledWith('Shohadaa', expect.anything(), expect.anything())
   })
 
   it('selects a destination from server-side stop autocomplete', async () => {

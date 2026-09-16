@@ -39,7 +39,7 @@ class DebugLogoutCommand extends Command
         $token = $loginData['data']['token'] ?? null;
 
         $this->info("Login status: " . $loginResponse->getStatusCode());
-        $this->info("Token: " . $token);
+        $this->info("Token generated: " . ($token ? '[REDACTED]' : 'NONE'));
 
         // Check token in DB before logout
         $hashedTokenBefore = hash('sha256', explode('|', $token, 2)[1] ?? $token);

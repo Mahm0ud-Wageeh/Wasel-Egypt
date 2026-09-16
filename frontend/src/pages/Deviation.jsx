@@ -305,7 +305,7 @@ export default function Deviation() {
         </div>
 
         {/* ── Incident panel ── */}
-        <aside className="cockpit__panel is-expanded" aria-label={t('deviation.incident')}>
+        <aside className="cockpit__panel cockpit__panel--expanded is-expanded" aria-label={t('deviation.incident')}>
           <div className="cockpit__scroll">
             {success && <Alert severity="success" title={t('deviation.incident')}>{success}</Alert>}
             {error && <Alert severity="error" title={t('deviation.incident')}>{error}</Alert>}

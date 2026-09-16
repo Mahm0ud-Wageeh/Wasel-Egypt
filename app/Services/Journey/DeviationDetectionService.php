@@ -31,13 +31,71 @@ use Illuminate\Support\Collection;
  */
 class DeviationDetectionService
 {
-    public const OFF_ROUTE_THRESHOLD_METERS = 250;
-    public const OFF_ROUTE_HIGH_METERS = 1000;
+    public const TOLERANCE_WALK_METERS = 50.0;
+    public const TOLERANCE_TRANSIT_METERS = 100.0; // in 90-120m corridor
+    public const OFF_ROUTE_THRESHOLD_METERS = 100.0;
+    public const OFF_ROUTE_HIGH_METERS = 1000.0;
     public const MISSED_STOP_GRACE_SEC = 900;
-    public const MISSED_STOP_DISTANCE_METERS = 250;
+    public const MISSED_STOP_EARLY_GRACE_SEC = 120;
+    public const MISSED_STOP_DISTANCE_METERS = 250.0;
 
     public function __construct(private GeoCalculator $geo, private NotificationService $notifications)
     {
+    }
+
+    /**
+     * Compute the minimum distance from a point to the leg corridor in meters.
+     * Uses min pointToSegmentDistanceMeters over leg.geometry polylines if present,
+     * falling back to the straight segment between endpoints only if null or < 2 points.
+     */
+    public function corridorDistanceMeters(JourneyLeg $leg, float $latitude, float $longitude): float
+    {
+        $geometry = $leg->geometry;
+
+        if (is_array($geometry) && count($geometry) >= 2) {
+            $minDist = null;
+            $count = count($geometry);
+            for ($i = 0; $i < $count - 1; $i++) {
+                $p1 = $geometry[$i];
+                $p2 = $geometry[$i + 1];
+                if (!isset($p1[0], $p1[1], $p2[0], $p2[1])) {
+                    continue;
+                }
+                $dist = $this->geo::pointToSegmentDistanceMeters(
+                    $latitude,
+                    $longitude,
+                    (float) $p1[0],
+                    (float) $p1[1],
+                    (float) $p2[0],
+                    (float) $p2[1]
+                );
+                if ($minDist === null || $dist < $minDist) {
+                    $minDist = $dist;
+                }
+            }
+            if ($minDist !== null) {
+                return $minDist;
+            }
+        }
+
+        return $this->geo::pointToSegmentDistanceMeters(
+            $latitude,
+            $longitude,
+            (float) $leg->from_lat,
+            (float) $leg->from_lng,
+            (float) $leg->to_lat,
+            (float) $leg->to_lng,
+        );
+    }
+
+    /**
+     * Corridor tolerance per mode: 50m for walking, 100m for transit (90-120m corridor).
+     */
+    public function corridorTolerance(JourneyLeg $leg): float
+    {
+        return $leg->mode === 'walking'
+            ? self::TOLERANCE_WALK_METERS
+            : self::TOLERANCE_TRANSIT_METERS;
     }
 
     /**
@@ -45,10 +103,17 @@ class DeviationDetectionService
      *
      * @param array $context Result of the tracking computation:
      *                       ['nearest_stop' => TransitStop|null, 'nearest_distance' => float|null].
+     * @param array $data Optional location update payload with speed/accuracy.
      * @return DeviationEvent|null The persisted deviation event, if one fired.
      */
-    public function detect(ActiveJourney $activeJourney, Carbon $recordedAt, float $latitude, float $longitude, array $context): ?DeviationEvent
-    {
+    public function detect(
+        ActiveJourney $activeJourney,
+        Carbon $recordedAt,
+        float $latitude,
+        float $longitude,
+        array $context,
+        array $data = []
+    ): ?DeviationEvent {
         if (!in_array($activeJourney->status, ['active', 'rerouted'], true)) {
             return null;
         }
@@ -61,17 +126,43 @@ class DeviationDetectionService
 
         $alightingStop = $boardedLeg->transitStopTo;
 
-        // 1. Off route: distance from the leg corridor.
-        $corridorDistance = $this->geo::pointToSegmentDistanceMeters(
-            $latitude,
-            $longitude,
-            (float) $boardedLeg->from_lat,
-            (float) $boardedLeg->from_lng,
-            (float) $boardedLeg->to_lat,
-            (float) $boardedLeg->to_lng,
-        );
+        // 1. Missed stop & early overshoot detection (evaluated first when past arrival)
+        if ($boardedLeg->arrival_time !== null && $alightingStop !== null) {
+            $arrival = Carbon::instance($boardedLeg->arrival_time);
+            $distanceToAlighting = $this->geo::distanceMeters(
+                $latitude,
+                $longitude,
+                (float) $alightingStop->latitude,
+                (float) $alightingStop->longitude,
+            );
 
-        if ($corridorDistance > self::OFF_ROUTE_THRESHOLD_METERS) {
+            $speedMps = isset($data['speed_mps'])
+                ? (float) $data['speed_mps']
+                : (isset($data['speed_kph']) ? ((float) $data['speed_kph']) / 3.6 : 0.0);
+
+            // Overshoot: passed alighting stop + distance increasing + speed > 1m/s for 45s => candidate in 120s not 900s
+            $isOvershoot = $this->isOvershootCandidate($activeJourney, $alightingStop, $distanceToAlighting, $speedMps, $recordedAt, $arrival);
+            $graceSec = $isOvershoot ? self::MISSED_STOP_EARLY_GRACE_SEC : self::MISSED_STOP_GRACE_SEC;
+
+            if ($recordedAt->greaterThan($arrival->copy()->addSeconds($graceSec))
+                && $distanceToAlighting > self::MISSED_STOP_DISTANCE_METERS) {
+
+                $advice = $this->formatMissedStopAdvice($activeJourney, $boardedLeg, $alightingStop, $distanceToAlighting);
+
+                return $this->persist($activeJourney, $recordedAt, $latitude, $longitude, [
+                    'deviation_type' => 'missed_stop',
+                    'severity' => 'medium',
+                    'description' => $advice,
+                    'expected_stop_id' => $alightingStop->id,
+                ]);
+            }
+        }
+
+        // 2. Off route: distance from the leg polyline corridor.
+        $corridorDistance = $this->corridorDistanceMeters($boardedLeg, $latitude, $longitude);
+        $tolerance = $this->corridorTolerance($boardedLeg);
+
+        if ($corridorDistance > $tolerance) {
             $severity = $corridorDistance > self::OFF_ROUTE_HIGH_METERS ? 'high' : 'medium';
 
             return $this->persist($activeJourney, $recordedAt, $latitude, $longitude, [
@@ -87,33 +178,104 @@ class DeviationDetectionService
             ]);
         }
 
-        // 2. Missed stop: planned arrival passed by more than the grace period
-        //    while still not near the alighting stop.
-        if ($boardedLeg->arrival_time !== null && $alightingStop !== null) {
-            $arrival = Carbon::instance($boardedLeg->arrival_time);
-            $distanceToAlighting = $this->geo::distanceMeters(
-                $latitude,
-                $longitude,
-                (float) $alightingStop->latitude,
-                (float) $alightingStop->longitude,
-            );
+        return null;
+    }
 
-            if ($recordedAt->greaterThan($arrival->copy()->addSeconds(self::MISSED_STOP_GRACE_SEC))
-                && $distanceToAlighting > self::MISSED_STOP_DISTANCE_METERS) {
-                return $this->persist($activeJourney, $recordedAt, $latitude, $longitude, [
-                    'deviation_type' => 'missed_stop',
-                    'severity' => 'medium',
-                    'description' => sprintf(
-                        'Missed stop: planned arrival at %s was %d minutes ago.',
-                        $alightingStop->name,
-                        (int) round($recordedAt->diffInMinutes($arrival)),
-                    ),
-                    'expected_stop_id' => $alightingStop->id,
-                ]);
+    /**
+     * Detect overshoot: passed alighting stop + distance increasing + speed > 1 m/s => 120s candidate.
+     */
+    private function isOvershootCandidate(
+        ActiveJourney $activeJourney,
+        $alightingStop,
+        float $currentDistanceToStop,
+        float $speedMps,
+        Carbon $recordedAt,
+        Carbon $arrival
+    ): bool {
+        if ($recordedAt->lessThanOrEqualTo($arrival->copy()->addSeconds(self::MISSED_STOP_EARLY_GRACE_SEC))) {
+            return false;
+        }
+
+        if ($speedMps <= 1.0) {
+            return false;
+        }
+
+        $recent = $activeJourney->journeyProgress()
+            ->where('recorded_at', '>=', $recordedAt->copy()->subSeconds(60))
+            ->orderByDesc('recorded_at')
+            ->take(5)
+            ->get();
+
+        if ($recent->isEmpty()) {
+            return $currentDistanceToStop > 100.0;
+        }
+
+        $earlier = $recent->last();
+        $earlierDistance = $this->geo::distanceMeters(
+            (float) $earlier->latitude,
+            (float) $earlier->longitude,
+            (float) $alightingStop->latitude,
+            (float) $alightingStop->longitude
+        );
+
+        $spanSec = $recordedAt->diffInSeconds(Carbon::parse($earlier->recorded_at));
+
+        return ($currentDistanceToStop >= $earlierDistance) && ($spanSec >= 30 || $currentDistanceToStop > 100.0);
+    }
+
+    /**
+     * Format bilingual guidance: “انزل الجاية X وامشي Y راجع” + transfer cue.
+     */
+    private function formatMissedStopAdvice(
+        ActiveJourney $activeJourney,
+        JourneyLeg $boardedLeg,
+        $alightingStop,
+        float $distanceToAlighting
+    ): string {
+        $walkBackMeters = (int) round($distanceToAlighting);
+        $nextStopName = $this->findNextStopName($boardedLeg, $alightingStop);
+
+        $transferCueEn = '';
+        $transferCueAr = '';
+
+        $subsequentLegs = $activeJourney->journey->journeyLegs
+            ->where('sequence', '>', $boardedLeg->sequence)
+            ->sortBy('sequence');
+
+        $transitTransfer = $subsequentLegs->first(fn ($l) => in_array($l->mode, ['bus', 'metro', 'minibus', 'microbus', 'rail'], true));
+        if ($transitTransfer !== null) {
+            $line = $transitTransfer->routeVariant?->route?->short_name ?? $transitTransfer->mode;
+            $transferCueEn = " (transfer to Line {$line})";
+            $transferCueAr = " (تحويل إلى خط {$line})";
+        }
+
+        return sprintf(
+            'Missed stop: Alight at next stop %s and walk %dm back to %s%s / انزل الجاية %s وامشي %dm راجع إلى %s%s',
+            $nextStopName,
+            $walkBackMeters,
+            $alightingStop->name,
+            $transferCueEn,
+            $nextStopName,
+            $walkBackMeters,
+            $alightingStop->name,
+            $transferCueAr
+        );
+    }
+
+    /**
+     * Find next stop along the route variant after the alighting stop.
+     */
+    private function findNextStopName(JourneyLeg $leg, $alightingStop): string
+    {
+        if ($leg->routeVariant) {
+            $routeStops = $leg->routeVariant->routeStops()->with('transitStop')->orderBy('sequence')->get();
+            $currentIdx = $routeStops->search(fn ($rs) => $rs->transit_stop_id === $alightingStop->id);
+            if ($currentIdx !== false && isset($routeStops[$currentIdx + 1]) && $routeStops[$currentIdx + 1]->transitStop) {
+                return $routeStops[$currentIdx + 1]->transitStop->name;
             }
         }
 
-        return null;
+        return 'المحطة القادمة';
     }
 
     /**

@@ -47,6 +47,8 @@ class AiActionValidator
         'open_profile' => [],
         'switch_map_layer' => ['layer' => 'enum:satellite|streets|dark'],
         'focus_map_location' => ['latitude' => 'float', 'longitude' => 'float', 'zoom' => '?float'],
+        'get_live_eta' => [],
+        'get_next_stop' => [],
     ];
 
     public const MAX_ACTIONS = 4;

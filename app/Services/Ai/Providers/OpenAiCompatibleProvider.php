@@ -122,6 +122,9 @@ class OpenAiCompatibleProvider implements AiProvider
         $language = ($context['language'] ?? 'en') === 'ar' ? 'ar' : 'en';
         $statsJson = json_encode($context['stats'] ?? [], JSON_UNESCAPED_UNICODE);
         $alertsJson = json_encode($context['alerts'] ?? [], JSON_UNESCAPED_UNICODE);
+        $journeyJson = isset($context['active_journey'])
+            ? json_encode($context['active_journey'], JSON_UNESCAPED_UNICODE)
+            : 'null';
 
         $actionList = implode("\n", array_map(
             fn (string $type, array $params) => '  - '.$type.($params !== [] ? ' (params: '.implode(', ', array_keys($params)).')' : ''),
@@ -137,6 +140,13 @@ class OpenAiCompatibleProvider implements AiProvider
         REAL NETWORK CONTEXT (use these facts; never invent others):
         {$statsJson}
         ACTIVE ALERTS: {$alertsJson}
+        ACTIVE JOURNEY TELEMETRY: {$journeyJson}
+
+        CRITICAL GROUNDING (R-03): AI is NEVER the source of truth for journey state. If
+        ACTIVE JOURNEY TELEMETRY is present, you MUST strictly use its values (legIndex,
+        mode, nextStop, remaining_eta_sec, progress, isDeviated, deviationDescription)
+        when the user asks about their active trip, next stop, ETA, or off-route status.
+        Never hallucinate stops or times that differ from this telemetry.
 
         USER LANGUAGE: answer strictly in {$language}.
 

@@ -274,3 +274,114 @@ export function forwardOffsetLocation(lat, lng, bearingDeg, distanceMeters) {
 
   return [toDegrees(offsetLat), toDegrees(offsetLng)]
 }
+
+/**
+ * Classify angular difference between two segments into maneuver type.
+ * @param {number} angleDiff signed degree diff [-180, 180]
+ * @returns {'straight'|'slight_right'|'turn_right'|'sharp_right'|'u_turn'|'slight_left'|'turn_left'|'sharp_left'}
+ */
+export function classifyTurnAngle(angleDiff) {
+  if (!Number.isFinite(angleDiff)) return 'straight'
+  const abs = Math.abs(angleDiff)
+  if (abs < 20) return 'straight'
+  if (angleDiff > 0) {
+    if (angleDiff <= 45) return 'slight_right'
+    if (angleDiff <= 135) return 'turn_right'
+    if (angleDiff <= 170) return 'sharp_right'
+    return 'u_turn'
+  } else {
+    if (angleDiff >= -45) return 'slight_left'
+    if (angleDiff >= -135) return 'turn_left'
+    if (angleDiff >= -170) return 'sharp_left'
+    return 'u_turn'
+  }
+}
+
+/**
+ * Detect all maneuvers (turns) along a polyline.
+ * @param {Array<[number, number]>} polyline
+ * @returns {Array<{
+ *   vertexIndex: number,
+ *   point: [number, number],
+ *   turnType: string,
+ *   angleDiff: number,
+ *   bearingBefore: number,
+ *   bearingAfter: number,
+ *   distanceFromStartMeters: number
+ * }>}
+ */
+export function detectPolylineManeuvers(polyline) {
+  if (!Array.isArray(polyline) || polyline.length < 3) return []
+  const maneuvers = []
+  let cumulativeDist = 0
+
+  for (let i = 1; i < polyline.length - 1; i++) {
+    const prev = polyline[i - 1]
+    const curr = polyline[i]
+    const next = polyline[i + 1]
+
+    const segLen = haversineDistance(prev, curr)
+    cumulativeDist += segLen
+
+    const bearingBefore = calculateBearing(prev, curr)
+    const bearingAfter = calculateBearing(curr, next)
+    const angleDiff = shortestAngleDiff(bearingBefore, bearingAfter)
+
+    const turnType = classifyTurnAngle(angleDiff)
+    if (turnType !== 'straight') {
+      maneuvers.push({
+        vertexIndex: i,
+        point: curr,
+        turnType,
+        angleDiff,
+        bearingBefore,
+        bearingAfter,
+        distanceFromStartMeters: cumulativeDist,
+      })
+    }
+  }
+
+  return maneuvers
+}
+
+/**
+ * Find the next upcoming maneuver along polyline ahead of current progress.
+ *
+ * @param {Array<[number, number]>} polyline
+ * @param {number} segmentIndex
+ * @param {number} t
+ * @param {Array<object>} [precomputedManeuvers]
+ * @returns {{
+ *   type: string,
+ *   distanceMeters: number,
+ *   point: [number, number]|null,
+ *   bearingAfter: number|null
+ * }|null}
+ */
+export function findUpcomingManeuver(polyline, segmentIndex, t = 0, precomputedManeuvers = null) {
+  if (!Array.isArray(polyline) || polyline.length < 2) return null
+  const currentTraveled = distanceAlongPolyline(polyline, segmentIndex, t)
+  const totalLength = polylineLength(polyline)
+  const remainingTotal = Math.max(0, totalLength - currentTraveled)
+
+  const maneuvers = precomputedManeuvers || detectPolylineManeuvers(polyline)
+
+  for (const m of maneuvers) {
+    if (m.vertexIndex > segmentIndex || (m.vertexIndex === segmentIndex && t < 0.5)) {
+      const distToManeuver = Math.max(0, m.distanceFromStartMeters - currentTraveled)
+      return {
+        type: m.turnType,
+        distanceMeters: Math.round(distToManeuver),
+        point: m.point,
+        bearingAfter: m.bearingAfter,
+      }
+    }
+  }
+
+  return {
+    type: 'arrive',
+    distanceMeters: Math.round(remainingTotal),
+    point: polyline[polyline.length - 1],
+    bearingAfter: null,
+  }
+}

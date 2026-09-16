@@ -18,8 +18,8 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/register', [App\Http\Controllers\Api\V1\AuthController::class, 'register'])->middleware('throttle:5,1');
     Route::post('auth/login', [App\Http\Controllers\Api\V1\AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('auth/logout', [App\Http\Controllers\Api\V1\AuthController::class, 'logout'])->middleware('auth:sanctum');
-    Route::post('auth/forgot-password', [App\Http\Controllers\Api\V1\AuthController::class, 'forgotPassword']);
-    Route::post('auth/reset-password', [App\Http\Controllers\Api\V1\AuthController::class, 'resetPassword']);
+    Route::post('auth/forgot-password', [App\Http\Controllers\Api\V1\AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('auth/reset-password', [App\Http\Controllers\Api\V1\AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
     Route::get('auth/user', [App\Http\Controllers\Api\V1\AuthController::class, 'user'])->middleware('auth:sanctum');
 
     // User routes
@@ -30,44 +30,44 @@ Route::prefix('v1')->group(function () {
 
     // Journey planning (user-owned resources: self-or-admin authorization in the controller)
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('journeys/search', [App\Http\Controllers\Api\V1\JourneyController::class, 'search']);
+        Route::post('journeys/search', [App\Http\Controllers\Api\V1\JourneyController::class, 'search'])->middleware('throttle:30,1');
         Route::get('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'index']);
-        Route::post('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'store']);
+        Route::post('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'store'])->middleware('throttle:20,1');
         Route::get('journeys/{id}', [App\Http\Controllers\Api\V1\JourneyController::class, 'show']);
         Route::get('journeys/{id}/alternatives', [App\Http\Controllers\Api\V1\JourneyController::class, 'alternatives']);
-        Route::delete('journeys/{id}', [App\Http\Controllers\Api\V1\JourneyController::class, 'destroy']);
+        Route::delete('journeys/{id}', [App\Http\Controllers\Api\V1\JourneyController::class, 'destroy'])->middleware('throttle:30,1');
 
         // Journey execution (owner-only mutations, owner-or-admin reads)
-        Route::post('journeys/{id}/start', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'start']);
+        Route::post('journeys/{id}/start', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'start'])->middleware('throttle:15,1');
         Route::get('active-journeys', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'index']);
         Route::get('active-journeys/{id}', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'show']);
-        Route::post('active-journeys/{id}/location', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'updateLocation']);
+        Route::post('active-journeys/{id}/location', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'updateLocation'])->middleware('throttle:60,1');
         Route::get('active-journeys/{id}/progress', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'progress']);
-        Route::post('active-journeys/{id}/complete', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'complete']);
-        Route::post('active-journeys/{id}/cancel', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'cancel']);
+        Route::post('active-journeys/{id}/complete', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'complete'])->middleware('throttle:15,1');
+        Route::post('active-journeys/{id}/cancel', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'cancel'])->middleware('throttle:15,1');
 
         // Deviation handling and recovery (owner-only mutations, owner-or-admin reads)
         Route::get('active-journeys/{id}/deviations', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'deviations']);
-        Route::post('active-journeys/{id}/resume', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'resume']);
+        Route::post('active-journeys/{id}/resume', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'resume'])->middleware('throttle:15,1');
         Route::get('active-journeys/{id}/recovery-options', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'listRecoveryOptions']);
-        Route::post('active-journeys/{id}/recovery-options', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'generateRecoveryOptions']);
-        Route::post('active-journeys/{id}/recovery-options/{recoveryId}/accept', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'acceptRecovery']);
+        Route::post('active-journeys/{id}/recovery-options', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'generateRecoveryOptions'])->middleware('throttle:10,1');
+        Route::post('active-journeys/{id}/recovery-options/{recoveryId}/accept', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'acceptRecovery'])->middleware('throttle:15,1');
 
         // Community reports (user-owned; moderation restricted by role middleware)
         Route::get('reports', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'index']);
-        Route::post('reports', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'store']);
+        Route::post('reports', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'store'])->middleware('throttle:10,1');
         Route::get('reports/{id}', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'show']);
-        Route::delete('reports/{id}', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'destroy']);
+        Route::delete('reports/{id}', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'destroy'])->middleware('throttle:20,1');
         Route::get('reports/{id}/moderations', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'moderations']);
-        Route::post('reports/{id}/moderate', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'moderate'])->middleware('role:moderator,admin');
+        Route::post('reports/{id}/moderate', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'moderate'])->middleware(['role:moderator,admin', 'throttle:30,1']);
         Route::get('users/{id}/trust', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'trust']);
 
         // Notifications (strictly personal, in-app)
         Route::get('notifications', [App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
         Route::get('notifications/unread-count', [App\Http\Controllers\Api\V1\NotificationController::class, 'unreadCount']);
-        Route::post('notifications/read-all', [App\Http\Controllers\Api\V1\NotificationController::class, 'markAllRead']);
-        Route::post('notifications/{id}/read', [App\Http\Controllers\Api\V1\NotificationController::class, 'markRead']);
-        Route::delete('notifications/{id}', [App\Http\Controllers\Api\V1\NotificationController::class, 'destroy']);
+        Route::post('notifications/read-all', [App\Http\Controllers\Api\V1\NotificationController::class, 'markAllRead'])->middleware('throttle:30,1');
+        Route::post('notifications/{id}/read', [App\Http\Controllers\Api\V1\NotificationController::class, 'markRead'])->middleware('throttle:60,1');
+        Route::delete('notifications/{id}', [App\Http\Controllers\Api\V1\NotificationController::class, 'destroy'])->middleware('throttle:30,1');
     });
 
     // Admin routes
@@ -93,7 +93,7 @@ Route::prefix('v1')->group(function () {
         Route::get('data/quality', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'quality']);
         Route::get('data/audit', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'audit']);
         Route::get('data/imports/{id}/rollback-preview', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'rollbackPreview']);
-        Route::post('data/imports/{id}/rollback', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'executeRollback']);
+        Route::post('data/imports/{id}/rollback', [App\Http\Controllers\Api\V1\Admin\DataGovernanceController::class, 'executeRollback'])->middleware('throttle:5,1');
     });
 });
 
@@ -163,12 +163,15 @@ Route::middleware(['auth:sanctum', 'permission:transit-data-edit'])->prefix('v1'
     Route::apiResource('service-alert-routes', App\Http\Controllers\Api\V1\Transit\ServiceAlertRouteController::class);
 
     // GTFS Import
-    Route::post('gtfs/import', [App\Http\Controllers\Api\V1\Transit\GtfsImportController::class, 'import']);
-    Route::post('gtfs/validate', [App\Http\Controllers\Api\V1\Transit\GtfsImportController::class, 'validate']);
+    Route::post('gtfs/import', [App\Http\Controllers\Api\V1\Transit\GtfsImportController::class, 'import'])->middleware('throttle:5,1');
+    Route::post('gtfs/validate', [App\Http\Controllers\Api\V1\Transit\GtfsImportController::class, 'validate'])->middleware('throttle:5,1');
 });
 
 // Public endpoints (no authentication required)
 Route::prefix('v1')->group(function () {
+    // Health and telemetry status (public observability, no PII)
+    Route::get('health', [App\Http\Controllers\Api\V1\HealthController::class, 'check']);
+
     // Public community reports (verified/resolved only)
     Route::get('community-reports', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'publicIndex']);
     Route::get('community-reports/{id}', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'publicShow']);
@@ -178,8 +181,11 @@ Route::prefix('v1')->group(function () {
 
     // Unified place + stop search (geocoder proxied server-side, throttled
     // to respect the keyless Photon public instance's fair-use policy).
+    // 30/min: the client debounces (600ms) + aborts superseded keystrokes,
+    // and Photon responses are cached server-side — typing bursts stay far
+    // below upstream load while autocomplete never starves mid-word.
     Route::get('places/search', [App\Http\Controllers\Api\V1\PlaceController::class, 'search'])
-        ->middleware('throttle:10,1');
+        ->middleware('throttle:30,1');
     Route::get('stops/{id}', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicShow']);
     Route::get('stops/{id}/departures', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicDepartures']);
 

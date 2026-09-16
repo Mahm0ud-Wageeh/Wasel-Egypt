@@ -53,7 +53,8 @@ class JourneyPlanResource extends JsonResource
                 // produced this leg (walk_source='estimate').
                 'geometry' => $leg['geometry'] ?? null,
                 'walk_source' => $leg['walk_source'] ?? null,
-                'geometry_source' => $leg['geometry_source'] ?? null,
+                'geometry_source' => $leg['geometry_source'] ?? (!empty($leg['geometry']) ? 'route_geometry' : 'stop_to_stop'),
+                'leg_steps' => $leg['leg_steps'] ?? null,
                 'reliability' => $leg['reliability'] ?? null,
             ])->all(),
             'transfers' => collect($this->resource['transfers'])->map(fn (array $transfer) => [

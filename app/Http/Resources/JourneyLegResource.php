@@ -51,6 +51,7 @@ class JourneyLegResource extends JsonResource
             // before geometry persistence (map falls back to straight lines).
             'geometry' => $this->geometry,
             'geometry_source' => $this->geometry_source,
+            'leg_steps' => $this->leg_steps,
             'agency_id' => $this->agency_id,
             'agency' => $this->whenLoaded('agency', fn () => $this->agency ? [
                 'id' => $this->agency->id,

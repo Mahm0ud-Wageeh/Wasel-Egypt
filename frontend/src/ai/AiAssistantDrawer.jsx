@@ -21,7 +21,7 @@ import { trackEvent } from '../utils/analytics'
 const MAX_HEIGHT_PHONE = '78vh'
 
 export function AiAssistantDrawer() {
-  const { open, setOpen, messages, sending, status, send, clear, isRtl } = useAiAssistant()
+  const { open, setOpen, messages, sending, status, send, clear, isRtl, journeyContext } = useAiAssistant()
   const { t, language } = useI18n()
   const [draft, setDraft] = useState('')
   const [appliedChips, setAppliedChips] = useState([])
@@ -52,9 +52,13 @@ export function AiAssistantDrawer() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, setOpen])
 
-  const suggestions = language === 'ar'
-    ? ['من التحرير إلى الجيزة', 'اعرض الخط الأول', 'تذكرة المترو بكام؟', 'في تحذيرات على الشبكة؟']
-    : ['From Tahrir to Giza', 'Show line 1', 'Metro ticket price?', 'Any service alerts?']
+  const suggestions = journeyContext
+    ? (language === 'ar'
+        ? ['ما هي محطتي التالية؟', 'كم من الوقت متبقي؟', 'هل أنا على المسار الصحيح؟', 'في تحذيرات على الشبكة؟']
+        : ['What is my next stop?', 'How much time is left?', 'Am I on track?', 'Any service alerts?'])
+    : (language === 'ar'
+        ? ['من التحرير إلى الجيزة', 'اعرض الخط الأول', 'تذكرة المترو بكام؟', 'في تحذيرات على الشبكة؟']
+        : ['From Tahrir to Giza', 'Show line 1', 'Metro ticket price?', 'Any service alerts?'])
 
   const onSubmit = async (e) => {
     e?.preventDefault?.()

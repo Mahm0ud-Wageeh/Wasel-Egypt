@@ -61,6 +61,11 @@ import {
   History,
   BadgeCheck,
   FlaskConical,
+  Compass,
+  Volume2,
+  VolumeX,
+  CornerUpRight,
+  CornerUpLeft,
 } from 'lucide-react'
 
 /**
@@ -125,6 +130,11 @@ const ICONS = {
   history: History,
   badgeCheck: BadgeCheck,
   flaskConical: FlaskConical,
+  compass: Compass,
+  volume: Volume2,
+  volumeMute: VolumeX,
+  turnRight: CornerUpRight,
+  turnLeft: CornerUpLeft,
 
   // status
   success: CircleCheck,

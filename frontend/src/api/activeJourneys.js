@@ -36,12 +36,16 @@ export async function getActiveJourneyById(id) {
   return response.data ?? response
 }
 
-export async function updateJourneyLocation(id, { latitude, longitude, speed_mps = 0, recorded_at = null }) {
+export async function updateJourneyLocation(id, { latitude, longitude, speed_mps = 0, recorded_at = null, accuracy = null, heading = null, client_seq = null, is_backfill = null }) {
   const payload = {
     latitude: Number(latitude),
     longitude: Number(longitude),
     speed_mps: speed_mps !== null && speed_mps !== undefined ? Number(speed_mps) : 0,
     ...(recorded_at ? { recorded_at } : {}),
+    ...(accuracy !== null && accuracy !== undefined ? { accuracy: Number(accuracy) } : {}),
+    ...(heading !== null && heading !== undefined ? { heading: Number(heading) } : {}),
+    ...(client_seq !== null && client_seq !== undefined ? { client_seq: Number(client_seq) } : {}),
+    ...(is_backfill ? { is_backfill: true } : {}),
   }
   const response = await apiRequest(endpoints.activeJourneys.location(id), {
     method: 'POST',

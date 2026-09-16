@@ -4,6 +4,10 @@ import { RouteMatcher } from '../utils/geo/routeMatcher'
 
 const POST_MIN_INTERVAL_MS = 10000 // Throttled backend ping interval
 const POST_MIN_DISTANCE_M = 25 // 25 meters minimum movement for backend ping
+// Tunnel detection: N consecutive GPS errors (timeout/unavailable — never
+// permission denial) after at least one good fix means the rider is most
+// likely in a metro tunnel / dead zone.
+const TUNNEL_CONSECUTIVE_ERRORS = 3
 
 /**
  * useNavigationEngine — Production live navigation engine for Wasel Egypt.
@@ -24,6 +28,7 @@ export function useNavigationEngine({
   onDeviationDetected = null,
 }) {
   const [status, setStatus] = useState('off')
+  const [retryCounter, setRetryCounter] = useState(0)
   const [rawPosition, setRawPosition] = useState(null)
   const [visualPosition, setVisualPosition] = useState(null)
   const [heading, setHeading] = useState(null)
@@ -31,11 +36,17 @@ export function useNavigationEngine({
   const [movementState, setMovementState] = useState('stationary')
   const [routeMatch, setRouteMatch] = useState(null)
   const [isOffRoute, setIsOffRoute] = useState(false)
+  const [isStale, setIsStale] = useState(false)
+  const [tunnelMode, setTunnelMode] = useState(false)
+  const lastFixAtRef = useRef(null)
+  const consecutiveErrorsRef = useRef(0)
 
   const filterRef = useRef(new PositionFilter())
   const matcherRef = useRef(new RouteMatcher())
   const watchIdRef = useRef(null)
   const lastPostRef = useRef(null)
+  const lastOffRouteRef = useRef(false)
+  const lastLegCompleteRef = useRef(false)
   const updateCallbackRef = useRef(onLocationUpdate)
   updateCallbackRef.current = onLocationUpdate
   const deviationCallbackRef = useRef(onDeviationDetected)
@@ -44,6 +55,8 @@ export function useNavigationEngine({
   // Reset when itinerary or leg changes drastically
   useEffect(() => {
     matcherRef.current.reset()
+    lastOffRouteRef.current = false
+    lastLegCompleteRef.current = false
   }, [currentLegIndex])
 
   const stop = useCallback(() => {
@@ -53,6 +66,10 @@ export function useNavigationEngine({
     watchIdRef.current = null
     filterRef.current.reset()
     matcherRef.current.reset()
+    lastOffRouteRef.current = false
+    lastLegCompleteRef.current = false
+    consecutiveErrorsRef.current = 0
+    setTunnelMode(false)
     setStatus('off')
   }, [])
 
@@ -71,6 +88,11 @@ export function useNavigationEngine({
       setSpeed(filtered.speed)
       setMovementState(filtered.movementState)
 
+      lastFixAtRef.current = Date.now()
+      setIsStale(false)
+      // A good fix clears the consecutive-error run (tunnel over / glitch passed).
+      consecutiveErrorsRef.current = 0
+      setTunnelMode(false)
       // Map match against current itinerary
       const match = matcherRef.current.match(filtered, itinerary, currentLegIndex)
       setRouteMatch(match)
@@ -84,17 +106,22 @@ export function useNavigationEngine({
         deviationCallbackRef.current?.(match)
       }
 
-      // Throttled honest posting to backend API
+      // Throttled honest posting to backend API: 10s / 25m, force immediate on newly off-route or leg complete
       const now = Date.now()
       const last = lastPostRef.current
       const movedM = last
         ? Math.hypot((raw.lat - last.lat) * 111320, (raw.lng - last.lng) * 111320 * Math.cos((raw.lat * Math.PI) / 180))
         : Infinity
 
+      const isNewOffRoute = match.isOffRoute && !lastOffRouteRef.current
+      const isNewLegComplete = match.isLegComplete && !lastLegCompleteRef.current
+      lastOffRouteRef.current = match.isOffRoute
+      lastLegCompleteRef.current = match.isLegComplete
+
+      const forcePost = isNewOffRoute || isNewLegComplete
       if (
         !last ||
-        match.isOffRoute ||
-        match.isLegComplete ||
+        forcePost ||
         (now - last.at >= POST_MIN_INTERVAL_MS && movedM >= POST_MIN_DISTANCE_M)
       ) {
         lastPostRef.current = { at: now, lat: raw.lat, lng: raw.lng }
@@ -137,6 +164,22 @@ export function useNavigationEngine({
         })
       },
       (err) => {
+        if (lastFixAtRef.current) {
+          setIsStale(true)
+        }
+        // Count consecutive GPS errors INSIDE the callback: the status state
+        // stays 'error' across repeated failures, so counting from status
+        // transitions outside would stall at 1 and tunnel mode would never
+        // engage. Permission denial is terminal intent — never a tunnel.
+        if (err.code === err.PERMISSION_DENIED) {
+          consecutiveErrorsRef.current = 0
+          setTunnelMode(false)
+        } else if (lastFixAtRef.current) {
+          consecutiveErrorsRef.current += 1
+          if (consecutiveErrorsRef.current >= TUNNEL_CONSECUTIVE_ERRORS) {
+            setTunnelMode(true)
+          }
+        }
         switch (err.code) {
           case err.PERMISSION_DENIED:
             setStatus('denied')
@@ -162,7 +205,13 @@ export function useNavigationEngine({
       }
       watchIdRef.current = null
     }
-  }, [enabled, stop, processCoordinates])
+  }, [enabled, stop, processCoordinates, retryCounter])
+
+  const retry = useCallback(() => {
+    consecutiveErrorsRef.current = 0
+    setTunnelMode(false)
+    setRetryCounter((c) => c + 1)
+  }, [])
 
   // Allow manual simulation pings (e.g. for testing / demo)
   const simulateLocation = useCallback(
@@ -188,6 +237,9 @@ export function useNavigationEngine({
     movementState,
     routeMatch,
     isOffRoute,
+    isStale,
+    tunnelMode,
+    retry,
     simulateLocation,
     stop,
   }

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useI18n } from '../i18n/LanguageContext'
 import { useLiveJourneyTracking } from '../hooks/useLiveJourneyTracking'
 import { useNavigationEngine } from '../hooks/useNavigationEngine'
+import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import { Card } from '../components/ui/Card'
 import { Badge, ModeDot } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -79,7 +80,7 @@ function etaMinutes(tracking) {
  * governed by the geometry-based fit contract and never reacts to pings.
  */
 export default function ActiveJourney() {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const { id: rawParamId } = useParams()
   // Route params arrive as strings; normalize for API calls.
   const paramId = rawParamId != null ? Number(rawParamId) : null
@@ -111,8 +112,32 @@ export default function ActiveJourney() {
   }, [panelMode])
 
   // Live GPS: consent-based device tracking with throttled honest pings.
+  const manualOverrideRef = useRef(false)
   const [liveOn, setLiveOn] = useState(false)
   const [followOn, setFollowOn] = useState(false)
+
+  // Auto-live on start when journey is active or rerouted
+  useEffect(() => {
+    if (activeJourney && !manualOverrideRef.current) {
+      if (activeJourney.status === 'active' || activeJourney.status === 'rerouted') {
+        setLiveOn(true)
+      }
+    }
+  }, [activeJourney?.id, activeJourney?.status])
+
+  // ── Phase 2: Tunnel mode (driven by the engine) ──
+  const [tunnelMode, setTunnelMode] = useState(false)
+
+  // ── Phase 2: Stale fix age ──
+  const [fixAgeMs, setFixAgeMs] = useState(null) // ms since last good fix
+  const lastGoodFixAtRef = useRef(null)          // wall-clock timestamp of last accepted fix
+  const fixAgeTimerRef = useRef(null)
+  const lastKnownLocRef = useRef(null)
+
+  const tr = (key, fallback) => {
+    const val = t(key)
+    return (!val || val === key) ? fallback : val
+  }
 
   const fetchJourney = useCallback(async () => {
     setLoading(true)
@@ -141,27 +166,83 @@ export default function ActiveJourney() {
     fetchJourney()
   }, [fetchJourney])
 
-  // Throttled live fixes -> journey API (drives tracking/progress/deviation).
-  const postFix = useCallback(async (payload) => {
-    if (!activeJourney?.id) return
-    try {
-      const updated = await updateJourneyLocation(activeJourney.id, {
+  const postingRef = useRef(false)
+
+  // ── Phase 1: Offline queue poster ──
+  // Passes client_seq through verbatim: the queue stamps every entry, and
+  // live attempts stamp below — the server dedupes the pair into one row.
+  const offlineQueuePoster = useCallback(
+    (payload) => {
+      if (!activeJourney?.id) return Promise.reject(new Error('no journey'))
+      return updateJourneyLocation(activeJourney.id, {
         latitude: payload.latitude,
         longitude: payload.longitude,
         speed_mps: Number.isFinite(payload.speed) ? payload.speed : 1.4,
-        recorded_at: payload.recorded_at ?? new Date().toISOString(),
+        accuracy: payload.accuracy,
+        heading: payload.heading,
+        recorded_at: payload.recorded_at, // fix-time timestamp — never re-stamped
+        ...(Number.isFinite(payload.client_seq) ? { client_seq: payload.client_seq } : {}),
       })
+    },
+    [activeJourney?.id]
+  )
+
+  const offlineQueue = useOfflineQueue({
+    journeyId: activeJourney?.id ?? null,
+    poster: offlineQueuePoster,
+  })
+
+  // Throttled live fixes -> journey API.
+  // On network failure: enqueue; on success: ack + drain queue.
+  // The seq is allocated BEFORE the live attempt and reused on retry, so a
+  // ping that timed out after being recorded collapses into one server row.
+  const postFix = useCallback(async (payload) => {
+    if (!activeJourney?.id || postingRef.current) return
+    postingRef.current = true
+    // Phase 2: mark good fix
+    lastGoodFixAtRef.current = Date.now()
+    setFixAgeMs(0)
+    if (tunnelMode) {
+      setTunnelMode(false)
+      setFollowOn(true) // auto-resume follow on fix
+    }
+    const seq = offlineQueue.allocateSeq?.() ?? null
+    const body = {
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      speed_mps: Number.isFinite(payload.speed) ? payload.speed : 1.4,
+      accuracy: payload.accuracy,
+      heading: payload.heading,
+      recorded_at: payload.recorded_at ?? new Date().toISOString(),
+      ...(seq != null ? { client_seq: seq } : {}),
+    }
+    try {
+      const updated = await updateJourneyLocation(activeJourney.id, body)
       const resultData = updated.data ?? updated
       setActiveJourney(resultData)
       if (resultData.status === 'deviated') {
         navigate(`/active-journeys/${activeJourney.id}/deviation`)
       }
-    } catch { /* transient - the next fix retries */ }
-  }, [activeJourney?.id, navigate])
+      offlineQueue.notifySuccess()
+    } catch (err) {
+      // Network/server error: enqueue verbatim payload (original recorded_at)
+      // under the SAME seq as the failed live attempt.
+      offlineQueue.enqueue({
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        speed: Number.isFinite(payload.speed) ? payload.speed : 1.4,
+        accuracy: payload.accuracy,
+        heading: payload.heading,
+        recorded_at: payload.recorded_at ?? new Date().toISOString(),
+      }, seq)
+    } finally {
+      postingRef.current = false
+    }
+  }, [activeJourney?.id, navigate, offlineQueue, tunnelMode])
 
   const live = useLiveJourneyTracking({ enabled: liveOn, postPosition: postFix })
 
-  // Follow-me arms automatically once the first live fix lands.
+  // Arms follow-me when live tracking goes live
   useEffect(() => {
     if (live.status === 'live') setFollowOn(true)
   }, [live.status])
@@ -195,10 +276,35 @@ export default function ActiveJourney() {
     onDeviationDetected: null,
   })
 
-  // Arms follow-me when navigation engine goes live too.
+  // Arms follow-me when navigation engine goes live
   useEffect(() => {
     if (navEngine.status === 'live') setFollowOn(true)
   }, [navEngine.status])
+
+  // ── Phase 2: Tunnel mode — driven by the engine's consecutive-error
+  // counter. Counting status transitions here would stall: the status stays
+  // 'error' across repeated GPS failures, so this effect would run once.
+  useEffect(() => {
+    if (navEngine.tunnelMode && !tunnelMode) {
+      setTunnelMode(true)
+      setFollowOn(false) // pause follow-zoom in tunnel
+    }
+  }, [navEngine.tunnelMode, tunnelMode])
+
+  // ── Phase 2: Fix-age ticker — updates fixAgeMs every second while stale ──
+  useEffect(() => {
+    if (navEngine.isStale && lastGoodFixAtRef.current) {
+      clearInterval(fixAgeTimerRef.current)
+      fixAgeTimerRef.current = setInterval(() => {
+        setFixAgeMs(Date.now() - lastGoodFixAtRef.current)
+      }, 1000)
+    } else {
+      clearInterval(fixAgeTimerRef.current)
+      fixAgeTimerRef.current = null
+      setFixAgeMs(null)
+    }
+    return () => clearInterval(fixAgeTimerRef.current)
+  }, [navEngine.isStale])
 
   const handleSendLocation = async (lat, lng) => {
     if (!activeJourney) return
@@ -252,7 +358,7 @@ export default function ActiveJourney() {
       const res = await completeJourney(activeJourney.id)
       trackEvent('journey_completed', { journey_id: activeJourney.id })
       setActiveJourney(res.data ?? res)
-      setActionSuccess(t('journey.completed_toast'))
+      setActionSuccess(tr('journey.completed_toast', 'Journey completed! Great trip.'))
       setTimeout(() => navigate('/home'), 1800)
     } catch (err) {
       setError(err.message || 'Failed to complete journey.')
@@ -269,7 +375,7 @@ export default function ActiveJourney() {
       const res = await cancelJourney(activeJourney.id)
       trackEvent('journey_cancelled', { journey_id: activeJourney.id })
       setActiveJourney(res.data ?? res)
-      setActionSuccess(t('journey.cancelled_toast'))
+      setActionSuccess(tr('journey.cancelled_toast', 'Journey cancelled.'))
       setTimeout(() => navigate('/home'), 1400)
     } catch (err) {
       setError(err.message || 'Failed to cancel journey.')
@@ -395,9 +501,10 @@ export default function ActiveJourney() {
     }
     const modeChanged = nextLeg && (nextLeg.type ?? nextLeg.mode) !== (currentLeg.type ?? currentLeg.mode)
     const alightTo = nextStop?.name ?? currentLeg.to_stop?.name
+    const nextStopLabel = tr('journey.next_stop', 'Next stop')
     return {
       icon: 'circleDot',
-      main: `${t('journey.next_stop')}: ${alightTo ?? '—'}`,
+      main: `${nextStopLabel}: ${alightTo ?? '—'}`,
       sub: {
         line: currentLeg.route_variant?.route?.short_name ?? null,
         board: currentLeg.from_stop?.name ?? null,
@@ -436,17 +543,35 @@ export default function ActiveJourney() {
     )
   }
 
-  // Navigation engine status: use navEngine if active, else fall back to old live
+  // Navigation engine status
   const navActive = navEngine.status === 'live'
   const liveActive = liveOn && (navActive || live.status === 'live')
 
-  // Navigation HUD data from the route matcher
+  // Phase 2: GPS-lost / stale derived state
+  // Use navEngine snapped pos > live pos > latest ping
+  const currentLoc = navEngine.visualPosition
+    ?? live.position
+    ?? (latestPing?.latitude ? { lat: Number(latestPing.latitude), lng: Number(latestPing.longitude) } : null)
+  if (currentLoc) lastKnownLocRef.current = currentLoc
+
+  const isGpsLost = liveOn && (navEngine.isStale || ((navEngine.status === 'error' || live.status === 'error') && Boolean(lastKnownLocRef.current)))
+  const isGpsDenied = liveOn && (navEngine.status === 'denied' || live.status === 'denied')
+  // Fresh GPS-less contexts (no geolocation API, e.g. insecure http on a
+  // phone, or an engine that never got a fix): honest banner, not silence.
+  // 'error' without a last-known position also lands here (isGpsLost needs one).
+  const isGpsUnavailable = liveOn && !isGpsDenied && !isGpsLost && (navEngine.status === 'unavailable' || navEngine.status === 'error' || live.status === 'unavailable')
+
+  const fixAgeSec = fixAgeMs != null ? Math.round(fixAgeMs / 1000) : null
+  // Show stale banner when fix is >10 s old
+  const showStaleBanner = isGpsLost && fixAgeSec != null && fixAgeSec >= 10
+
+  // Navigation HUD data
   const navManeuver = navEngine.routeMatch?.nextManeuver ?? null
   const navOffRoute = navEngine.isOffRoute
 
   return (
     <div className="app-shell__page app-shell__page--cockpit">
-      <div className={`cockpit${isDeviated ? ' cockpit--deviated' : ''}${isRerouted ? ' cockpit--rerouted' : ''}`}>
+      <div className={`cockpit cockpit--panel-${panelMode}${isDeviated ? ' cockpit--deviated' : ''}${isRerouted ? ' cockpit--rerouted' : ''}`}>
         {/* ── The map is the cockpit ── */}
         <div className="cockpit__map">
           <MapPanel
@@ -534,14 +659,17 @@ export default function ActiveJourney() {
             </div>
           </div>
 
-          {/* Live navigation controls: GPS toggle + follow-me */}
+          {/* Live navigation controls: GPS toggle + follow-me + sync chip */}
           <div className="cockpit__chips">
             <button
               type="button"
               className={`chip${liveActive ? ' on' : ''}`}
               aria-pressed={liveOn}
               disabled={live.status === 'starting' || navEngine.status === 'starting'}
-              onClick={() => setLiveOn((v) => !v)}
+              onClick={() => {
+                manualOverrideRef.current = true
+                setLiveOn((v) => !v)
+              }}
             >
               <Icon name={liveActive ? 'track' : 'locate'} size={13} aria-hidden="true" />
               {liveActive ? t('cockpit.live_on') : t('cockpit.live_tracking')}
@@ -556,6 +684,23 @@ export default function ActiveJourney() {
                 <Icon name="crosshair" size={13} aria-hidden="true" />
                 {followOn ? t('cockpit.follow_me') : t('cockpit.resume_following')}
               </button>
+            )}
+            {/* Phase 1: Offline sync chip — visible only when relevant */}
+            {(offlineQueue.queuedCount > 0 || offlineQueue.syncedCount > 0) && (
+              <span
+                className="chip"
+                aria-live="polite"
+                aria-label={
+                  language === 'ar'
+                    ? `${offlineQueue.syncedCount} متزامن · ${offlineQueue.queuedCount} في الطابور`
+                    : `${offlineQueue.syncedCount} synced · ${offlineQueue.queuedCount} queued`
+                }
+                style={{ fontSize: 11, opacity: 0.85, cursor: 'default' }}
+              >
+                {language === 'ar'
+                  ? `${offlineQueue.syncedCount} متزامن · ${offlineQueue.queuedCount} في الطابور`
+                  : `${offlineQueue.syncedCount} synced · ${offlineQueue.queuedCount} queued`}
+              </span>
             )}
           </div>
 
@@ -610,28 +755,94 @@ export default function ActiveJourney() {
           <div className="cockpit__scroll">
             {actionSuccess && <Alert severity="success" title="Success">{actionSuccess}</Alert>}
             {error && <Alert severity="error" title="Tracking Notice">{error}</Alert>}
-            {liveOn && live.status === 'denied' && (
-              <Alert severity="warning" title={t('cockpit.gps_denied_title')}>{t('cockpit.gps_denied')}</Alert>
+
+            {/* Phase 2: GPS denied banner */}
+            {isGpsDenied && (
+              <Alert severity="warning" title={language === 'ar' ? 'تم رفض إذن الموقع' : 'Location permission was denied'}>
+                {language === 'ar'
+                  ? 'يرجى السماح بالوصول من إعدادات المتصفح ثم اضغط إعادة محاولة'
+                  : 'Allow location access in your browser settings, then tap Retry.'}
+                <button
+                  type="button"
+                  className="chip on"
+                  style={{ marginInlineStart: 8, fontSize: 11, padding: '3px 8px' }}
+                  onClick={() => navEngine.retry?.()}
+                  aria-label={language === 'ar' ? 'إعادة محاولة' : 'Retry'}
+                >
+                  {language === 'ar' ? 'إعادة محاولة' : 'Retry'}
+                </button>
+              </Alert>
             )}
-            {liveOn && (live.status === 'unavailable' || live.status === 'error') && (
-              <Alert severity="warning" title={t('cockpit.gps_denied_title')}>{t('cockpit.gps_unavailable')}</Alert>
+
+            {/* GPS unavailable banner (no geolocation API / never got a fix) */}
+            {isGpsUnavailable && (
+              <Alert severity="warning" title={t('cockpit.gps_denied_title')}>
+                {t('cockpit.gps_unavailable')}
+                <button
+                  type="button"
+                  className="chip on"
+                  style={{ marginInlineStart: 8, fontSize: 11, padding: '3px 8px' }}
+                  onClick={() => navEngine.retry?.()}
+                  aria-label={language === 'ar' ? 'إعادة محاولة' : 'Retry'}
+                >
+                  {language === 'ar' ? 'إعادة محاولة' : 'Retry'}
+                </button>
+              </Alert>
+            )}
+
+            {/* Phase 2: GPS lost / stale banner (>10 s since last fix) */}
+            {isGpsLost && !isGpsDenied && (
+              <Alert severity="warning" title={language === 'ar' ? 'إشارة GPS ضعيفة' : 'GPS signal lost · Last known position retained'}>
+                {showStaleBanner
+                  ? (language === 'ar'
+                    ? `آخر إشارة منذ ${fixAgeSec} ثانية — تثبيت الموقع الأخير`
+                    : `Last fix ${fixAgeSec}s ago — holding position`)
+                  : (language === 'ar' ? 'تثبيت آخر موقع معروف' : 'Holding last known position')}
+                <button
+                  type="button"
+                  className="chip on"
+                  style={{ marginInlineStart: 8, fontSize: 11, padding: '3px 8px' }}
+                  onClick={() => navEngine.retry?.()}
+                  aria-label={language === 'ar' ? 'إعادة محاولة' : 'Retry'}
+                >
+                  {language === 'ar' ? 'إعادة محاولة' : 'Retry'}
+                </button>
+              </Alert>
+            )}
+
+            {/* Phase 2: Tunnel mode toast */}
+            {tunnelMode && liveOn && (
+              <Alert severity="warning" title={language === 'ar' ? 'وضع النفق' : 'Tunnel mode — GPS paused'}>
+                {language === 'ar'
+                  ? 'فقدنا إشارة GPS بسبب النفق. تتابع الخريطة معطّل — سيستأنف تلقائياً عند استعادة الإشارة.'
+                  : 'Lost GPS signal in tunnel. Map follow paused — will resume automatically on signal.'}
+              </Alert>
             )}
 
             {isDeviated && (
               <Alert
                 severity="error"
-                title={t('journey.deviated_title')}
-                action={
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => navigate(`/active-journeys/${activeJourney.id}/deviation`)}
-                  >
-                    {t('journey.resolve')}
-                  </Button>
-                }
+                title={tr('journey.deviated_title', 'Deviation Detected')}
               >
-                {t('journey.deviated_body')}
+                <div>
+                  <p>{tracking?.deviation?.description || tr('journey.deviated_body', 'Off-route deviation detected.')}</p>
+                  <div className="row" style={{ gap: 8, marginTop: 8 }}>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => navigate(`/active-journeys/${activeJourney.id}/deviation`)}
+                    >
+                      Reroute now
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {}}
+                    >
+                      Keep plan
+                    </Button>
+                  </div>
+                </div>
               </Alert>
             )}
 
@@ -783,7 +994,7 @@ export default function ActiveJourney() {
               {legs.length > 0 && (
                 <Card flat>
                   <div className="row-between" style={{ marginBottom: 10 }}>
-                    <b style={{ fontSize: 14 }}>{t('journey.itinerary')}</b>
+                    <b style={{ fontSize: 14 }}>{tr('journey.itinerary', 'Itinerary')}</b>
                     <span className="t-caption">
                       {legs.length} legs{activeJourney.started_at ? ` · ${t('journey.started_at').replace('{time}', formatTime(activeJourney.started_at))}` : ''}
                     </span>
@@ -812,6 +1023,15 @@ export default function ActiveJourney() {
                               {isCurrent && (
                                 <span className="badge b-active" style={{ marginTop: 4 }}>{t('journey.in_progress')}</span>
                               )}
+                              {!leg.geometry && (
+                                <span
+                                  className="badge"
+                                  title="Route shape not available — straight-line shown for reference"
+                                  style={{ marginTop: 3, fontSize: 9.5, opacity: 0.75 }}
+                                >
+                                  Straight-line estimate
+                                </span>
+                              )}
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <div className="t-caption t-num">{Math.round((leg.duration_sec || 0) / 60)} min</div>
@@ -839,13 +1059,14 @@ export default function ActiveJourney() {
                       size="sm"
                       variant="secondary"
                       loading={gpsSimulating}
+                      aria-label="Ping on-route GPS"
                       onClick={() =>
                         userLocation
                           ? handleSendLocation(userLocation.lat + 0.002, userLocation.lng + 0.002)
                           : handleSendLocation(30.0423, 31.2315)
                       }
                     >
-                      {t('journey.ping_on')}
+                      {tr('journey.ping_on', 'Ping on-route GPS')}
                     </Button>
                     <Button
                       size="sm"
@@ -863,10 +1084,10 @@ export default function ActiveJourney() {
               {!isDone && (
                 <div className="row" style={{ gap: 10 }}>
                   <Button block variant="primary" loading={actionLoading} onClick={handleComplete}>
-                    {t('journey.complete')}
+                    {tr('journey.complete', 'Complete journey')}
                   </Button>
                   <Button block variant="danger" loading={actionLoading} onClick={handleCancel}>
-                    {t('journey.cancel_trip')}
+                    {tr('journey.cancel_trip', 'Cancel trip')}
                   </Button>
                 </div>
               )}

@@ -88,4 +88,69 @@ describe('Responsive Behavior & Layout Integrity', () => {
     expect(mapPanel).toHaveAttribute('aria-label', expect.stringMatching(/^Map/))
     expect(mapPanel).toHaveAttribute('style', expect.stringContaining('height'))
   })
+
+  it('handles ActiveJourney cockpit sheet snaps (collapsed, expanded, hidden, reopen) on mobile', async () => {
+    const mockActive = {
+      id: 55,
+      user_id: 1,
+      status: 'active',
+      journey: {
+        id: 10,
+        journey_legs: [
+          {
+            id: 1,
+            sequence: 1,
+            mode: 'metro',
+            from_lat: '30.0444',
+            from_lng: '31.2357',
+            to_lat: '30.0555',
+            to_lng: '31.2444',
+            from_stop: { id: 1, name: 'Sadat' },
+            to_stop: { id: 2, name: 'Attaba' },
+          },
+        ],
+      },
+      tracking: {
+        current_leg_index: 0,
+        next_stop: { id: 2, name: 'Attaba', latitude: 30.0555, longitude: 31.2444 },
+        progress_percent: 50,
+      },
+    }
+
+    const { getActiveJourneyById, getActiveJourneys } = await import('../api/activeJourneys')
+    vi.spyOn({ getActiveJourneyById }, 'getActiveJourneyById').mockResolvedValue(mockActive)
+    const activeModule = await import('../api/activeJourneys')
+    vi.spyOn(activeModule, 'getActiveJourneyById').mockResolvedValue(mockActive)
+    vi.spyOn(activeModule, 'getActiveJourneys').mockResolvedValue({ data: [mockActive] })
+
+    sessionStorage.setItem('wasel.cockpit.panel', 'collapsed')
+    const { default: ActiveJourney } = await import('../pages/ActiveJourney')
+    const { container } = renderWithProviders(<ActiveJourney />, {
+      route: '/active-journeys/55',
+      authState: { isAuthenticated: true, user: { id: 1 } },
+    })
+
+    const toggle = await screen.findByRole('button', { name: /show.*details/i })
+    expect(toggle).toBeInTheDocument()
+    expect(container.querySelector('.cockpit--panel-collapsed')).toBeInTheDocument()
+
+    // Expand bottom sheet
+    fireEvent.click(toggle)
+    expect(container.querySelector('.cockpit--panel-expanded')).toBeInTheDocument()
+    expect(container.querySelector('.cockpit__panel--expanded')).toBeInTheDocument()
+
+    // Hide panel
+    const closeBtn = container.querySelector('.cockpit__panel-close')
+    expect(closeBtn).toBeInTheDocument()
+    fireEvent.click(closeBtn)
+
+    expect(container.querySelector('.cockpit--panel-hidden')).toBeInTheDocument()
+    const reopenBtn = container.querySelector('.cockpit__reopen')
+    expect(reopenBtn).toBeInTheDocument()
+
+    // Reopen panel
+    fireEvent.click(reopenBtn)
+    expect(container.querySelector('.cockpit--panel-expanded')).toBeInTheDocument()
+  })
 })
+

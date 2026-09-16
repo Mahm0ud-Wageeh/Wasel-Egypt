@@ -9,6 +9,9 @@ import {
   polylineLength,
   distanceAlongPolyline,
   forwardOffsetLocation,
+  classifyTurnAngle,
+  detectPolylineManeuvers,
+  findUpcomingManeuver,
 } from '../utils/geo/navigationMath'
 
 describe('navigationMath', () => {
@@ -196,6 +199,62 @@ describe('navigationMath', () => {
       const result = forwardOffsetLocation(30.0, 31.0, 90, 500)
       expect(result[0]).toBeCloseTo(30.0, 3)
       expect(result[1]).toBeGreaterThan(31.0)
+    })
+  })
+
+  describe('classifyTurnAngle', () => {
+    it('identifies straight motion for small angles', () => {
+      expect(classifyTurnAngle(5)).toBe('straight')
+      expect(classifyTurnAngle(-10)).toBe('straight')
+    })
+
+    it('identifies right turns correctly', () => {
+      expect(classifyTurnAngle(30)).toBe('slight_right')
+      expect(classifyTurnAngle(90)).toBe('turn_right')
+      expect(classifyTurnAngle(150)).toBe('sharp_right')
+      expect(classifyTurnAngle(175)).toBe('u_turn')
+    })
+
+    it('identifies left turns correctly', () => {
+      expect(classifyTurnAngle(-35)).toBe('slight_left')
+      expect(classifyTurnAngle(-90)).toBe('turn_left')
+      expect(classifyTurnAngle(-160)).toBe('sharp_left')
+      expect(classifyTurnAngle(-175)).toBe('u_turn')
+    })
+  })
+
+  describe('detectPolylineManeuvers & findUpcomingManeuver', () => {
+    // Polyline: North, then East, then South (two 90-degree right turns)
+    const polyline = [
+      [30.000, 31.000],
+      [30.005, 31.000], // Turn right here (East)
+      [30.005, 31.005], // Turn right here (South)
+      [30.000, 31.005],
+    ]
+
+    it('detects two right turns in an inverted U-path', () => {
+      const maneuvers = detectPolylineManeuvers(polyline)
+      expect(maneuvers.length).toBe(2)
+      expect(maneuvers[0].turnType).toBe('turn_right')
+      expect(maneuvers[0].vertexIndex).toBe(1)
+      expect(maneuvers[1].turnType).toBe('turn_right')
+      expect(maneuvers[1].vertexIndex).toBe(2)
+    })
+
+    it('finds the upcoming maneuver based on current segment', () => {
+      // User is at start of segment 0 heading toward vertex 1
+      const upcoming = findUpcomingManeuver(polyline, 0, 0.2)
+      expect(upcoming).not.toBeNull()
+      expect(upcoming.type).toBe('turn_right')
+      expect(upcoming.distanceMeters).toBeGreaterThan(0)
+    })
+
+    it('indicates arrival when past all turns', () => {
+      // User is on segment 2 (after both turns)
+      const upcoming = findUpcomingManeuver(polyline, 2, 0.5)
+      expect(upcoming).not.toBeNull()
+      expect(upcoming.type).toBe('arrive')
+      expect(upcoming.distanceMeters).toBeGreaterThan(0)
     })
   })
 })

@@ -97,7 +97,10 @@ function makeNavigationArrow(color) {
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext?.('2d')
+  if (!ctx) {
+    return { width: size, height: size, data: new Uint8ClampedArray(size * size * 4) }
+  }
 
   // 1. Forward radiant light beam cone (Google Maps style)
   const beamGrad = ctx.createRadialGradient(size / 2, size / 2, 10, size / 2, size / 2, 46)
@@ -167,11 +170,13 @@ function itineraryToFeatures(itinerary, kind) {
     }
     if (!coords || coords.length < 2) return
 
+    const legType = leg.type ?? (leg.mode === 'walking' ? 'walking' : 'transit')
+
     features.push({
       type: 'Feature',
       properties: {
         kind,
-        legType: leg.type,
+        legType,
         mode: leg.mode,
         index: idx,
       },
@@ -465,11 +470,19 @@ export function MapPanel({
   followRef.current = follow
   const followInterruptRef = useRef(onFollowInterrupt)
   followInterruptRef.current = onFollowInterrupt
+  // Displaced flag: true once the camera moves by hand (any gesture),
+  // independent of follow/navigation state — drives the floating Recenter
+  // FAB so a rider browsing the route with no GPS is never left stranded.
+  const [displaced, setDisplaced] = useState(false)
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return undefined
     const interrupt = () => {
+      // Any hand gesture displaces the camera — flag it so the floating
+      // Recenter FAB appears even outside live navigation (e.g. browsing
+      // a route with GPS off). Follow teardown keeps its own gate below.
+      setDisplaced(true)
       if (followRef.current) followInterruptRef.current?.()
     }
     map.on('dragstart', interrupt)
@@ -484,26 +497,45 @@ export function MapPanel({
     }
   }, [ready])
 
+  const firstFixSnappedRef = useRef(false)
+  useEffect(() => {
+    if (!navigationMode) {
+      firstFixSnappedRef.current = false
+    }
+  }, [navigationMode])
+
   useEffect(() => {
     const map = mapRef.current
     if (!follow || !map || !ready || !userLocation) return
     const uLat = Number(userLocation.lat)
     const uLng = Number(userLocation.lng)
     if (!Number.isFinite(uLat) || !Number.isFinite(uLng)) return
+    // Follow is actively driving the camera again — back at anchor.
+    setDisplaced(false)
 
     if (navigationMode) {
+      if (!firstFixSnappedRef.current) {
+        firstFixSnappedRef.current = true
+        map.flyTo({
+          center: [uLng, uLat],
+          zoom: 16.5,
+          duration: 900,
+        })
+        return
+      }
+
       const offsetDist = Number(userSpeed) > 6 ? 45 : 24
       const [fLat, fLng] = forwardOffsetLocation(uLat, uLng, userHeading ?? 0, offsetDist)
       const targetCenter = [fLng, fLat]
       const targetBearing = headingUp && Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0
       const targetPitch = pitch3D ? 38 : 0
-      const targetZoom = Number(userSpeed) > 10 ? 15.5 : Number(userSpeed) > 3 ? 16.5 : 17.2
+      const targetZoom = Number(userSpeed) > 10 ? 15.2 : Number(userSpeed) > 2.5 ? 16.4 : 17.4
 
       map.easeTo({
         center: targetCenter,
         bearing: targetBearing,
         pitch: targetPitch,
-        zoom: Math.max(map.getZoom(), targetZoom),
+        zoom: targetZoom,
         duration: 800,
       })
     } else {
@@ -769,7 +801,8 @@ export function MapPanel({
       userLocation && Number.isFinite(Number(userLocation.lat)) && Number.isFinite(Number(userLocation.lng))
     if (validUser) {
       const accuracyM = Number(userLocation.accuracy) || 0
-      const headingVal = userHeading != null && Number.isFinite(Number(userHeading)) ? Number(userHeading) : null
+      const hasHeading = Number(userSpeed) > 1.2 && userHeading != null && Number.isFinite(Number(userHeading))
+      const headingVal = hasHeading ? Number(userHeading) : null
       const sourceData = {
         type: 'Feature',
         properties: { heading: headingVal },
@@ -859,7 +892,7 @@ export function MapPanel({
     // here. Rebuilding layers on a palette/basemap change must never move the
     // camera, and re-running this effect from cosmetic re-renders (zoom
     // badge, panel toggles) must never re-apply the last focus.
-  }, [ready, itinerary, alternatives, origin, destination, stops, userLocation, userHeading, deviation, currentLegIndex, highlightStop, clearDynamic, stopsLayerOn, nearby, activeLayer, palette, modeColors])
+  }, [ready, itinerary, alternatives, origin, destination, stops, userLocation, userHeading, userSpeed, deviation, currentLegIndex, highlightStop, clearDynamic, stopsLayerOn, nearby, activeLayer, palette, modeColors])
 
   // ---------- camera fit (explicit plotted-data changes only) ----------
   // The camera belongs to the user once the focus animation finishes. It is
@@ -929,6 +962,8 @@ export function MapPanel({
     const map = mapRef.current
     const maplibre = maplibreRef.current
     if (!map || !maplibre) return
+    // Returning to anchor clears the displacement flag.
+    setDisplaced(false)
 
     const valid = (p) => p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))
     const target =
@@ -941,9 +976,10 @@ export function MapPanel({
         const uLng = Number(userLocation.lng)
         const offsetDist = Number(userSpeed) > 6 ? 45 : 24
         const [fLat, fLng] = forwardOffsetLocation(uLat, uLng, userHeading ?? 0, offsetDist)
+        const targetZoom = Number(userSpeed) > 10 ? 15.2 : Number(userSpeed) > 2.5 ? 16.4 : 17.4
         map.flyTo({
           center: [fLng, fLat],
-          zoom: Math.max(map.getZoom(), 16.8),
+          zoom: targetZoom,
           bearing: headingUp && Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0,
           pitch: pitch3D ? 38 : 0,
           duration: 700,
@@ -952,7 +988,15 @@ export function MapPanel({
         map.flyTo({ center: target, zoom: Math.max(map.getZoom(), 15), duration: 500 })
       }
     }
-  }, [userLocation, origin, navigationMode, userHeading, userSpeed, headingUp, pitch3D])
+    // No live position and no origin (e.g. browsing a saved route with GPS
+    // off): fall back to the plotted route bounds so the rider is never
+    // left staring at a displaced viewport with no way back.
+    if (fitPoints.length > 0) {
+      const bounds = new maplibre.LngLatBounds()
+      fitPoints.forEach((p) => bounds.extend(p))
+      map.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 600 })
+    }
+  }, [userLocation, origin, navigationMode, userHeading, userSpeed, headingUp, pitch3D, fitPoints])
 
   const zoomBy = useCallback((delta) => {
     mapRef.current?.easeTo({ zoom: (mapRef.current?.getZoom() ?? 11) + delta, duration: 250 })
@@ -1089,7 +1133,11 @@ export function MapPanel({
             </button>
           </div>
 
-          {navigationMode && !follow && ready && (
+          {/* Floating Recenter FAB: the legacy nav contract (navigationMode
+              && follow lost) is preserved untouched; additionally any hand
+              gesture sets `displaced`, so route browsers with no GPS also
+              get a way back to the plotted data. */}
+          {ready && fitPoints.length > 0 && ((navigationMode && !follow) || displaced) && (
             <button
               type="button"
               className="map-recenter-fab"

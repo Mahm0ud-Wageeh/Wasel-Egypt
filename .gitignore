@@ -44,3 +44,7 @@ frontend/.env.*.local
 
 # Local GUI-QA evidence (untracked test artifacts)
 gui-test-screenshots/
+
+# Agent & IDE ignore files
+.antigravityignore
+.geminiignore

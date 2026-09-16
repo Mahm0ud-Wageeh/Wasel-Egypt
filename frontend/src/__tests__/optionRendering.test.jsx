@@ -232,4 +232,40 @@ describe('Journey Option Rendering', () => {
       expect(screen.queryByRole('dialog', { name: 'Journey details' })).not.toBeInTheDocument()
     })
   })
+
+  it('renders 2 transfers badge for 2-transfer journey options', () => {
+    const twoTransferOption = {
+      ...mockJourneyPlan.options[0],
+      total_transfers: 2,
+    }
+    renderResults([twoTransferOption])
+
+    expect(screen.getByText('2 transfers')).toBeInTheDocument()
+  })
+
+  it('renders turn-by-turn walking steps and straight-line fallback badge in timeline', async () => {
+    const optionWithStepsAndFallback = {
+      ...mockJourneyPlan.options[0],
+      legs: [
+        {
+          ...mockJourneyPlan.options[0].legs[0],
+          geometry_source: 'stop_to_stop',
+          leg_steps: [
+            { instruction: 'Head north on Al-Gomhoureya', distance: 50, bearing: 10 },
+            { instruction: 'Turn right onto Ramses St', distance: 100, bearing: 95 },
+          ],
+        },
+        mockJourneyPlan.options[0].legs[1],
+        mockJourneyPlan.options[0].legs[2],
+      ],
+    }
+    renderResults([optionWithStepsAndFallback])
+    fireEvent.click(screen.getByRole('button', { name: /view details/i }))
+    const dialog = await screen.findByRole('dialog', { name: 'Journey details' }, { timeout: 2500 })
+
+    expect(within(dialog).getByText('Straight-line estimate')).toBeInTheDocument()
+    expect(within(dialog).getByText(/Walking directions/i)).toBeInTheDocument()
+    expect(within(dialog).getByText(/Head north on Al-Gomhoureya/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/Turn right onto Ramses St/)).toBeInTheDocument()
+  })
 })

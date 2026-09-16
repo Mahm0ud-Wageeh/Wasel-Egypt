@@ -37,6 +37,25 @@ class RoadAwareWalkingService
             ?? config('services.osrm.url', env('OSRM_URL', 'http://127.0.0.1:5001'));
     }
 
+    public static function fallbackCount(): int
+    {
+        try {
+            return (int) \Illuminate\Support\Facades\Cache::get('osrm:fallback_count', 0);
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    public static function recordFallback(): void
+    {
+        try {
+            \Illuminate\Support\Facades\Cache::increment('osrm:fallback_count');
+            \Illuminate\Support\Facades\Cache::put('osrm:last_fallback_at', now()->toIso8601String(), 86400);
+        } catch (\Throwable) {
+            // Degrade gracefully if cache store unreachable
+        }
+    }
+
     protected function enabled(): bool
     {
         return (bool) config(
@@ -52,6 +71,7 @@ class RoadAwareWalkingService
      *   @var int   $distance_meters  Actual road distance.
      *   @var int   $duration_sec     Realistic walking duration.
      *   @var array $geometry        [[lat, lng], ...] road-following polyline.
+     *   @var array|null $leg_steps  [{instruction, distance, bearing}] walking steps.
      *   @var string $source          'osrm' (always; the fallback path is
      *                                handled by the caller via null returns).
      * } or null when OSRM is unavailable / no route exists.
@@ -118,16 +138,19 @@ class RoadAwareWalkingService
                     . '&destinations=' . implode(',', range($srcCount, count($coords) - 1)));
 
             if ($response->failed()) {
+                self::recordFallback();
                 return null;
             }
 
             $data = $response->json();
             if (($data['code'] ?? null) !== 'Ok' || !isset($data['distances'])) {
+                self::recordFallback();
                 return null;
             }
 
             return $data['distances'];
         } catch (\Throwable $e) {
+            self::recordFallback();
             Log::debug('OSRM table request failed: ' . $e->getMessage());
 
             return null;
@@ -142,15 +165,17 @@ class RoadAwareWalkingService
         try {
             $response = Http::timeout(5)
                 ->get("{$this->url()}/route/v1/foot/{$from};{$to}"
-                    . '?overview=full&geometries=geojson');
+                    . '?overview=full&geometries=geojson&steps=true');
 
             if ($response->failed()) {
+                self::recordFallback();
                 return null;
             }
 
             $data = $response->json();
 
             if (($data['code'] ?? null) !== 'Ok' || empty($data['routes'][0])) {
+                self::recordFallback();
                 return null;
             }
 
@@ -161,17 +186,68 @@ class RoadAwareWalkingService
                 $route['geometry']['coordinates'] ?? []
             );
 
+            $rawSteps = $route['legs'][0]['steps'] ?? null;
+            $legSteps = null;
+            if (is_array($rawSteps) && $rawSteps !== []) {
+                $legSteps = [];
+                foreach ($rawSteps as $s) {
+                    $maneuver = $s['maneuver'] ?? [];
+                    $type = $maneuver['type'] ?? 'continue';
+                    $modifier = $maneuver['modifier'] ?? null;
+                    $name = trim($s['name'] ?? '');
+                    $bearing = (int) round($maneuver['bearing_after'] ?? $maneuver['bearing_before'] ?? 0);
+                    $distance = (int) round($s['distance'] ?? 0);
+
+                    $instruction = $this->formatStepInstruction($type, $modifier, $name, $bearing);
+                    $legSteps[] = [
+                        'instruction' => $instruction,
+                        'distance' => $distance,
+                        'bearing' => $bearing,
+                    ];
+                }
+            }
+
             return [
                 'distance_meters' => (int) round($route['distance']),
                 'duration_sec' => (int) round($route['duration']),
                 'geometry' => $geometry,
+                'leg_steps' => $legSteps,
                 'source' => 'osrm',
             ];
         } catch (\Throwable $e) {
+            self::recordFallback();
             Log::debug('OSRM route request failed: ' . $e->getMessage());
 
             return null;
         }
+    }
+
+    protected function formatStepInstruction(string $type, ?string $modifier, string $name, int $bearing): string
+    {
+        $street = $name !== '' ? " onto {$name}" : '';
+        $onStreet = $name !== '' ? " on {$name}" : '';
+
+        if ($type === 'depart') {
+            $cardinal = GeoCalculator::bearingToCardinal($bearing);
+            return "Head {$cardinal}" . ($name !== '' ? " on {$name}" : '');
+        }
+
+        if ($type === 'arrive') {
+            return 'Arrive at destination';
+        }
+
+        if ($type === 'turn') {
+            $modText = $modifier ? ' ' . str_replace('_', ' ', $modifier) : '';
+            return "Turn{$modText}{$street}";
+        }
+
+        if ($type === 'continue' || $type === 'new name') {
+            return "Continue{$onStreet}";
+        }
+
+        $modText = $modifier ? ' ' . str_replace('_', ' ', $modifier) : '';
+        $typeText = ucfirst(str_replace('_', ' ', $type));
+        return "{$typeText}{$modText}{$street}";
     }
 
     protected function cacheKey(float $fromLat, float $fromLng, float $toLat, float $toLng): string

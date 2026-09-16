@@ -11,18 +11,22 @@ import {
   snapToPolyline,
   polylineLength,
   distanceAlongPolyline,
+  detectPolylineManeuvers,
+  findUpcomingManeuver,
 } from './navigationMath'
 
 export class RouteMatcher {
   constructor(options = {}) {
     this.walkingToleranceMeters = options.walkingToleranceMeters ?? 50
-    this.transitToleranceMeters = options.transitToleranceMeters ?? 90
+    this.transitToleranceMeters = options.transitToleranceMeters ?? 100 // 90-120m corridor
     this.offRouteConsecutiveFixesRequired = options.offRouteConsecutiveFixesRequired ?? 3
     this.offRouteMinDurationMs = options.offRouteMinDurationMs ?? 6000
 
     this.consecutiveOffRouteCount = 0
     this.firstOffRouteTimestamp = null
     this.lastMatchedSegmentIndex = 0
+    this.cachedManeuvers = null
+    this.lastManeuverLegIndex = null
   }
 
   /** Reset matcher state. */
@@ -30,6 +34,8 @@ export class RouteMatcher {
     this.consecutiveOffRouteCount = 0
     this.firstOffRouteTimestamp = null
     this.lastMatchedSegmentIndex = 0
+    this.cachedManeuvers = null
+    this.lastManeuverLegIndex = null
   }
 
   /**
@@ -187,15 +193,101 @@ export class RouteMatcher {
       }
     }
 
-    // Next Maneuver
-    const nextManeuver = {
-      instruction: isWalking
-        ? `Walk ${Math.round(distanceRemainingInLeg)}m to ${leg.to_stop?.name ?? 'destination'}`
-        : `Ride ${leg.mode ?? 'transit'} to ${leg.to_stop?.name ?? 'next stop'}`,
-      distanceMeters: Math.round(distanceRemainingInLeg),
-      mode: leg.mode ?? (isWalking ? 'walking' : 'transit'),
-      type: leg.type ?? (isWalking ? 'walking' : 'transit'),
-      targetStop: leg.to_stop?.name ?? null,
+    // Maneuvers caching per leg
+    if (this.lastManeuverLegIndex !== currentLegIndex || !this.cachedManeuvers) {
+      this.cachedManeuvers = detectPolylineManeuvers(polyline)
+      this.lastManeuverLegIndex = currentLegIndex
+    }
+
+    const nextLeg = legs[currentLegIndex + 1] || null
+    const isTransfer = Boolean(nextLeg && (nextLeg.type ?? nextLeg.mode) !== (leg.type ?? leg.mode))
+
+    // Real Turn-by-Turn Maneuver from Route Geometry
+    let nextManeuver = null
+
+    if (isWalking) {
+      const turnAhead = findUpcomingManeuver(
+        polyline,
+        snapResult.segmentIndex,
+        snapResult.t,
+        this.cachedManeuvers
+      )
+
+      if (turnAhead && turnAhead.type !== 'arrive') {
+        const d = turnAhead.distanceMeters
+        const turnKey = turnAhead.type
+        const turnLabelEn = turnKey.replace(/_/g, ' ')
+        const instructionEn = d <= 15
+          ? `${turnLabelEn.charAt(0).toUpperCase() + turnLabelEn.slice(1)} now`
+          : `In ${d}m, ${turnLabelEn}`
+        const instructionAr = localizeTurnAr(turnKey, d)
+
+        nextManeuver = {
+          instruction: instructionEn,
+          instruction_en: instructionEn,
+          instruction_ar: instructionAr,
+          distanceMeters: d,
+          mode: 'walking',
+          type: 'walking',
+          turnType: turnKey,
+          targetStop: leg.to_stop?.name ?? null,
+          isTransfer: false,
+          isArrival: false,
+        }
+      } else {
+        const d = Math.round(distanceRemainingInLeg)
+        const destName = leg.to_stop?.name ?? 'destination'
+        const instructionEn = d <= 20
+          ? `Arriving at ${destName}`
+          : `Walk ${d}m to ${destName}`
+        const instructionAr = d <= 20
+          ? `الوصول إلى ${destName}`
+          : `امشِ ${d}م إلى ${destName}`
+
+        nextManeuver = {
+          instruction: instructionEn,
+          instruction_en: instructionEn,
+          instruction_ar: instructionAr,
+          distanceMeters: d,
+          mode: 'walking',
+          type: 'walking',
+          turnType: 'arrive',
+          targetStop: leg.to_stop?.name ?? null,
+          isTransfer: false,
+          isArrival: d <= 20,
+        }
+      }
+    } else {
+      // Transit Leg Maneuvers
+      const d = Math.round(distanceRemainingInLeg)
+      const stopName = leg.to_stop?.name ?? 'next stop'
+      const lineName = leg.route_variant?.route?.short_name ? `Line ${leg.route_variant.route.short_name}` : (leg.mode ?? 'transit')
+
+      let instructionEn = `Ride ${lineName} to ${stopName}`
+      let instructionAr = `استقل ${lineName} إلى ${stopName}`
+
+      if (distanceToStop <= 300) {
+        if (isTransfer) {
+          instructionEn = `Prepare to alight at ${stopName} and transfer`
+          instructionAr = `استعد للنزول في ${stopName} والتحويل`
+        } else {
+          instructionEn = `Prepare to alight at ${stopName} in ${Math.round(distanceToStop)}m`
+          instructionAr = `استعد للنزول في ${stopName} بعد ${Math.round(distanceToStop)}م`
+        }
+      }
+
+      nextManeuver = {
+        instruction: instructionEn,
+        instruction_en: instructionEn,
+        instruction_ar: instructionAr,
+        distanceMeters: d,
+        mode: leg.mode ?? 'transit',
+        type: leg.type ?? 'transit',
+        turnType: distanceToStop <= 300 ? (isTransfer ? 'transfer' : 'alight') : 'ride',
+        targetStop: stopName,
+        isTransfer,
+        isArrival: distanceToStop <= 40,
+      }
     }
 
     return {
@@ -217,4 +309,23 @@ export class RouteMatcher {
       nextManeuver,
     }
   }
+}
+
+export function localizeTurnAr(turnKey, distanceMeters) {
+  const translations = {
+    turn_right: 'انعطف يميناً',
+    slight_right: 'انعطف يميناً قليلاً',
+    sharp_right: 'انعطف يميناً بشكل حاد',
+    turn_left: 'انعطف يساراً',
+    slight_left: 'انعطف يساراً قليلاً',
+    sharp_left: 'انعطف يساراً بشكل حاد',
+    u_turn: 'استدر للخلف',
+    straight: 'تابع للأمام',
+    arrive: 'الوصول إلى الوجهة',
+  }
+  const turnText = translations[turnKey] || 'تابع السير'
+  if (distanceMeters <= 15) {
+    return `${turnText} الآن`
+  }
+  return `بعد ${distanceMeters}م، ${turnText}`
 }

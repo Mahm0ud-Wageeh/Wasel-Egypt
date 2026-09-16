@@ -227,14 +227,13 @@ describe('Journey Cockpit — map-first active journey', () => {
     expect(mapProps.fitTo).toBe('route')
   })
 
-  it('arms follow-me from the live GPS toggle and shows honest reduced tracking', async () => {
+  it('auto-arms live GPS on start and shows honest reduced tracking', async () => {
     renderCockpit()
 
     await waitFor(() => expect(screen.getByText('Itinerary')).toBeInTheDocument())
 
-    // jsdom has no geolocation: the honest reduced-tracking path shows.
-    const liveBtn = screen.getByRole('button', { name: /live gps/i })
-    fireEvent.click(liveBtn)
+    // Auto-live on Start: jsdom has no geolocation, so the honest
+    // reduced-tracking path shows WITHOUT clicking the toggle.
     await waitFor(() => {
       expect(screen.getByText(/Reduced tracking/i)).toBeInTheDocument()
     })
@@ -242,6 +241,18 @@ describe('Journey Cockpit — map-first active journey', () => {
     // GPS is unavailable, so permission recovery works without remount).
     expect(typeof mapProps.onFollowInterrupt).toBe('function')
     expect(mapProps.follow).toBe(false)
+
+    // Manual override: toggling Live GPS off hides the banner…
+    const liveBtn = screen.getByRole('button', { name: /live gps/i })
+    fireEvent.click(liveBtn)
+    await waitFor(() => {
+      expect(screen.queryByText(/Reduced tracking/i)).not.toBeInTheDocument()
+    })
+    // …and toggling it back on restores honest tracking state.
+    fireEvent.click(liveBtn)
+    await waitFor(() => {
+      expect(screen.getByText(/Reduced tracking/i)).toBeInTheDocument()
+    })
   })
 
   it('surfaces the deviation recovery path inside the cockpit', async () => {
@@ -254,8 +265,11 @@ describe('Journey Cockpit — map-first active journey', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Deviation detected/i)).toBeInTheDocument()
-      // Map chip + panel action both lead to recovery.
-      expect(screen.getAllByRole('button', { name: /view recovery options/i }).length).toBe(2)
+      // Map chip leads to the recovery screen…
+      expect(screen.getByRole('button', { name: /view recovery options/i })).toBeInTheDocument()
+      // …and the panel offers instant reroute vs keep-plan directly.
+      expect(screen.getByRole('button', { name: /^reroute now$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^keep plan$/i })).toBeInTheDocument()
     })
   })
 

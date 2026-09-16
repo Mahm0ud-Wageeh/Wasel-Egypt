@@ -89,3 +89,28 @@ it('keeps generated dictionaries identical to JSON with full key parity', () => 
   expect(Object.keys(en).sort()).toEqual(Object.keys(ar).sort())
   for (const value of Object.values(ar)) expect(value).not.toMatch(/\?{3,}/)
 })
+
+it('verifies all journey companion cockpit keys have authentic Arabic translations', () => {
+  const companionKeys = [
+    'cockpit.gps_retry',
+    'cockpit.gps_lost',
+    'cockpit.recenter',
+    'cockpit.gps_denied',
+    'cockpit.gps_denied_title',
+    'cockpit.gps_weak',
+    'cockpit.live_on',
+    'cockpit.live_tracking',
+    'cockpit.follow_me',
+    'cockpit.resume_following',
+    'cockpit.heading_up',
+    'cockpit.north_up',
+  ]
+
+  for (const key of companionKeys) {
+    expect(ar[key]).toBeDefined()
+    expect(ar[key].length).toBeGreaterThan(0)
+    expect(ar[key]).not.toEqual(en[key]) // Must be real Arabic, not English fallback
+    expect(ar[key]).not.toMatch(/[a-zA-Z]{4,}/) // No untranslated English words
+  }
+})
+

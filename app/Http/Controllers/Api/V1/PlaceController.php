@@ -54,9 +54,12 @@ class PlaceController extends AuthController
         }
 
         // 1. Transit stops (real imported network).
+        // Escape LIKE wildcards so a literal % _ \ in the query cannot turn
+        // the lookup into an unintended full-table wildcard scan.
+        $like = addcslashes($query, '%_\\');
         $stops = DB::table('transit_stops')
             ->leftJoin('areas', 'transit_stops.area_id', '=', 'areas.id')
-            ->where('transit_stops.name', 'like', '%' . $query . '%')
+            ->where('transit_stops.name', 'like', '%' . $like . '%')
             ->orderBy('transit_stops.name')
             ->limit(6)
             ->get([

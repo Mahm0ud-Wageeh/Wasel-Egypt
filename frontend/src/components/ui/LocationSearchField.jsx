@@ -6,16 +6,18 @@ import { Icon } from './Icon'
  * landing hero and the journey planner.
  *
  * Features (unified UX across surfaces):
- * - Server-side stop + place autocomplete (debounced 300ms)
+ * - Server-side stop + place autocomplete (debounced 600ms, previous
+ *   in-flight request aborted so fast typing never floods the throttle)
  * - "Use my current location" action (real browser geolocation)
  * - Clear button, selected state, loading spinner
  * - Raw "lat, lng" paste support (power users)
  * - ARIA combobox pattern with full keyboard navigation
  *
  * Controlled selection via `selected`/`onChange`; query text is local.
+ * onSearch receives (query, { signal }) — callers must swallow aborts.
  */
 
-const DEBOUNCE_MS = 300
+const DEBOUNCE_MS = 600
 
 function parseCoordinates(str) {
   if (!str) return null
@@ -66,14 +68,24 @@ export function LocationSearchField({
   useEffect(() => { setQuery(selected?.name ?? '') }, [selected?.name])
 
   // Debounced server-side search (skipped while a selection is active).
+  // Each new keystroke aborts the previous in-flight request: without this,
+  // typing a word fires one request per keystroke and trips the server
+  // throttle, killing suggestions mid-word with 429s.
+  const abortRef = useRef(null)
   useEffect(() => {
     if (!onSearch) return undefined
     const q = query.trim()
     if (q.length < 2 || isSelected) return undefined
     if (parseCoordinates(q)) return undefined
-    const timer = setTimeout(() => onSearch(q), DEBOUNCE_MS)
+    const timer = setTimeout(() => {
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+      Promise.resolve(onSearch(q, { signal: controller.signal })).catch(() => {})
+    }, DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [query, onSearch, isSelected])
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   const stopOptions = useMemo(() => results.slice(0, 6), [results])
   const placeOptions = useMemo(() => places.slice(0, 5), [places])

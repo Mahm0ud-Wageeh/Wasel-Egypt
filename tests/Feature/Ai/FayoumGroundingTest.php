@@ -27,20 +27,32 @@ class FayoumGroundingTest extends TestCase
         parent::setUp();
         Cache::flush();
 
+        $fayoum = Governorate::firstOrCreate(['name' => 'Faiyum'], ['code' => 'FYM']);
+        $area = Area::firstOrCreate(['name' => 'Fayoum', 'governorate_id' => $fayoum->id]);
+
         $mode = TransitMode::factory()->create(['name' => 'Metro', 'icon' => 'subway']);
-        $giza = TransitStop::factory()->create(['name' => 'Giza', 'latitude' => 30.0131, 'longitude' => 31.2089]);
+        $giza = TransitStop::factory()->create([
+            'name' => 'Giza',
+            'latitude' => 30.0131,
+            'longitude' => 31.2089,
+            'area_id' => $area->id,
+        ]);
 
         // A Greater Cairo street whose name contains "Fayoum" — the decoy
         // the resolver must NOT pick when the user means the governorate.
-        TransitStop::factory()->create(['name' => 'Al Fayoum Rd.', 'latitude' => 30.05, 'longitude' => 31.23]);
+        TransitStop::factory()->create([
+            'name' => 'Al Fayoum Rd.',
+            'latitude' => 30.05,
+            'longitude' => 31.23,
+            'area_id' => $area->id,
+        ]);
 
         // The real Fayoum pack stops (subset).
-        $fayoum = Governorate::factory()->create(['name' => 'Faiyum', 'code' => 'FYM']);
-        $area = Area::factory()->create(['name' => 'Fayoum', 'governorate_id' => $fayoum->id]);
         TransitStop::factory()->create([
             'name' => 'Fayoum Bus Terminal',
             'gtfs_stop_id' => 'fayoum:terminal',
-            'latitude' => 29.3084, 'longitude' => 30.8428,
+            'latitude' => 29.3084,
+            'longitude' => 30.8428,
             'area_id' => $area->id,
         ]);
 

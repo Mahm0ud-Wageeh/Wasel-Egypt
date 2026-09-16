@@ -10,7 +10,7 @@ import { endpoints } from './endpoints'
  * cached and throttled server-side — the client never calls the
  * geocoder directly.
  */
-export async function searchPlaces(query, { lat, lng } = {}) {
+export async function searchPlaces(query, { lat, lng } = {}, { signal } = {}) {
   const params = new URLSearchParams({ q: query })
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
     params.set('lat', String(lat))
@@ -18,6 +18,7 @@ export async function searchPlaces(query, { lat, lng } = {}) {
   }
   const response = await apiRequest(`${endpoints.public.placesSearch}?${params.toString()}`, {
     auth: false,
+    ...(signal ? { signal } : {}),
   })
   return response.data ?? response
 }

@@ -74,7 +74,13 @@ class ActiveJourneyController extends AuthController
     {
         $user = Auth::user();
 
-        $query = ActiveJourney::with('journey.journeyLegs.transitStopFrom', 'journey.journeyLegs.transitStopTo', 'journey.journeyLegs.routeVariant.route');
+        $query = ActiveJourney::with([
+            'journey.journeyLegs.transitStopFrom',
+            'journey.journeyLegs.transitStopTo',
+            'journey.journeyLegs.routeVariant.route',
+            'latestJourneyProgress',
+            'latestDeviationEvent',
+        ]);
 
         if ($user->hasRole('admin')) {
             if ($request->has('user_id')) {
@@ -151,6 +157,7 @@ class ActiveJourneyController extends AuthController
             'data' => array_merge(
                 (new ActiveJourneyResource($result['active_journey']->load('journey.journeyLegs')))->withTracking($result['tracking'])->toArray(request()),
                 ['progress' => new JourneyProgressResource($result['progress'])],
+                ['gap_ack' => $result['gap_ack'] ?? ['accepted' => true, 'duplicate' => false, 'backfill' => false, 'client_seq' => null]],
                 $result['deviation_event'] !== null ? [
                     'deviation' => new DeviationEventResource($result['deviation_event']),
                 ] : [],
@@ -451,21 +458,21 @@ class ActiveJourneyController extends AuthController
 
     private function unauthenticated(): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        return \App\Support\ApiError::response('unauthenticated', 401, 'Unauthenticated');
     }
 
     private function notFound(string $message): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => $message], 404);
+        return \App\Support\ApiError::response('not_found', 404, $message);
     }
 
     private function forbidden(string $message): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => $message], 403);
+        return \App\Support\ApiError::response('forbidden', 403, $message);
     }
 
     private function conflict(string $message): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => $message], 409);
+        return \App\Support\ApiError::response('conflict', 409, $message);
     }
 }

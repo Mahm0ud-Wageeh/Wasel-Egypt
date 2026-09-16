@@ -264,7 +264,9 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, selectedL
               ? t('results.direct')
               : option.total_transfers === 1
                 ? t('results.one_transfer')
-                : t('results.transfers').replace('{count}', option.total_transfers)}
+                : option.total_transfers === 2
+                  ? t('results.two_transfers')
+                  : t('results.transfers').replace('{count}', option.total_transfers)}
           </span>
           {option.fare && (
             <span className="chip" style={{ fontSize: 11.5 }}>
@@ -347,7 +349,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, selectedL
                   </span>
                   <div style={{ flex: 1 }}>
                     <div className="row-between" style={{ alignItems: 'baseline' }}>
-                      <div className="row" style={{ gap: 6, alignItems: 'center' }}>
+                      <div className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className="badge" style={{ fontSize: 10, padding: '1px 5px', background: 'var(--sand)' }}>
                           {t('results.leg_label').replace('{n}', idx + 1)}
                         </span>
@@ -355,6 +357,11 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, selectedL
                           {legModeLabel}
                           {lineName ? ` · ${lineName}` : ''}
                         </b>
+                        {leg.geometry_source === 'stop_to_stop' && (
+                          <span className="badge badge--medium" style={{ fontSize: 10, padding: '1px 5px' }}>
+                            {t('results.straight_line_badge')}
+                          </span>
+                        )}
                       </div>
                       <span className="t-caption t-num" style={{ fontSize: 11.5 }}>
                         {formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)} · {Math.round(leg.duration_sec / 60)} min
@@ -369,6 +376,19 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, selectedL
                       <div className="t-caption" style={{ fontSize: 11.5, color: 'var(--ink700)', marginBlockStart: 1 }}>
                         {t('results.action_ride_to').replace('{stop}', leg.to_stop.name)}
                         {leg.distance_meters ? ` · ${formatDistance(leg.distance_meters)}` : ''}
+                      </div>
+                    )}
+
+                    {isWalk && Array.isArray(leg.leg_steps) && leg.leg_steps.length > 0 && (
+                      <div className="jtl__walk-steps" style={{ marginBlockStart: 5, paddingInlineStart: 8, borderInlineStart: '2px solid var(--p200)' }}>
+                        <span className="t-caption" style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink700)' }}>
+                          {t('results.turn_steps')}:
+                        </span>
+                        {leg.leg_steps.map((step, sIdx) => (
+                          <div key={sIdx} className="t-caption" style={{ fontSize: 11, color: 'var(--ink700)', marginBlockStart: 2 }}>
+                            • {step.instruction} {step.distance ? `(${formatDistance(step.distance)})` : ''}
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -488,7 +508,9 @@ function BestRouteHero({ option, onStart, starting, saveState, onSave, onOpenDet
             ? t('results.direct')
             : option.total_transfers === 1
               ? t('results.one_transfer')
-              : t('results.transfers').replace('{count}', option.total_transfers)}
+              : option.total_transfers === 2
+                ? t('results.two_transfers')
+                : t('results.transfers').replace('{count}', option.total_transfers)}
         </span>
       </div>
       <div className="row" style={{ gap: 10, marginBlockStart: 2 }}>

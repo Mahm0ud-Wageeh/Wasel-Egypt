@@ -70,12 +70,12 @@ export function useJourneyPlanner({ initial = null } = {}) {
     return () => { cancelled = true }
   }, [geo.status, geo.position, originStop])
 
-  const makeSearchHandler = useCallback(async (query) => {
+  const makeSearchHandler = useCallback(async (query, { signal } = {}) => {
     setSearching(true)
     setSearchError(null)
     try {
       const bias = geo.position ?? { lat: 30.05, lng: 31.23 }
-      const data = await searchPlaces(query, bias)
+      const data = await searchPlaces(query, bias, { signal })
       const seen = new Set()
       const dedupe = (list) => (Array.isArray(list) ? list : []).filter((item) => {
         const key = item.id ?? `${item.name}|${item.lat}|${item.lng}`
@@ -93,7 +93,11 @@ export function useJourneyPlanner({ initial = null } = {}) {
         })),
         places: dedupe(Array.isArray(data?.places) ? data.places : []),
       }
-    } catch {
+    } catch (err) {
+      // Superseded keystroke (aborted) or typing-burst throttle (429): keep
+      // the previous suggestions on screen instead of flashing an error or
+      // wiping the list mid-word. Returning null tells callers to skip set.
+      if (err?.aborted || err?.status === 429) return null
       setSearchError(t('planner.err_unavailable'))
       return { stops: [], places: [] }
     } finally {
@@ -103,12 +107,14 @@ export function useJourneyPlanner({ initial = null } = {}) {
 
   // Each field gets a fresh result cache — concurrent origin/destination
   // typing must not overwrite each other's dropdowns.
-  const searchOrigin = useCallback(async (q) => {
-    const r = await makeSearchHandler(q)
+  const searchOrigin = useCallback(async (q, opts) => {
+    const r = await makeSearchHandler(q, opts)
+    if (!r) return
     setOriginResults(r.stops); setOriginPlaces(r.places)
   }, [makeSearchHandler])
-  const searchDestination = useCallback(async (q) => {
-    const r = await makeSearchHandler(q)
+  const searchDestination = useCallback(async (q, opts) => {
+    const r = await makeSearchHandler(q, opts)
+    if (!r) return
     setDestResults(r.stops); setDestPlaces(r.places)
   }, [makeSearchHandler])
 

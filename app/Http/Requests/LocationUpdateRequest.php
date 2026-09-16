@@ -24,8 +24,14 @@ class LocationUpdateRequest extends FormRequest
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'recorded_at' => ['nullable', 'date'],
             'speed_kph' => ['nullable', 'numeric', 'min:0', 'max:300'],
+            'speed_mps' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'speed' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'bearing_deg' => ['nullable', 'numeric', 'min:0', 'max:360'],
+            'heading' => ['nullable', 'numeric', 'min:0', 'max:360'],
             'accuracy_meters' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+            'accuracy' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+            'client_seq' => ['nullable', 'integer', 'min:1', 'max:4294967295'],
+            'is_backfill' => ['nullable', 'boolean'],
         ];
     }
 }

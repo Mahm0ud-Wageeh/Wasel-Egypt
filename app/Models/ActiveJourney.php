@@ -79,11 +79,27 @@ class ActiveJourney extends Model
     }
 
     /**
+     * Get the latest journey progress record for the active journey.
+     */
+    public function latestJourneyProgress()
+    {
+        return $this->hasOne(JourneyProgress::class)->latestOfMany();
+    }
+
+    /**
      * Get the deviation events for the active journey.
      */
     public function deviationEvents()
     {
         return $this->hasMany(DeviationEvent::class);
+    }
+
+    /**
+     * Get the latest deviation event for the active journey.
+     */
+    public function latestDeviationEvent()
+    {
+        return $this->hasOne(DeviationEvent::class)->latestOfMany();
     }
 
     /**

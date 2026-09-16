@@ -30,6 +30,7 @@ class AiChatController extends Controller
             'language' => ['nullable', 'string', 'in:en,ar'],
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'active_journey_id' => ['nullable', 'integer', 'exists:active_journeys,id'],
         ]);
 
         $messages = array_values(array_map(
@@ -44,10 +45,49 @@ class AiChatController extends Controller
             ], 422);
         }
 
+        $activeJourneyTelemetry = null;
+        if (!empty($validated['active_journey_id'])) {
+            $activeJourney = \App\Models\ActiveJourney::with([
+                'journey.journeyLegs.transitStopFrom',
+                'journey.journeyLegs.transitStopTo',
+            ])->find($validated['active_journey_id']);
+
+            $user = $request->user('sanctum');
+            if (!$user || ($activeJourney->user_id !== $user->id && !$user->hasRole('admin'))) {
+                return response()->json([
+                    'message' => 'Unauthorized to access active journey telemetry.',
+                    'errors' => ['active_journey_id' => ['Unauthorized.']],
+                ], 403);
+            }
+
+            $trackingState = app(\App\Services\Journey\JourneyTrackingService::class)->currentState($activeJourney);
+            $legs = $activeJourney->journey?->journeyLegs ?? collect();
+            $legIndex = $activeJourney->current_leg_index ?? 0;
+            $currentLeg = $legs->firstWhere('sequence', $legIndex + 1) ?? $legs->get($legIndex);
+
+            $activeJourneyTelemetry = [
+                'id' => $activeJourney->id,
+                'status' => $activeJourney->status,
+                'legIndex' => $legIndex,
+                'totalLegs' => $legs->count(),
+                'mode' => $currentLeg?->mode ?? 'transit',
+                'fromStop' => $currentLeg?->transitStopFrom?->name ?? null,
+                'toStop' => $currentLeg?->transitStopTo?->name ?? null,
+                'nextStop' => $trackingState['next_stop']['name'] ?? $currentLeg?->transitStopTo?->name ?? null,
+                'remaining_eta_sec' => $trackingState['remaining_eta_sec'] ?? null,
+                'distance_remaining_m' => $trackingState['distance_remaining_m'] ?? null,
+                'progress' => (float) ($trackingState['progress_percent'] ?? $activeJourney->current_progress_percent ?? 0),
+                'isDeviated' => $activeJourney->status === 'deviated' || !empty($trackingState['deviation']),
+                'deviationType' => $trackingState['deviation']['type'] ?? null,
+                'deviationDescription' => $trackingState['deviation']['description'] ?? null,
+            ];
+        }
+
         $payload = $this->service->handle($messages, [
             'language' => $validated['language'] ?? null,
             'lat' => isset($validated['lat']) ? (float) $validated['lat'] : null,
             'lng' => isset($validated['lng']) ? (float) $validated['lng'] : null,
+            'active_journey' => $activeJourneyTelemetry,
         ]);
 
         return response()->json($payload);

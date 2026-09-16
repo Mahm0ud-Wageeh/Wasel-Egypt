@@ -549,7 +549,10 @@ span {
     justify-content: center;
   }
   .chip {
-    min-block-size: 36px;
+    min-block-size: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .hero-planner__actions .btn,
   .planner-card__actions .btn,
@@ -593,9 +596,14 @@ span {
   .notif-list > .card:hover,
   .how-step-card:hover,
   .transit-mode-card:hover,
-  .intelligence-card:hover {
+  .intelligence-card:hover,
+  .cockpit__panel,
+  .stop-panel,
+  .results-sheet,
+  .map-recenter-fab {
     animation: none !important;
     transform: none !important;
+    transition: none !important;
   }
 }
 

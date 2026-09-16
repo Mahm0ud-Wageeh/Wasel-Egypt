@@ -20,7 +20,7 @@ import { useI18n } from '../i18n/LanguageContext'
  * behavior.
  */
 
-const AiAssistantContext = createContext(null)
+export const AiAssistantContext = createContext(null)
 
 // Client-side mirror of the backend whitelist (AiActionValidator).
 const CLIENT_ACTIONS = {
@@ -41,6 +41,8 @@ const CLIENT_ACTIONS = {
   open_profile: [],
   switch_map_layer: ['layer'],
   focus_map_location: ['latitude', 'longitude', 'zoom'],
+  get_live_eta: [],
+  get_next_stop: [],
 }
 
 const HISTORY_KEY = 'wasel.ai.history'
@@ -67,6 +69,7 @@ export function AiAssistantProvider({ children }) {
   })
   const [sending, setSending] = useState(false)
   const [status, setStatus] = useState(null) // {available, provider}
+  const [journeyContext, setJourneyContext] = useState(null)
 
   // "Near me" questions need a position: request it lazily once the
   // assistant panel is first opened (browser-gated, never forced).
@@ -124,6 +127,53 @@ export function AiAssistantProvider({ children }) {
     setMessages((prev) => [...prev, userMessage])
     setSending(true)
 
+    // Direct active navigation telemetry grounding:
+    // If navigation is running and the user asks about live telemetry (next stop, ETA, off-route),
+    // ground directly from client telemetry state with zero delay or network dependency.
+    if (journeyContext) {
+      const isAr = language === 'ar' || /[\u0600-\u06FF]/.test(trimmed)
+      const isNextStopQuery = /next stop|where.*stop|station|المحطة.*(التالية|القادمة|الجاية)|محطت/i.test(trimmed)
+      const isEtaQuery = /eta|time.*left|remaining|how long|arrive|فاضل.*(قد|إيه|ايه)|الوقت.*المتبقي|كم.*(باقي|متبقي|وقت)|متى.*أصل/i.test(trimmed)
+      const isDeviationQuery = /off route|deviat|lost|wrong|on track|توهت|تايه|خارج.*المسار|المسار.*الصحيح/i.test(trimmed)
+
+      if (isNextStopQuery) {
+        const stopName = journeyContext.nextStop || journeyContext.toStop || 'destination'
+        const reply = isAr
+          ? `محطتك القادمة هي "${stopName}". أنت في المرحلة ${(journeyContext.currentLegIndex ?? 0) + 1} (${journeyContext.currentLegMode || 'مواصلة'}).`
+          : `Your next stop is "${stopName}". You are on leg ${(journeyContext.currentLegIndex ?? 0) + 1} (${journeyContext.currentLegMode || 'transit'}).`
+        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSending(false)
+        return { message: assistantMsg, applied: [] }
+      }
+
+      if (isEtaQuery) {
+        const mins = journeyContext.remainingMinutes ?? '—'
+        const pct = journeyContext.progressPercent ?? 0
+        const reply = isAr
+          ? `الوقت المقدر المتبقي لرحلتك هو حوالي ${mins} دقيقة (${pct}% مكتملة).`
+          : `Estimated time remaining for your journey is about ${mins} minutes (${pct}% completed).`
+        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSending(false)
+        return { message: assistantMsg, applied: [] }
+      }
+
+      if (isDeviationQuery) {
+        const reply = journeyContext.isOffRoute || journeyContext.isDeviated
+          ? (isAr
+              ? 'تنبيه: أنت خارج المسار المحدد حالياً. يمكنك استخدام زر إعادة التوجيه في لوحة الملاحة لتحديث خطتك.'
+              : 'Alert: You are currently detected off-route. You can tap Reroute in the navigation HUD to recalculate.')
+          : (isAr
+              ? 'أنت على المسار الصحيح تماماً وتتبع خطة الرحلة بسلاسة.'
+              : 'You are on track and following the planned route smoothly.')
+        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSending(false)
+        return { message: assistantMsg, applied: [] }
+      }
+    }
+
     try {
       const res = await apiRequest(endpoints.ai.chat, {
         method: 'POST',
@@ -132,6 +182,7 @@ export function AiAssistantProvider({ children }) {
           language,
           lat: devicePosition?.lat ?? null,
           lng: devicePosition?.lng ?? null,
+          active_journey_id: journeyContext?.journeyId ?? null,
         },
       })
 
@@ -157,11 +208,14 @@ export function AiAssistantProvider({ children }) {
       // Execute validated actions immediately after the reply lands.
       const applied = executeActions(res?.actions ?? [], { navigate, t })
       return { message: assistantMessage, applied }
-    } catch {
+    } catch (err) {
+      const is429 = err?.status === 429 || err?.message?.includes('429')
       const error = {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        content: t('ai.error_body'),
+        content: is429
+          ? (language === 'ar' ? 'تم تجاوز الحد المسموح للطلبات. يرجى الانتظار دقيقة والمحاولة مجدداً.' : 'Rate limit exceeded. Please wait a minute before sending another request.')
+          : t('ai.error_body'),
         isError: true,
       }
       setMessages((prev) => [...prev, error])
@@ -169,7 +223,7 @@ export function AiAssistantProvider({ children }) {
     } finally {
       setSending(false)
     }
-  }, [messages, sending, language, navigate, t])
+  }, [messages, sending, language, navigate, t, journeyContext])
 
   const clear = useCallback(() => {
     setMessages([])
@@ -190,8 +244,10 @@ export function AiAssistantProvider({ children }) {
       send,
       clear,
       isRtl,
+      journeyContext,
+      setJourneyContext,
     }),
-    [open, messages, sending, status, send, clear, isRtl],
+    [open, messages, sending, status, send, clear, isRtl, journeyContext],
   )
 
   return <AiAssistantContext.Provider value={value}>{children}</AiAssistantContext.Provider>
@@ -312,6 +368,10 @@ function executeActions(actions, { navigate }) {
           didApply = true
         }
         break
+      case 'get_live_eta':
+      case 'get_next_stop':
+        didApply = true
+        break
       default:
         break
     }
@@ -336,9 +396,9 @@ function executeActions(actions, { navigate }) {
   return applied
 }
 
-export function useAiAssistant() {
+export function useAiAssistant(strict = false) {
   const ctx = useContext(AiAssistantContext)
-  if (!ctx) throw new Error('useAiAssistant must be used inside AiAssistantProvider')
+  if (!ctx && strict) throw new Error('useAiAssistant must be used inside AiAssistantProvider')
   return ctx
 }
 

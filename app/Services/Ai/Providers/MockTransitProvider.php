@@ -110,6 +110,7 @@ class MockTransitProvider implements AiProvider
             fn (string $t) => $this->nearbyIntent($t, $arabic, $context),
             fn (string $t) => $this->alertsIntent($t, $arabic),
             fn (string $t) => $this->savedIntent($t, $arabic),
+            fn (string $t) => $this->liveJourneyIntent($t, $arabic, $context),
             fn (string $t) => $this->activeIntent($t, $arabic),
             fn (string $t) => $this->greetingIntent($t, $arabic),
         ];
@@ -291,6 +292,119 @@ class MockTransitProvider implements AiProvider
                 : "Opening your saved journeys — you can start any of them with one click.",
             'actions' => [['type' => 'show_saved_journeys', 'params' => []]],
         ];
+    }
+
+    private function liveJourneyIntent(string $text, bool $arabic, array $context): ?array
+    {
+        $journey = $context['active_journey'] ?? null;
+        if ($journey === null) {
+            return null;
+        }
+
+        // 1. Next stop query: "المحطة الجاية؟", "next stop", "upcoming station", "المحطة القادمة"
+        if (preg_match('/(المحطة\s*(الجاية|القادمة|التالية)|next\s*stop|upcoming\s*stop|which\s*station)/iu', $text)) {
+            if ($journey && !empty($journey['nextStop'])) {
+                $nextStop = $journey['nextStop'];
+                $mode = $journey['mode'] ?? 'transit';
+                $modeLabel = $arabic ? ($mode === 'walking' ? 'مشياً' : 'مواصلات') : $mode;
+                return [
+                    'content' => $arabic
+                        ? "محطتك القادمة هي «{$nextStop}» (الوسيلة: {$modeLabel})."
+                        : "Your next stop is \"{$nextStop}\" (mode: {$modeLabel}).",
+                    'actions' => [
+                        ['type' => 'get_next_stop', 'params' => []],
+                        ['type' => 'open_active_journey', 'params' => []],
+                    ],
+                ];
+            }
+            return [
+                'content' => $arabic
+                    ? 'لا توجد رحلة نشطة حالياً لمعرفة المحطة القادمة. يمكنك التخطيط لرحلة جديدة من المخطط.'
+                    : 'No active journey in progress to identify your next stop.',
+                'actions' => [['type' => 'open_planner', 'params' => []]],
+            ];
+        }
+
+        // 2. ETA / Time remaining: "فاضل قد ايه؟", "كم باقي؟", "الوقت المتبقي", "eta", "time remaining", "time left"
+        if (preg_match('/(فاضل\s*قد\s*(إيه|ايه)|كم\s*باقي|الوقت\s*المتبقي|متى\s*(أوصل|اوصل|أصل|اصل)|eta|remaining\s*time|time\s*left|how\s*long|how\s*much\s*time)/iu', $text)) {
+            if ($journey) {
+                $etaSec = $journey['remaining_eta_sec'] ?? null;
+                $etaMin = $etaSec !== null ? max(1, (int) round($etaSec / 60)) : null;
+                $progress = round((float) ($journey['progress'] ?? 0));
+                $etaText = $etaMin !== null ? "{$etaMin} " . ($arabic ? "دقيقة" : "min") : ($arabic ? "جارٍ الحساب" : "calculating");
+                return [
+                    'content' => $arabic
+                        ? "الوقت المتبقي المقدر للوصول: {$etaText} (نسبة الإنجاز: {$progress}%)."
+                        : "Estimated time remaining: {$etaText} (progress: {$progress}%).",
+                    'actions' => [
+                        ['type' => 'get_live_eta', 'params' => []],
+                        ['type' => 'open_active_journey', 'params' => []],
+                    ],
+                ];
+            }
+            return [
+                'content' => $arabic
+                    ? 'لا توجد رحلة نشطة حالياً لحساب الوقت المتبقي.'
+                    : 'No active journey in progress to estimate remaining arrival time.',
+                'actions' => [['type' => 'open_planner', 'params' => []]],
+            ];
+        }
+
+        // 3. Off-route / Lost: "توهت؟", "أنا تايه؟", "خرجت عن المسار؟", "am i lost?", "off route?"
+        if (preg_match('/(توهت|تايه|خرجت\s*عن\s*المسار|ضللت|lost|off\s*route|deviat)/iu', $text)) {
+            if ($journey) {
+                $isDeviated = !empty($journey['isDeviated']);
+                if ($isDeviated) {
+                    $desc = $journey['deviationDescription'] ?? ($arabic ? 'تم رصد انحراف عن المسار، تفقد خيارات إعادة التوجيه.' : 'Off-route detected, check recovery options.');
+                    return [
+                        'content' => $arabic
+                            ? "تنبيه: أنت منحرف عن المسار! {$desc}"
+                            : "Alert: You are off-route! {$desc}",
+                        'actions' => [['type' => 'open_active_journey', 'params' => []]],
+                    ];
+                }
+                $progress = round((float) ($journey['progress'] ?? 0));
+                return [
+                    'content' => $arabic
+                        ? "أنت على المسار الصحيح تماماً! نسبة إنجاز الرحلة حالياً {$progress}%."
+                        : "You are on the correct route! Current journey progress is {$progress}%.",
+                    'actions' => [['type' => 'open_active_journey', 'params' => []]],
+                ];
+            }
+            return [
+                'content' => $arabic
+                    ? 'أنت لست في رحلة نشطة حالياً لتحديد حالة المسار.'
+                    : 'You do not have an active journey running right now.',
+                'actions' => [['type' => 'open_planner', 'params' => []]],
+            ];
+        }
+
+        // 4. General trip status
+        if (preg_match('/(my journey|active journey|current trip|رحلتي|رحلتي الحالية|رحلتي النشطة|أنا فين|انا فين)/iu', $text)) {
+            if ($journey) {
+                $legNum = ($journey['legIndex'] ?? 0) + 1;
+                $totalLegs = $journey['totalLegs'] ?? 1;
+                $nextStop = $journey['nextStop'] ?? '—';
+                $progress = round((float) ($journey['progress'] ?? 0));
+                $etaSec = $journey['remaining_eta_sec'] ?? null;
+                $etaMin = $etaSec !== null ? max(1, (int) round($etaSec / 60)) : null;
+                $etaStr = $etaMin !== null ? " (~{$etaMin} " . ($arabic ? "دقيقة" : "min") . ")" : "";
+                return [
+                    'content' => $arabic
+                        ? "أنت في المرحلة {$legNum} من {$totalLegs}. المحطة القادمة: {$nextStop}. التقدم: {$progress}%{$etaStr}."
+                        : "You are on leg {$legNum} of {$totalLegs}. Next stop: {$nextStop}. Progress: {$progress}%{$etaStr}.",
+                    'actions' => [['type' => 'open_active_journey', 'params' => []]],
+                ];
+            }
+            return [
+                'content' => $arabic
+                    ? 'راجعت حالة رحلتك — لا توجد رحلة نشطة حالياً. يمكنك بدء رحلة جديدة من المخطط.'
+                    : 'Checked your journey status — no active journey is currently running.',
+                'actions' => [['type' => 'open_planner', 'params' => []]],
+            ];
+        }
+
+        return null;
     }
 
     private function activeIntent(string $text, bool $arabic): ?array

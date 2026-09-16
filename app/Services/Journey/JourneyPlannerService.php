@@ -166,6 +166,7 @@ class JourneyPlannerService
 
         $this->scheduleMemo = [];
         $this->geometryMemo = [];
+        $this->indexFingerprint = null;
         $disruptions = $this->activeDisruptions($requestedAt);
 
         $plans = [];
@@ -301,6 +302,7 @@ class JourneyPlannerService
                     $walk['distance'],
                     $walk['geometry'],
                     $walk['source'],
+                    $walk['leg_steps'] ?? null,
                 ),
             ],
             'transfers' => [],
@@ -435,66 +437,202 @@ class JourneyPlannerService
             }
         }
 
-        if ($interchangeSets === []) {
-            return $plans;
-        }
+        if ($interchangeSets !== []) {
+            // Rank interchange stops by destination proximity; examine the best
+            // bounded set (distinct stops), then assemble.
+            $interchanges = [];
+            foreach ($interchangeSets as $stopId => $void) {
+                $interchanges[] = $network['stops'][$stopId];
+            }
+            usort($interchanges, fn (array $a, array $b) =>
+                [GeoCalculator::distanceMeters($destinationLat, $destinationLng, $a['lat'], $a['lng']), $a['id']]
+                <=> [GeoCalculator::distanceMeters($destinationLat, $destinationLng, $b['lat'], $b['lng']), $b['id']]);
+            $interchanges = array_slice($interchanges, 0, self::MAX_INTERCHANGE_STOPS * 4);
 
-        // Rank interchange stops by destination proximity; examine the best
-        // bounded set (distinct stops), then assemble.
-        $interchanges = [];
-        foreach ($interchangeSets as $stopId => $void) {
-            $interchanges[] = $network['stops'][$stopId];
-        }
-        usort($interchanges, fn (array $a, array $b) =>
-            [GeoCalculator::distanceMeters($destinationLat, $destinationLng, $a['lat'], $a['lng']), $a['id']]
-            <=> [GeoCalculator::distanceMeters($destinationLat, $destinationLng, $b['lat'], $b['lng']), $b['id']]);
-        $interchanges = array_slice($interchanges, 0, self::MAX_INTERCHANGE_STOPS * 4);
+            foreach ($interchanges as $interchange) {
+                foreach (($interchangeSets[$interchange['id']] ?? []) as $legKey => $secondVariantIds) {
+                    [$firstVariantId, $originStopId] = explode(':', $legKey);
+                    $firstVariant = $network['variants'][$firstVariantId];
+                    $originStop = $network['stops'][$originStopId];
+                    $posO = $firstVariant['positions'][$originStopId] ?? null;
+                    $posI = $firstVariant['positions'][$interchange['id']] ?? null;
 
-        foreach ($interchanges as $interchange) {
-            foreach (($interchangeSets[$interchange['id']] ?? []) as $legKey => $secondVariantIds) {
-                [$firstVariantId, $originStopId] = explode(':', $legKey);
-                $firstVariant = $network['variants'][$firstVariantId];
-                $originStop = $network['stops'][$originStopId];
-                $posO = $firstVariant['positions'][$originStopId] ?? null;
-                $posI = $firstVariant['positions'][$interchange['id']] ?? null;
-
-                if ($posO === null || $posI === null || $posO >= $posI) {
-                    continue;
-                }
-
-                $leg1 = $this->buildTransitLeg($firstVariant, $originStop, $interchange, $requestedAt);
-
-                foreach (array_unique($secondVariantIds) as $secondVariantId) {
-                    $secondVariant = $network['variants'][$secondVariantId];
-                    $posI2 = $secondVariant['positions'][$interchange['id']] ?? null;
-                    if ($posI2 === null) {
+                    if ($posO === null || $posI === null || $posO >= $posI) {
                         continue;
                     }
 
-                    foreach ($destBoard[$secondVariantId] as $destStopId) {
-                        $posD = $secondVariant['positions'][$destStopId] ?? null;
-                        if ($posD === null || $posI2 >= $posD) {
+                    $leg1 = $this->buildTransitLeg($firstVariant, $originStop, $interchange, $requestedAt);
+
+                    foreach (array_unique($secondVariantIds) as $secondVariantId) {
+                        $secondVariant = $network['variants'][$secondVariantId];
+                        $posI2 = $secondVariant['positions'][$interchange['id']] ?? null;
+                        if ($posI2 === null) {
                             continue;
                         }
-                        $destStop = $network['stops'][$destStopId];
 
-                        $leg2 = $this->buildTransitLeg($secondVariant, $interchange, $destStop, $leg1['arrival_time']);
+                        foreach ($destBoard[$secondVariantId] as $destStopId) {
+                            $posD = $secondVariant['positions'][$destStopId] ?? null;
+                            if ($posD === null || $posI2 >= $posD) {
+                                continue;
+                            }
+                            $destStop = $network['stops'][$destStopId];
 
-                        $plans[] = $this->assemblePlan(
-                            [$leg1, $leg2],
-                            $originStop,
-                            $destStop,
-                            $originLat,
-                            $originLng,
-                            $destinationLat,
-                            $destinationLng,
-                            $prefs,
-                            $requestedAt,
-                            $seen,
-                        );
+                            $leg2 = $this->buildTransitLeg($secondVariant, $interchange, $destStop, $leg1['arrival_time']);
 
-                        if (count($plans) >= self::MAX_CANDIDATE_PLANS) {
-                            return $plans;
+                            $plans[] = $this->assemblePlan(
+                                [$leg1, $leg2],
+                                $originStop,
+                                $destStop,
+                                $originLat,
+                                $originLng,
+                                $destinationLat,
+                                $destinationLng,
+                                $prefs,
+                                $requestedAt,
+                                $seen,
+                            );
+
+                            if (count($plans) >= self::MAX_CANDIDATE_PLANS) {
+                                return $plans;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($maxTransfers < 2 || count($plans) >= self::MAX_CANDIDATE_PLANS) {
+            return $plans;
+        }
+
+        // ---- Two-transfer plans: ride origin-boardable variant (firstVariant)
+        // to interchange 1, then a connecting variant (secondVariant) to
+        // interchange 2, then a dest-boardable variant (thirdVariant) onwards.
+        // Bounded fanout: candidate interchanges are filtered for forward
+        // spatial progress and capped to avoid exponential explosion.
+        foreach ($originBoard as $firstVariantId => $originBoardings) {
+            $firstVariant = $network['variants'][$firstVariantId];
+
+            foreach ($originBoardings as $originStopId) {
+                $originStop = $network['stops'][$originStopId];
+                $posO = $firstVariant['positions'][$originStopId] ?? null;
+                if ($posO === null) {
+                    continue;
+                }
+
+                $distOriginToDest = GeoCalculator::distanceMeters($originStop['lat'], $originStop['lng'], $destinationLat, $destinationLng);
+
+                // Candidate interchange 1 stops on firstVariant
+                $candidateI1List = [];
+                foreach ($firstVariant['stops'] as $sId1) {
+                    $pos1 = $firstVariant['positions'][$sId1] ?? null;
+                    if ($pos1 === null || $pos1 <= $posO || $sId1 === $originStopId) {
+                        continue;
+                    }
+                    $s1 = $network['stops'][$sId1];
+                    $dist1 = GeoCalculator::distanceMeters($s1['lat'], $s1['lng'], $destinationLat, $destinationLng);
+                    $candidateI1List[] = ['stop' => $s1, 'dist' => $dist1];
+                }
+
+                if ($candidateI1List === []) {
+                    continue;
+                }
+
+                usort($candidateI1List, fn ($a, $b) => $a['dist'] <=> $b['dist']);
+                $candidateI1List = array_slice($candidateI1List, 0, 4);
+
+                foreach ($candidateI1List as $i1Data) {
+                    $interchange1 = $i1Data['stop'];
+                    $dist1 = $i1Data['dist'];
+                    $i1StopId = $interchange1['id'];
+
+                    $secondVariantIds = array_values(array_filter(
+                        $network['stop_variants'][$i1StopId] ?? [],
+                        fn ($vId) => $vId !== $firstVariantId
+                    ));
+                    $secondVariantIds = array_slice($secondVariantIds, 0, 4);
+
+                    if ($secondVariantIds === []) {
+                        continue;
+                    }
+
+                    $leg1 = $this->buildTransitLeg($firstVariant, $originStop, $interchange1, $requestedAt);
+
+                    foreach ($secondVariantIds as $secondVariantId) {
+                        $secondVariant = $network['variants'][$secondVariantId];
+                        $posI1_2 = $secondVariant['positions'][$i1StopId] ?? null;
+                        if ($posI1_2 === null) {
+                            continue;
+                        }
+
+                        // Candidate interchange 2 stops on secondVariant
+                        $candidateI2List = [];
+                        foreach ($secondVariant['stops'] as $sId2) {
+                            $pos2 = $secondVariant['positions'][$sId2] ?? null;
+                            if ($pos2 === null || $pos2 <= $posI1_2 || $sId2 === $i1StopId) {
+                                continue;
+                            }
+                            $s2 = $network['stops'][$sId2];
+                            $dist2 = GeoCalculator::distanceMeters($s2['lat'], $s2['lng'], $destinationLat, $destinationLng);
+                            $candidateI2List[] = ['stop' => $s2, 'dist' => $dist2];
+                        }
+
+                        if ($candidateI2List === []) {
+                            continue;
+                        }
+
+                        usort($candidateI2List, fn ($a, $b) => $a['dist'] <=> $b['dist']);
+                        $candidateI2List = array_slice($candidateI2List, 0, 4);
+
+                        foreach ($candidateI2List as $i2Data) {
+                            $interchange2 = $i2Data['stop'];
+                            $i2StopId = $interchange2['id'];
+
+                            $thirdVariantIds = array_values(array_filter(
+                                $network['stop_variants'][$i2StopId] ?? [],
+                                fn ($vId) => isset($destBoard[$vId]) && $vId !== $secondVariantId && $vId !== $firstVariantId
+                            ));
+
+                            if ($thirdVariantIds === []) {
+                                continue;
+                            }
+
+                            $leg2 = $this->buildTransitLeg($secondVariant, $interchange1, $interchange2, $leg1['arrival_time']);
+
+                            foreach ($thirdVariantIds as $thirdVariantId) {
+                                $thirdVariant = $network['variants'][$thirdVariantId];
+                                $posI2_3 = $thirdVariant['positions'][$i2StopId] ?? null;
+                                if ($posI2_3 === null) {
+                                    continue;
+                                }
+
+                                foreach ($destBoard[$thirdVariantId] as $destStopId) {
+                                    $posD = $thirdVariant['positions'][$destStopId] ?? null;
+                                    if ($posD === null || $posI2_3 >= $posD) {
+                                        continue;
+                                    }
+                                    $destStop = $network['stops'][$destStopId];
+
+                                    $leg3 = $this->buildTransitLeg($thirdVariant, $interchange2, $destStop, $leg2['arrival_time']);
+
+                                    $plans[] = $this->assemblePlan(
+                                        [$leg1, $leg2, $leg3],
+                                        $originStop,
+                                        $destStop,
+                                        $originLat,
+                                        $originLng,
+                                        $destinationLat,
+                                        $destinationLng,
+                                        $prefs,
+                                        $requestedAt,
+                                        $seen,
+                                    );
+
+                                    if (count($plans) >= self::MAX_CANDIDATE_PLANS) {
+                                        return $plans;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -560,6 +698,7 @@ class JourneyPlannerService
             $accessWalk['distance'],
             $accessWalk['geometry'],
             $accessWalk['source'],
+            $accessWalk['leg_steps'] ?? null,
         );
 
         $legCount = count($transitLegs);
@@ -609,6 +748,7 @@ class JourneyPlannerService
                         $transferWalk['distance'],
                         $transferWalk['geometry'],
                         $transferWalk['source'],
+                        $transferWalk['leg_steps'] ?? null,
                     );
                     $legs[] = $transferLeg;
                     $transfer['to_leg_index'] = count($legs) - 1;
@@ -635,6 +775,7 @@ class JourneyPlannerService
             $egressWalk['distance'],
             $egressWalk['geometry'],
             $egressWalk['source'],
+            $egressWalk['leg_steps'] ?? null,
         );
 
         $walkDistance = array_sum(array_map(
@@ -689,10 +830,23 @@ class JourneyPlannerService
         $route = $this->walking->walkingRoute($fromLat, $fromLng, $toLat, $toLng);
 
         if ($route !== null) {
+            $legSteps = $route['leg_steps'] ?? null;
+            if (empty($legSteps)) {
+                $legSteps = GeoCalculator::synthesizeWalkingSteps(
+                    $fromLat,
+                    $fromLng,
+                    $toLat,
+                    $toLng,
+                    $route['geometry'] ?? null,
+                    (int) $route['distance_meters']
+                );
+            }
+
             return [
                 'distance' => (int) $route['distance_meters'],
                 'duration_sec' => (int) $route['duration_sec'],
                 'geometry' => $route['geometry'],
+                'leg_steps' => $legSteps,
                 'source' => 'osrm',
             ];
         }
@@ -705,6 +859,7 @@ class JourneyPlannerService
             'distance' => $distance,
             'duration_sec' => GeoCalculator::walkingDurationSec($distance, $walkSpeed ?? 'average'),
             'geometry' => null,
+            'leg_steps' => GeoCalculator::synthesizeWalkingSteps($fromLat, $fromLng, $toLat, $toLng, null, $distance),
             'source' => 'estimate',
         ];
     }
@@ -724,6 +879,7 @@ class JourneyPlannerService
         int $distance,
         ?array $geometry = null,
         string $walkSource = 'estimate',
+        ?array $legSteps = null,
     ): array {
         return [
             'type' => 'walking',
@@ -742,7 +898,9 @@ class JourneyPlannerService
             'duration_sec' => max(1, $arrival->getTimestamp() - $departure->getTimestamp()),
             'distance_meters' => $distance,
             'geometry' => $geometry,
+            'geometry_source' => $geometry !== null ? 'route_geometry' : 'stop_to_stop',
             'walk_source' => $walkSource,
+            'leg_steps' => $legSteps,
             'reliability' => 1.0,
         ];
     }

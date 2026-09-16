@@ -317,9 +317,6 @@ class RouteStopTest extends TestCase
         $dbCount = DB::table('route_stops')->where('transit_stop_id', $transitStop->id)->count();
         $this->assertEquals(2, $dbCount, 'Expected 2 route stops in DB for transit stop');
 
-        dump($routeStop1->toArray(), $routeStop2->toArray());
-
-        
         // Test filtering by route_variant_id for variant A
         $response = $this->getJson('/api/v1/route-stops?route_variant_id=' . $routeVariantA->id);
         $response->assertStatus(200);
@@ -356,9 +353,6 @@ class RouteStopTest extends TestCase
         // Test pagination
         $response = $this->getJson('/api/v1/route-stops?per_page=1');
         $response->assertStatus(200);
-        dump($response->json(), 'Response JSON');
-        dump(RouteStop::count(), 'RouteStop count in test');
-        dump(DB::table('route_stops')->count(), 'RouteStop count in DB via DB facade');
         $response->assertJsonCount(1, 'data');
         $this->assertEquals(2, (int) $response->json('meta')['total']);
         $this->assertEquals(2, (int) $response->json('meta')['last_page']);

@@ -249,8 +249,10 @@
 
 /* ---- Map controls ---- */
 .map-ctl {
-  inline-size: 40px;
-  block-size: 40px;
+  inline-size: 44px;
+  block-size: 44px;
+  min-inline-size: 44px;
+  min-block-size: 44px;
   border-radius: var(--r-sm);
   background: var(--surface);
   box-shadow: var(--sh-map-ctl);
@@ -464,6 +466,9 @@
   flex-direction: column;
   gap: var(--sp-3);
 }
+@media (max-width: 899px) {
+  .results-split__map { display: none; }
+}
 @media (min-width: 900px) {
   .results-map-toggle { display: none !important; }
   .results-split {
@@ -482,7 +487,7 @@
     max-width: 460px;
     max-height: calc(100dvh - 140px);
     overflow-y: auto;
-    padding-right: 4px;
+    padding-inline-end: 4px;
   }
 }
 .results-split__map .map-panel { height: clamp(300px, 55dvh, 560px); }
@@ -514,12 +519,12 @@
 /* ---- Timeline (journey details / active journey) ---- */
 .route-timeline {
   position: relative;
-  padding-left: 34px;
+  padding-inline-start: 34px;
 }
 .route-timeline::before {
   content: "";
   position: absolute;
-  left: 11px;
+  inset-inline-start: 11px;
   top: 8px;
   bottom: 8px;
   width: 3px;
@@ -529,7 +534,7 @@
 .tl-leg { position: relative; padding: 6px 0 10px; }
 .tl-leg__dot {
   position: absolute;
-  left: -30px;
+  inset-inline-start: -30px;
   top: 8px;
   width: 21px;
   height: 21px;
@@ -543,7 +548,7 @@
 }
 .tl-leg--walking .tl-leg__dot { background: var(--m-walk); }
 .tl-leg--done { opacity: 0.62; }
-.tl-leg--current { background: var(--p50); border-radius: var(--r-md); margin-left: -10px; padding-left: 10px; }
+.tl-leg--current { background: var(--p50); border-radius: var(--r-md); margin-inline-start: -10px; padding-inline-start: 10px; }
 
 /* ---- Score explanation ---- */
 .score-bars { display: flex; flex-direction: column; gap: 5px; }
@@ -1518,7 +1523,7 @@
    ============================================================ */
 .stop-panel {
   position: absolute;
-  inset-block-end: 12px;
+  inset-block-end: calc(12px + env(safe-area-inset-bottom, 0px));
   inset-inline: 12px;
   z-index: 8;
   background: var(--surface);
@@ -1531,13 +1536,10 @@
 }
 @media (min-width: 768px) {
   .stop-panel {
-    inset-inline: auto 12px;
+    inset-inline-start: auto;
+    inset-inline-end: 12px;
     inline-size: 340px;
   }
-}
-[dir='rtl'] .stop-panel { inset-inline: 12px auto; }
-@media (min-width: 768px) {
-  [dir='rtl'] .stop-panel { inset-inline: 12px auto; }
 }
 @keyframes stop-panel-in {
   from { opacity: 0; transform: translateY(10px); }
@@ -1571,8 +1573,10 @@
   overflow-wrap: anywhere;
 }
 .stop-panel__close {
-  inline-size: 30px;
-  block-size: 30px;
+  inline-size: 32px;
+  block-size: 32px;
+  min-inline-size: 32px;
+  min-block-size: 32px;
   border: none;
   border-radius: 50%;
   background: var(--surface-2);
@@ -1582,6 +1586,12 @@
   justify-content: center;
   cursor: pointer;
   flex: none;
+  position: relative;
+}
+.stop-panel__close::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 .stop-panel__close:hover { background: var(--e50); color: var(--e700); }
 .stop-panel__close:focus-visible { outline: 2px solid var(--p600); }
@@ -2176,8 +2186,17 @@
   padding: 8px 12px; box-shadow: var(--sh-sm);
   pointer-events: auto;
 }
+@media (min-width: 900px) {
+  .cockpit__topbar {
+    inset-block-start: 12px;
+    inset-inline-start: 12px;
+    inset-inline-end: calc(min(390px, 42%) + 24px);
+  }
+}
 .cockpit__back {
-  display: grid; place-items: center; inline-size: 36px; block-size: 36px; flex: none;
+  display: grid; place-items: center;
+  inline-size: 44px; block-size: 44px; min-inline-size: 44px; min-block-size: 44px;
+  flex: none;
   border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
   color: var(--ink900); cursor: pointer;
 }
@@ -2186,11 +2205,11 @@
 .cockpit__title .t-h2 { margin: 0; font-size: 17px; line-height: 1.2; color: var(--p900); }
 
 .cockpit__deviation-chip {
-  position: absolute; inset-block-start: 64px; inset-inline-start: 10px; z-index: 4;
+  position: absolute; inset-block-start: 70px; inset-inline-start: 10px; z-index: 4;
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--e700, #c62828); color: #fff; border: 0; cursor: pointer;
   font: inherit; font-size: 12.5px; font-weight: 700;
-  padding: 7px 12px; border-radius: 999px; box-shadow: var(--sh-md);
+  padding: 7px 12px; min-block-size: 44px; border-radius: 999px; box-shadow: var(--sh-md);
 }
 .cockpit__deviation-chip:hover { filter: brightness(1.08); }
 
@@ -2226,45 +2245,55 @@
 
 @media (min-width: 900px) {
   .cockpit__panel .cockpit__sheet-toggle { display: none; }
+  .cockpit .map-ctl-group {
+    inset-block-start: 72px;
+    inset-inline-end: calc(min(390px, 42%) + 24px);
+  }
 }
 
 @media (max-width: 899px) {
   .cockpit { height: calc(100dvh - 150px); min-height: 460px; }
+  .cockpit .map-ctl-group {
+    inset-block-start: 70px;
+    inset-inline-end: 10px;
+  }
   .cockpit__panel {
-    inset-inline: 8px; inset-block: auto; inset-block-end: 8px;
+    inset-inline: 8px; inset-block: auto;
+    inset-block-end: calc(8px + env(safe-area-inset-bottom, 0px));
     inline-size: auto; max-block-size: 152px;
     transition: max-block-size 0.28s var(--ease, ease);
   }
-  .cockpit__panel--expanded { max-block-size: min(62dvh, 560px); }
+  .cockpit__panel--expanded,
+  .cockpit__panel.is-expanded { max-block-size: min(62dvh, 560px); }
   .cockpit__sheet-toggle {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    inline-size: 100%; padding: 8px 12px 4px; background: none; border: 0; cursor: pointer;
+    inline-size: 100%; min-block-size: 44px; padding: 8px 12px 4px; background: none; border: 0; cursor: pointer;
     color: var(--ink700); font: inherit;
   }
   .cockpit__sheet-bar { position: absolute; inset-block-start: 4px; inset-inline: 0; margin-inline: auto; inline-size: 44px; block-size: 4px; border-radius: 999px; background: var(--line); }
-  .cockpit__sheet-toggle { position: relative; }
   .cockpit__panel--collapsed .cockpit__extra { display: none; }
   .cockpit__panel--collapsed .cockpit__scroll { padding-block-start: 4px; }
 }
 
 /* RTL: cockpit mirrors through logical properties; keep the map readable */
 [dir='rtl'] .cockpit__topbar { direction: rtl; }
-
-/* Cockpit: keep map controls clickable beside the floating panel
-   (the panel overlays the map's inline-end edge on desktop). */
-@media (min-width: 900px) {
-  .cockpit .map-ctl-group { inset-inline-end: calc(min(390px, 42%) + 24px); }
-}
+[dir='rtl'] .cockpit__back svg,
+[dir='rtl'] .topbar__back svg { transform: scaleX(-1); }
 
 /* ============================================================
    Compact compliant map credits (Esri/OSM attribution)
    ============================================================ */
 .map-credits { position: absolute; inset-block-end: 6px; inset-inline-start: 44px; z-index: 4; }
 .map-credits__btn {
-  inline-size: 24px; block-size: 24px; border-radius: 999px;
+  inline-size: 32px; block-size: 32px; min-inline-size: 32px; min-block-size: 32px;
+  border-radius: 999px;
   border: 1px solid var(--line); cursor: pointer;
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   color: var(--ink700); display: grid; place-items: center; padding: 0;
+  position: relative;
+}
+.map-credits__btn::before {
+  content: ""; position: absolute; inset: -6px;
 }
 .map-credits__btn:hover { color: var(--p700); }
 .map-credits__panel {
@@ -2305,25 +2334,33 @@
 
 /* Cockpit live-navigation chips + panel hide/show states */
 .cockpit__chips {
-  position: absolute; inset-block-start: 64px; inset-inline-start: 10px; z-index: 4;
+  position: absolute; inset-block-start: 70px; inset-inline-start: 10px; z-index: 4;
   display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
 }
-.cockpit__chips .chip { cursor: pointer; border: 1px solid var(--line); }
+@media (min-width: 900px) {
+  .cockpit__chips { inset-inline-start: 12px; inset-block-start: 72px; }
+}
+.cockpit__chips .chip { cursor: pointer; border: 1px solid var(--line); min-block-size: 36px; }
 .cockpit__panel--hidden { display: none; }
 .cockpit__reopen {
-  position: absolute; inset-block-end: 12px; inset-inline-end: 12px; z-index: 6;
-  cursor: pointer; box-shadow: var(--sh-md);
+  position: absolute; inset-block-end: calc(12px + env(safe-area-inset-bottom, 0px)); inset-inline-end: 12px; z-index: 6;
+  cursor: pointer; box-shadow: var(--sh-md); min-block-size: 44px;
 }
 .cockpit__sheet-toggle { position: relative; }
 .cockpit__sheet-toggle__main {
-  display: flex; inline-size: 100%; align-items: center; justify-content: center; gap: 8px;
+  display: flex; inline-size: 100%; min-block-size: 44px; align-items: center; justify-content: center; gap: 8px;
   background: none; border: 0; cursor: pointer; color: var(--ink700); font: inherit;
 }
 .cockpit__panel-close {
   position: absolute; inset-block-start: 6px; inset-inline-end: 6px;
-  inline-size: 26px; block-size: 26px; border-radius: 999px;
+  inline-size: 32px; block-size: 32px; min-inline-size: 32px; min-block-size: 32px;
+  border-radius: 999px;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink700);
   display: grid; place-items: center; cursor: pointer;
+  position: relative;
+}
+.cockpit__panel-close::before {
+  content: ""; position: absolute; inset: -6px;
 }
 @media (min-width: 900px) {
   .cockpit__panel-close { display: grid; }
@@ -2331,7 +2368,8 @@
 @media (max-width: 899px) {
   .cockpit__sheet-toggle { display: flex; align-items: center; }
   .cockpit__panel--collapsed { max-block-size: 152px; }
-  .cockpit__panel--expanded { max-block-size: min(62dvh, 560px); }
+  .cockpit__panel--expanded,
+  .cockpit__panel.is-expanded { max-block-size: min(62dvh, 560px); }
   .cockpit__panel--hidden { display: none; }
   .cockpit__panel--collapsed .cockpit__extra { display: none; }
 }
@@ -2355,8 +2393,11 @@
   z-index: 7;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 20px;
+  min-height: 44px;
+  min-inline-size: 44px;
   background: var(--surface);
   color: var(--p700);
   border: 1px solid var(--line);
@@ -2366,7 +2407,7 @@
   font-weight: 700;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, inset-block-end 0.28s var(--ease, ease);
   pointer-events: auto;
 }
 .map-recenter-fab:hover {
@@ -2385,6 +2426,31 @@
 }
 [dir='rtl'] .map-recenter-fab:active {
   transform: translateX(50%) translateY(0);
+}
+
+@media (min-width: 900px) {
+  .cockpit .map-recenter-fab {
+    inset-inline-start: calc((100% - min(390px, 42%) - 12px) / 2);
+    inset-block-end: 24px;
+  }
+}
+
+@media (max-width: 899px) {
+  .cockpit .map-recenter-fab {
+    inset-block-end: calc(164px + env(safe-area-inset-bottom, 0px));
+  }
+  .cockpit.cockpit--panel-collapsed .map-recenter-fab,
+  .cockpit:has(.cockpit__panel--collapsed) .map-recenter-fab {
+    inset-block-end: calc(164px + env(safe-area-inset-bottom, 0px));
+  }
+  .cockpit.cockpit--panel-expanded .map-recenter-fab,
+  .cockpit:has(.cockpit__panel--expanded) .map-recenter-fab {
+    inset-block-end: calc(min(62dvh, 560px) + 16px + env(safe-area-inset-bottom, 0px));
+  }
+  .cockpit.cockpit--panel-hidden .map-recenter-fab,
+  .cockpit:has(.cockpit__panel--hidden) .map-recenter-fab {
+    inset-block-end: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .cockpit__nav-overlay {

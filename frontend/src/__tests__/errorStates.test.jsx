@@ -100,4 +100,53 @@ describe('Journey Error States', () => {
       ).toBeInTheDocument()
     })
   })
+
+  it('renders honest empty state with adjust search action on JourneyResults', async () => {
+    const { JourneyResultsPage } = await import('../pages/JourneyResults')
+    renderWithProviders(<JourneyResultsPage />, {
+      route: '/journeys/results',
+      journeyState: {
+        searchParams: {
+          origin_lat: 30.0617,
+          origin_lng: 31.2464,
+          destination_lat: 30.0444,
+          destination_lng: 31.2357,
+        },
+        searchResults: [],
+      },
+    })
+
+    expect(screen.getByText('No journeys found')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /adjust search/i })).toBeInTheDocument()
+  })
+
+  it('renders honest empty recovery options state on Deviation screen', async () => {
+    const activeApi = await import('../api/activeJourneys')
+    vi.spyOn(activeApi, 'getActiveJourneyById').mockResolvedValue({
+      id: 99,
+      status: 'deviated',
+      journey: { legs: [] },
+      tracking: {
+        deviation: {
+          id: 1,
+          type: 'off_route',
+          severity: 'medium',
+          description: 'Off route',
+        },
+      },
+    })
+    vi.spyOn(activeApi, 'getJourneyDeviations').mockResolvedValue([])
+    vi.spyOn(activeApi, 'listRecoveryOptions').mockResolvedValue({ data: [] })
+
+    const { default: Deviation } = await import('../pages/Deviation')
+    renderWithProviders(<Deviation />, {
+      route: '/active-journeys/99/deviation',
+      authState: { isAuthenticated: true, user: { id: 1 } },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('No recovery routes yet')).toBeInTheDocument()
+    })
+  })
 })
+

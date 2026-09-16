@@ -23,6 +23,8 @@ class JourneyProgress extends Model
      */
     protected $fillable = [
         'active_journey_id',
+        'client_seq',
+        'is_backfill',
         'recorded_at',
         'latitude',
         'longitude',
@@ -43,6 +45,8 @@ class JourneyProgress extends Model
     {
         return [
             'active_journey_id' => 'integer',
+            'client_seq' => 'integer',
+            'is_backfill' => 'boolean',
             'recorded_at' => 'datetime',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',

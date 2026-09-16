@@ -288,6 +288,25 @@ class NotificationTest extends TestCase
     }
 
     /** @test */
+    public function listing_accepts_boolean_query_strings_for_unread_filter()
+    {
+        $this->seedNotifications($this->user, 2);
+
+        // Browsers/clients serialize booleans as "true"/"false" strings —
+        // these must filter, not 422 (regression: our own client sends this).
+        $asTrue = $this->actingAs($this->user)->getJson('/api/v1/notifications?unread=true');
+        $asTrue->assertStatus(200);
+        $this->assertCount(2, $asTrue->json('data'));
+
+        $asFalse = $this->actingAs($this->user)->getJson('/api/v1/notifications?unread=false');
+        $asFalse->assertStatus(200);
+        $this->assertCount(2, $asFalse->json('data'));
+
+        // Genuine garbage still fails validation.
+        $this->actingAs($this->user)->getJson('/api/v1/notifications?unread=maybe')->assertStatus(422);
+    }
+
+    /** @test */
     public function listing_is_paginated()
     {
         $this->seedNotifications($this->user, 5);

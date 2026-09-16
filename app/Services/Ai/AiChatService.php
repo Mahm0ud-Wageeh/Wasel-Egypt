@@ -36,6 +36,7 @@ class AiChatService
             'lng' => $options['lng'] ?? null,
             'stats' => $this->networkStats(),
             'alerts' => $this->activeAlertsSummary(),
+            'active_journey' => $options['active_journey'] ?? null,
         ];
 
         try {

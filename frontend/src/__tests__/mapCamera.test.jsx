@@ -107,8 +107,8 @@ const OTHER_LINE = {
   ],
 }
 
-async function mountMap(itinerary) {
-  const utils = renderWithProviders(<MapPanel itinerary={itinerary} height={300} />)
+async function mountMap(itinerary, props = {}) {
+  const utils = renderWithProviders(<MapPanel itinerary={itinerary} height={300} {...props} />)
   // Flush the dynamic maplibre import (Map is constructed in a microtask),
   // grab the instance, then fire load (map becomes ready).
   await act(async () => {})
@@ -278,3 +278,113 @@ describe('route geometry rendering composition', () => {
     expect(features[0].geometry.coordinates.at(-1)).toEqual([31.2114, 30.0261])
   })
 })
+
+describe('camera machine: ROUTE_FIT -> SNAP_TO_USER -> FOLLOW -> USER_CONTROLLED', () => {
+  it('snaps to user at zoom 16.5 on first fix in navigationMode', async () => {
+    const userPos = { lat: 30.0444, lng: 31.2357, accuracy: 12 }
+    const { map } = await mountMap(LINE, {
+      navigationMode: true,
+      follow: true,
+      userLocation: userPos,
+    })
+
+    // First fix snaps to user at zoom 16.5
+    expect(map.flyTo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [31.2357, 30.0444],
+        zoom: 16.5,
+      })
+    )
+  })
+
+  it('suppresses heading cone when userSpeed <= 1.2 and shows it when > 1.2', async () => {
+    const userPos = { lat: 30.0444, lng: 31.2357, accuracy: 12 }
+
+    // When stationary or speed <= 1.2: heading is nullified in source
+    const { map: mapStationary } = await mountMap(LINE, {
+      navigationMode: true,
+      userLocation: userPos,
+      userHeading: 90,
+      userSpeed: 0.8,
+    })
+    const userSourceStationary = mapStationary.sources['user']
+    expect(userSourceStationary.properties.heading).toBeNull()
+
+    // When moving speed > 1.2: heading is preserved for directional beam
+    const { map: mapMoving } = await mountMap(LINE, {
+      navigationMode: true,
+      userLocation: userPos,
+      userHeading: 90,
+      userSpeed: 2.5,
+    })
+    const userSourceMoving = mapMoving.sources['user']
+    expect(userSourceMoving.properties.heading).toBe(90)
+  })
+
+  it('triggers onFollowInterrupt on user gesture and allows recentering', async () => {
+    const onFollowInterrupt = vi.fn()
+    const onRecenter = vi.fn()
+    const userPos = { lat: 30.0444, lng: 31.2357, accuracy: 12 }
+
+    const { map } = await mountMap(LINE, {
+      navigationMode: true,
+      follow: true,
+      userLocation: userPos,
+      onFollowInterrupt,
+      onRecenter,
+    })
+
+    // Simulate user panning the map (gesture interrupt)
+    act(() => {
+      map.emit('dragstart')
+    })
+    expect(onFollowInterrupt).toHaveBeenCalled()
+  })
+
+  it('renders Recenter FAB when follow is interrupted and calls onRecenter when clicked', async () => {
+    const onRecenter = vi.fn()
+    const userPos = { lat: 30.0444, lng: 31.2357, accuracy: 12 }
+
+    const { map } = await mountMap(LINE, {
+      navigationMode: true,
+      follow: false, // user panned away
+      userLocation: userPos,
+      onRecenter,
+    })
+
+    const fab = document.querySelector('.map-recenter-fab')
+    expect(fab).toBeInTheDocument()
+
+    act(() => {
+      fab.click()
+    })
+
+    expect(onRecenter).toHaveBeenCalled()
+    expect(map.flyTo).toHaveBeenCalled()
+  })
+})
+
+describe('recenter FAB outside live navigation (no-GPS route browsing)', () => {
+  it('stays hidden until a hand gesture, then refits the route on click', async () => {
+    const onRecenter = vi.fn()
+    const { map } = await mountMap(LINE, { onRecenter })
+
+    // No GPS, no gesture yet: nothing to return from, so no FAB.
+    expect(document.querySelector('.map-recenter-fab')).toBeNull()
+
+    await act(async () => { map.emit('dragstart') })
+
+    const fab = document.querySelector('.map-recenter-fab')
+    expect(fab).toBeInTheDocument()
+
+    const fitsBefore = map.fitBounds.mock.calls.length
+    await act(async () => { fab.click() })
+
+    expect(onRecenter).toHaveBeenCalled()
+    // No userLocation/origin in this mount: falls back to route bounds.
+    expect(map.fitBounds.mock.calls.length).toBe(fitsBefore + 1)
+    // Back at anchor: the FAB dismisses itself.
+    expect(document.querySelector('.map-recenter-fab')).toBeNull()
+  })
+})
+

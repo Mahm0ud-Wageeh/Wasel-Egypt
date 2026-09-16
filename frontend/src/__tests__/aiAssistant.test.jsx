@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { act } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -210,3 +210,101 @@ describe('AI assistant action executor', () => {
     })
   })
 })
+
+describe('AI assistant active journey awareness', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+  })
+
+  it('answers next stop query directly using active journey telemetry without hitting API', async () => {
+    mockedRequest.mockResolvedValueOnce({ available: true, provider: { id: 'mock', label: 'X', simulated: true } })
+
+    let ctx = null
+    render(
+      <Harness>
+        <Probe onReady={(c) => { ctx = c }} />
+        <AiAssistantLauncher />
+        <AiAssistantDrawer />
+      </Harness>
+    )
+
+    // Simulate journey telemetry injected by ActiveJourney component
+    act(() => {
+      ctx.setJourneyContext({
+        journeyId: 42,
+        currentLegIndex: 1,
+        currentLegMode: 'metro',
+        nextStop: 'Sadat',
+        remainingMinutes: 8,
+        progressPercent: 65,
+        isOffRoute: false,
+      })
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /open the wasel assistant/i }))
+
+    // Check that context-aware suggestion chip is present
+    expect(screen.getByRole('button', { name: 'What is my next stop?' })).toBeTruthy()
+
+    const input = await screen.findByLabelText(/ask about routes/i)
+    fireEvent.change(input, { target: { value: 'Where is my next stop?' } })
+    fireEvent.submit(input.closest('form'))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Your next stop is "Sadat"/i)).toBeTruthy()
+    })
+
+    // API was only called for status on mount, not for this telemetry reply
+    expect(mockedRequest).not.toHaveBeenCalledWith(
+      expect.stringContaining('/ai/chat'),
+      expect.anything()
+    )
+  })
+
+  it('answers ETA queries and deviation queries from journey telemetry', async () => {
+    mockedRequest.mockResolvedValueOnce({ available: true, provider: { id: 'mock', label: 'X', simulated: true } })
+
+    let ctx = null
+    render(
+      <Harness>
+        <Probe onReady={(c) => { ctx = c }} />
+        <AiAssistantLauncher />
+        <AiAssistantDrawer />
+      </Harness>
+    )
+
+    act(() => {
+      ctx.setJourneyContext({
+        journeyId: 99,
+        currentLegIndex: 0,
+        nextStop: 'Opera',
+        remainingMinutes: 14,
+        progressPercent: 25,
+        isOffRoute: true,
+      })
+    })
+
+
+    fireEvent.click(screen.getByRole('button', { name: /open the wasel assistant/i }))
+
+    const input = await screen.findByLabelText(/ask about routes/i)
+
+    // ETA query
+    fireEvent.change(input, { target: { value: 'What is my ETA?' } })
+    fireEvent.submit(input.closest('form'))
+
+    await waitFor(() => {
+      expect(screen.getByText(/about 14 minutes \(25% completed\)/i)).toBeTruthy()
+    })
+
+    // Deviation query when off-route
+    fireEvent.change(input, { target: { value: 'Am I off route?' } })
+    fireEvent.submit(input.closest('form'))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Alert: You are currently detected off-route/i)).toBeTruthy()
+    })
+  })
+})
+

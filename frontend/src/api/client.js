@@ -75,10 +75,10 @@ async function parseBody(response) {
 /**
  * Perform an API request.
  * @param {string} path Endpoint path (from endpoints.js), relative to the API base.
- * @param {{method?: string, body?: object, query?: object, auth?: boolean}} options
+ * @param {{method?: string, body?: object, query?: object, auth?: boolean, signal?: AbortSignal}} options
  * @returns {Promise<object>} parsed response body
  */
-export async function apiRequest(path, { method = 'GET', body, query, auth = true } = {}) {
+export async function apiRequest(path, { method = 'GET', body, query, auth = true, signal } = {}) {
   const headers = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (auth) {
@@ -92,8 +92,14 @@ export async function apiRequest(path, { method = 'GET', body, query, auth = tru
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      ...(signal ? { signal } : {}),
     })
-  } catch {
+  } catch (e) {
+    if (e?.name === 'AbortError') {
+      const aborted = new ApiError(0, 'Request aborted.')
+      aborted.aborted = true
+      throw aborted
+    }
     throw new ApiError(0, 'Network unreachable. Check your connection and try again.')
   }
 

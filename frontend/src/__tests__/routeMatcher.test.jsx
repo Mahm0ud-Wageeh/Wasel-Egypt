@@ -174,4 +174,53 @@ describe('RouteMatcher', () => {
     expect(result.isOffRoute).toBe(false)
     expect(result.legProgressPercent).toBe(0)
   })
+
+  it('respects per-mode tolerances: walk 50m vs transit 100m', () => {
+    // 0.001 degrees lat offset from a diagonal line is ~78m perpendicular distance
+    // Walking leg: 78m offset should NOT snap (tolerance 50m)
+    const walkResult = matcher.match(
+      { lat: 30.046 + 0.001, lng: 31.237, heading: null, timestamp: Date.now() },
+      sampleItinerary,
+      0 // walking leg
+    )
+    expect(walkResult.isSnapped).toBe(false)
+    expect(walkResult.distanceToRouteMeters).toBeGreaterThan(50)
+
+    // Reset matcher for fresh comparison
+    matcher.reset()
+
+    // Transit leg: 78m offset SHOULD snap (tolerance 100m)
+    const transitResult = matcher.match(
+      { lat: 30.055 + 0.001, lng: 31.245, heading: null, timestamp: Date.now() },
+      sampleItinerary,
+      1 // transit leg
+    )
+    expect(transitResult.isSnapped).toBe(true)
+    expect(transitResult.distanceToRouteMeters).toBeLessThanOrEqual(100)
+  })
+
+  it('snaps accurately along a curved polyline corridor without false positives', () => {
+    // S-curve polyline
+    const curveItinerary = {
+      legs: [
+        makeLeg([
+          [30.0400, 31.2300],
+          [30.0420, 31.2320],
+          [30.0430, 31.2350],
+          [30.0420, 31.2380],
+          [30.0440, 31.2400],
+        ], 'walking')
+      ]
+    }
+
+    // Point near the curve apex
+    const result = matcher.match(
+      { lat: 30.0431, lng: 31.2351, heading: null, timestamp: Date.now() },
+      curveItinerary,
+      0
+    )
+    expect(result.isSnapped).toBe(true)
+    expect(result.isOffRoute).toBe(false)
+    expect(result.distanceToRouteMeters).toBeLessThan(25)
+  })
 })

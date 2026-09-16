@@ -278,6 +278,7 @@ class JourneyDeviationRecoveryTest extends TestCase
         $response->assertStatus(200);
         $options = $response->json('data');
 
+
         $this->assertGreaterThanOrEqual(2, count($options), 'Expected multiple recovery options.');
 
         foreach ($options as $option) {
@@ -597,5 +598,111 @@ class JourneyDeviationRecoveryTest extends TestCase
         $this->actingAs($this->user)
             ->postJson("/api/v1/active-journeys/{$activeId}/recovery-options", ['max_options' => 2])
             ->assertStatus(200);
+    }
+
+    /** @test */
+    public function polyline_corridor_avoids_false_positives_on_curved_transit_legs()
+    {
+        $activeId = $this->startRidingJourney();
+        $this->boardAtOriginStop($activeId);
+
+        // Attach a curved polyline to the transit leg
+        $active = ActiveJourney::with('journey.journeyLegs')->find($activeId);
+        $transitLeg = $active->journey->journeyLegs->firstWhere('transit_stop_from_id', $this->stopA->id);
+        $transitLeg->update([
+            'geometry' => [
+                [(float) $this->stopA->latitude, (float) $this->stopA->longitude],
+                [30.0600, 31.2500], // Bends significantly east
+                [(float) $this->stopC->latitude, (float) $this->stopC->longitude],
+            ],
+        ]);
+
+        // Point near the curve apex (30.0600, 31.2502 is ~20m from the polyline vertex)
+        // Straight-line distance from A to C would be ~800m off, causing a false deviation under the old code.
+        $response = $this->sendLocation($activeId, [
+            'latitude' => 30.0600,
+            'longitude' => 31.2502,
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertEquals('active', $response->json('data.status'));
+        $this->assertNull($response->json('data.tracking.deviation'));
+    }
+
+    /** @test */
+    public function accuracy_greater_than_120m_is_stored_but_skips_deviation_and_leg_advancement()
+    {
+        $activeId = $this->startRidingJourney();
+        $this->boardAtOriginStop($activeId);
+
+        // Wildly off-route point, but with weak GPS accuracy of 150m (> 120m threshold)
+        $response = $this->sendLocation($activeId, [
+            'latitude' => 30.0900,
+            'longitude' => 31.3000,
+            'accuracy_meters' => 150,
+            'recorded_at' => Carbon::today()->setTime(7, 50)->format('Y-m-d\TH:i'),
+        ]);
+
+        $response->assertStatus(200);
+        // Journey must stay active (no false deviation fired from noisy GPS)
+        $this->assertEquals('active', $response->json('data.status'));
+        $this->assertNull($response->json('data.tracking.deviation'));
+
+        // But the location reading must be recorded in journey_progress with accuracy_meters
+        $this->assertDatabaseHas('journey_progress', [
+            'active_journey_id' => $activeId,
+            'latitude' => 30.0900,
+            'longitude' => 31.3000,
+            'accuracy_meters' => 150,
+        ]);
+    }
+
+    /** @test */
+    public function early_missed_stop_overshoot_fires_in_120s_with_alight_advice()
+    {
+        $activeId = $this->startRidingJourney();
+        $this->boardAtOriginStop($activeId, '07:31');
+
+        // Planned arrival at Garden City (stopC) is 08:20.
+        // Send a location 125 seconds past arrival (08:22:05), moving away at speed 1.8 m/s, >250m past stop.
+        $response = $this->sendLocation($activeId, [
+            'latitude' => (float) $this->stopC->latitude + 0.0035, // ~380m past stop
+            'longitude' => (float) $this->stopC->longitude + 0.0035,
+            'speed_mps' => 1.8,
+            'recorded_at' => Carbon::today()->setTime(8, 22, 5)->format('Y-m-d\TH:i:s'),
+        ]);
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertEquals('deviated', $data['status']);
+        $this->assertEquals('missed_stop', $data['deviation']['deviation_type']);
+        $this->assertEquals('medium', $data['deviation']['severity']);
+        $this->assertTrue($data['deviation']['can_continue']);
+        $this->assertStringContainsString('انزل الجاية', $data['deviation']['description']);
+        $this->assertStringContainsString('راجع إلى', $data['deviation']['description']);
+    }
+
+    /** @test */
+    public function tracking_state_includes_distance_eta_delay_and_distance_remaining()
+    {
+        $activeId = $this->startRidingJourney();
+        $this->boardAtOriginStop($activeId);
+
+        $response = $this->sendLocation($activeId, [
+            'latitude' => 30.0532,
+            'longitude' => 31.2432,
+            'speed_mps' => 1.5,
+            'recorded_at' => Carbon::today()->setTime(7, 45)->format('Y-m-d\TH:i'),
+        ]);
+
+        $response->assertStatus(200);
+        $tracking = $response->json('data.tracking');
+        $this->assertArrayHasKey('remaining_eta_sec', $tracking);
+        $this->assertArrayHasKey('delay_sec', $tracking);
+        $this->assertArrayHasKey('distance_remaining_m', $tracking);
+        $this->assertNotNull($tracking['remaining_eta_sec']);
+        $this->assertNotNull($tracking['distance_remaining_m']);
+        $this->assertGreaterThan(0, $tracking['distance_remaining_m']);
     }
 }
