@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { setUnauthorizedHandler } from '../api/client'
+import { setToken, setUnauthorizedHandler } from '../api/client'
 import * as authApi from '../api/auth'
 
 export const AuthContext = createContext(null)
@@ -88,6 +88,16 @@ export function AuthProvider({ children }) {
     [applyUser]
   )
 
+  const loginWithToken = useCallback(
+    async (token) => {
+      setToken(token)
+      const me = await authApi.fetchCurrentUser()
+      applyUser(me)
+      return me
+    },
+    [applyUser]
+  )
+
   const logout = useCallback(async () => {
     await authApi.logout()
     applyUser(null)
@@ -104,10 +114,11 @@ export function AuthProvider({ children }) {
       isModerator: roles.includes('moderator') || roles.includes('admin'),
       login,
       register,
+      loginWithToken,
       logout,
       refresh,
     }
-  }, [user, status, login, register, logout, refresh])
+  }, [user, status, login, register, loginWithToken, logout, refresh])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

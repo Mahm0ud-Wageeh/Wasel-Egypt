@@ -21,6 +21,9 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/forgot-password', [App\Http\Controllers\Api\V1\AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('auth/reset-password', [App\Http\Controllers\Api\V1\AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
     Route::get('auth/user', [App\Http\Controllers\Api\V1\AuthController::class, 'user'])->middleware('auth:sanctum');
+    Route::get('auth/oauth-status', [App\Http\Controllers\Api\V1\SocialAuthController::class, 'status']);
+    Route::get('auth/{provider}/redirect', [App\Http\Controllers\Api\V1\SocialAuthController::class, 'redirectToProvider']);
+    Route::get('auth/{provider}/callback', [App\Http\Controllers\Api\V1\SocialAuthController::class, 'handleProviderCallback']);
 
     // User routes
     Route::get('users/{id}', [App\Http\Controllers\Api\V1\UserController::class, 'show'])->middleware('auth:sanctum');

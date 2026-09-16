@@ -9,6 +9,7 @@ import { Input, Select } from '../components/ui/Input'
 import { Alert } from '../components/ui/Alert'
 import { Icon } from '../components/ui/Icon'
 import { Skeleton } from '../components/ui/Feedback'
+import { GoogleIcon, GitHubIcon } from '../components/auth/SocialAuthButtons'
 import {
   getUserProfile,
   updateUserProfile,
@@ -28,6 +29,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [savingPrefs, setSavingPrefs] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const [error, setError] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
 
@@ -214,9 +216,20 @@ export default function Profile() {
                 justifyContent: 'center',
                 fontSize: 22,
                 fontWeight: 700,
+                overflow: 'hidden',
+                flexShrink: 0,
               }}
             >
-              {displayUser?.name?.charAt(0)?.toUpperCase() || 'U'}
+              {displayUser?.avatar ? (
+                <img
+                  src={displayUser.avatar}
+                  alt={displayUser?.name || 'Avatar'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                displayUser?.name?.charAt(0)?.toUpperCase() || 'U'
+              )}
             </div>
             <div>
               <b style={{ fontSize: 16, color: 'var(--ink900)' }}>{displayUser?.name}</b>
@@ -237,13 +250,32 @@ export default function Profile() {
           </Button>
         </div>
 
-        {/* Roles */}
+        {/* Roles & Connected Accounts */}
         <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
           {(displayUser?.roles ?? [{ name: 'User' }]).map((r) => (
             <span key={r.id || r.name} className="badge badge--neutral">
               {['admin', 'moderator', 'user', 'passenger'].includes(r.name.toLowerCase()) ? t('common.role.' + r.name.toLowerCase()) : r.name}
             </span>
           ))}
+
+          {displayUser?.google_id && (
+            <span className="badge badge--verified" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <GoogleIcon size={12} />
+              <span>{t('auth.provider_google')}</span>
+            </span>
+          )}
+          {displayUser?.github_id && (
+            <span className="badge badge--verified" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <GitHubIcon size={12} />
+              <span>{t('auth.provider_github')}</span>
+            </span>
+          )}
+          {displayUser?.email && !displayUser?.google_id && !displayUser?.github_id && (
+            <span className="badge badge--neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="mail" size={12} aria-hidden="true" />
+              <span>{t('auth.provider_email')}</span>
+            </span>
+          )}
         </div>
 
         {/* Inline Edit Form */}
@@ -442,10 +474,15 @@ export default function Profile() {
       <Button
         block
         variant="ghost"
+        loading={loggingOut}
         style={{ color: 'var(--e700)' }}
         onClick={async () => {
-          await logout()
-          navigate('/login', { replace: true })
+          setLoggingOut(true)
+          try {
+            await logout()
+          } finally {
+            navigate('/login', { replace: true })
+          }
         }}
       > {t('profile.sign_out')} </Button>
     </div>

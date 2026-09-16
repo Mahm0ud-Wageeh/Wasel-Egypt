@@ -326,6 +326,99 @@ h1, h2, h3 { text-wrap: balance; }
 .auth-brand p { color: var(--ink500); font-size: var(--fs-body); }
 .auth-footer { text-align: center; font-size: var(--fs-label); color: var(--ink500); }
 
+/* Social Authentication */
+.social-auth {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: var(--sp-1) 0;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--ink400);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: var(--sp-2) 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--line);
+}
+.auth-divider span {
+  padding: 0 var(--sp-3);
+}
+.social-auth__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  transition: transform var(--dur-fast) ease, box-shadow var(--dur-fast) ease, background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+  user-select: none;
+}
+.social-btn:active {
+  transform: scale(0.99);
+}
+.social-btn--google {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink800);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.social-btn--google:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--ink300);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.07);
+}
+.social-btn--github {
+  background: #1f2328;
+  border: 1px solid #1f2328;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.social-btn--github:hover:not(:disabled) {
+  background: #0f1216;
+  border-color: #0f1216;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+[data-theme='dark'] .social-btn--google {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+[data-theme='dark'] .social-btn--google:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+[data-theme='dark'] .social-btn--github {
+  background: #24292e;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.social-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 /* Utility */
 .stack { display: flex; flex-direction: column; gap: var(--sp-4); }
 .stack-sm { display: flex; flex-direction: column; gap: var(--sp-2); }

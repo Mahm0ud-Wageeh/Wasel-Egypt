@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/ui/Button'
 import { LogoMark } from '../components/ui/Logo'
 import { AuthLayout } from '../components/layout/AuthLayout'
+import { SocialAuthButtons } from '../components/auth/SocialAuthButtons'
 import { TextInput } from '../components/ui/Input'
 import { ApiError } from '../api/client'
 
@@ -102,6 +103,8 @@ export default function Register() {
           Create account
         </Button>
       </form>
+
+      <SocialAuthButtons />
 
       <p className="auth-footer">
         Already registered? <Link to="/login">{t('auth.login')}</Link>

@@ -7,6 +7,7 @@ import { TextInput } from '../components/ui/Input'
 import { Alert } from '../components/ui/Alert'
 import { LogoMark } from '../components/ui/Logo'
 import { AuthLayout } from '../components/layout/AuthLayout'
+import { SocialAuthButtons } from '../components/auth/SocialAuthButtons'
 import { ApiError } from '../api/client'
 
 /** Login — POST /auth/login; 401 renders an inline error alert. */
@@ -17,7 +18,13 @@ export default function Login() {
   const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
   const [fieldErrors, setFieldErrors] = useState({})
-  const [formError, setFormError] = useState(null)
+  const [formError, setFormError] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    const err = params.get('error') || location.state?.error
+    if (err === 'oauth_not_configured') return t('auth.oauth_not_configured')
+    if (err) return decodeURIComponent(err)
+    return null
+  })
   const [submitting, setSubmitting] = useState(false)
 
   const from = location.state?.from ?? '/home'
@@ -87,6 +94,8 @@ export default function Login() {
           Log in
         </Button>
       </form>
+
+      <SocialAuthButtons redirectFrom={from} />
 
       <Link to="/forgot-password" style={{ textAlign: 'center' }}>
         Forgot password?

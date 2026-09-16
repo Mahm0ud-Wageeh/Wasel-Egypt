@@ -32,6 +32,9 @@ class User extends Authenticatable implements CanResetPassword
         'password_hash',
         'status',
         'email_verified_at',
+        'google_id',
+        'github_id',
+        'avatar',
     ];
 
     /**
