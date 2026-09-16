@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\TransitOperator;
 use Illuminate\Http\Request;
 use App\Http\Requests\TransitOperatorRequest;
 use App\Http\Resources\TransitOperatorResource;
 
-class TransitOperatorController extends AuthController
+class TransitOperatorController extends Controller
 {
     /**
      * Display a listing of transit operators.
@@ -18,19 +18,22 @@ class TransitOperatorController extends AuthController
         $query = TransitOperator::query();
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'name', 'short_name', 'code', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $transitOperators = $query->paginate($perPage);
 
         return response()->json([
@@ -105,17 +108,20 @@ class TransitOperatorController extends AuthController
     {
         $query = TransitOperator::query();
 
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'name', 'short_name', 'code', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $transitOperators = $query->paginate($perPage);
 
         return response()->json([

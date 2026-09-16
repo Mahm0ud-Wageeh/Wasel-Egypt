@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\RouteStop;
 use Illuminate\Http\Request;
 use App\Http\Requests\RouteStopRequest;
 use App\Http\Resources\RouteStopResource;
 
-class RouteStopController extends AuthController
+class RouteStopController extends Controller
 {
     /**
      * Display a listing of route stops.
      */
     public function index(Request $request)
     {
-        $query = RouteStop::query();
+        $query = RouteStop::query()->with(['routeVariant.route', 'transitStop.area.governorate']);
 
         // Filter by route_variant_id
         if ($request->has('route_variant_id')) {
@@ -28,12 +28,13 @@ class RouteStopController extends AuthController
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'id');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'route_variant_id', 'transit_stop_id', 'sequence', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'id';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $routeStops = $query->paginate($perPage);
 
         return RouteStopResource::collection($routeStops);
@@ -56,7 +57,7 @@ class RouteStopController extends AuthController
      */
     public function show(RouteStop $routeStop)
     {
-        return new RouteStopResource($routeStop);
+        return new RouteStopResource($routeStop->load(['routeVariant.route', 'transitStop.area.governorate']));
     }
 
     /**

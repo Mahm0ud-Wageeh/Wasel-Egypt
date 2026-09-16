@@ -70,7 +70,10 @@ class SocialAuthController extends Controller
         try {
             $socialUser = Socialite::driver($provider)->stateless()->user();
         } catch (\Throwable $e) {
-            return redirect("{$frontendUrl}/login?error=" . urlencode("Failed to authenticate with {$provider}: " . $e->getMessage()));
+            \Illuminate\Support\Facades\Log::warning("OAuth authentication failed for {$provider}: " . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+            return redirect("{$frontendUrl}/login?error=oauth_failed&provider={$provider}");
         }
 
         $email = $socialUser->getEmail();
@@ -133,6 +136,6 @@ class SocialAuthController extends Controller
         // Issue Sanctum token
         $token = $user->createToken('Wasel Egypt')->plainTextToken;
 
-        return redirect("{$frontendUrl}/auth/callback?token={$token}&provider={$provider}");
+        return redirect("{$frontendUrl}/auth/callback#token={$token}&provider={$provider}");
     }
 }

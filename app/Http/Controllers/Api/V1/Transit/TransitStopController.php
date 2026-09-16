@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\TransitStop;
 use App\Services\Journey\GeoCalculator;
 use App\Services\Transit\StopDeparturesService;
@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\TransitStopRequest;
 use App\Http\Resources\TransitStopResource;
 
-class TransitStopController extends AuthController
+class TransitStopController extends Controller
 {
     /**
      * Display a listing of transit stops.
@@ -31,12 +31,13 @@ class TransitStopController extends AuthController
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'name', 'area_id', 'latitude', 'longitude', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $transitStops = $query->paginate($perPage);
 
         return TransitStopResource::collection($transitStops);
@@ -162,12 +163,13 @@ class TransitStopController extends AuthController
             return TransitStopResource::collection($paginator);
         }
 
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'name', 'area_id', 'latitude', 'longitude', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = min(100, (int) $request->input('per_page', 15));
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $transitStops = $query->paginate($perPage);
 
         return TransitStopResource::collection($transitStops);

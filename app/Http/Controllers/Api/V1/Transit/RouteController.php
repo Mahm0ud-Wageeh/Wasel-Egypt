@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\Route;
 use App\Models\RouteVariant;
 use Illuminate\Http\Request;
@@ -11,14 +11,14 @@ use App\Http\Resources\RouteResource;
 use App\Models\TransitMode;
 use Illuminate\Support\Facades\Log;
 
-class RouteController extends AuthController
+class RouteController extends Controller
 {
     /**
      * Display a listing of routes.
      */
     public function index(Request $request)
     {
-        $query = Route::query();
+        $query = Route::query()->with(['transitMode', 'transitOperator']);
 
         // Filter by transit_mode_id
         if ($request->has('transit_mode_id')) {
@@ -31,20 +31,23 @@ class RouteController extends AuthController
         }
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('long_name', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('long_name', 'like', "%{$search}%")
                   ->orWhere('short_name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'long_name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'short_name', 'long_name', 'transit_mode_id', 'transit_operator_id', 'sort_order', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'long_name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $routes = $query->paginate($perPage);
 
         return response()->json([
@@ -76,7 +79,7 @@ class RouteController extends AuthController
      */
     public function show(Route $route)
     {
-        return new RouteResource($route);
+        return new RouteResource($route->load(['transitMode', 'transitOperator']));
     }
 
     /**
@@ -107,7 +110,7 @@ class RouteController extends AuthController
      */
     public function publicIndex(Request $request)
     {
-        $query = Route::query();
+        $query = Route::query()->with(['transitMode', 'transitOperator']);
 
         // Filter by transit_mode_id
         if ($request->has('transit_mode_id')) {
@@ -120,20 +123,23 @@ class RouteController extends AuthController
         }
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('long_name', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('long_name', 'like', "%{$search}%")
                   ->orWhere('short_name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'long_name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'short_name', 'long_name', 'transit_mode_id', 'transit_operator_id', 'sort_order', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'long_name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $routes = $query->paginate($perPage);
 
         return RouteResource::collection($routes);

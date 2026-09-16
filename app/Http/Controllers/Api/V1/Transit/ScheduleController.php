@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
 use App\Http\Requests\ScheduleRequest;
 use App\Http\Resources\ScheduleResource;
 
-class ScheduleController extends AuthController
+class ScheduleController extends Controller
 {
     /**
      * Display a listing of schedules.
      */
     public function index(Request $request)
     {
-        $query = Schedule::query();
+        $query = Schedule::query()->with('routeVariant.route');
 
         // Filter by route_variant_id
         if ($request->has('route_variant_id')) {
@@ -34,20 +34,23 @@ class ScheduleController extends AuthController
         }
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('headsign', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('headsign', 'like', "%{$search}%")
                   ->orWhere('gtfs_trip_id', 'like', "%{$search}%")
                   ->orWhere('service_id', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'id');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'route_variant_id', 'service_id', 'headsign', 'start_date', 'end_date', 'is_active', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'id';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $schedules = $query->paginate($perPage);
 
         return response()->json([
@@ -79,7 +82,7 @@ class ScheduleController extends AuthController
      */
     public function show(Schedule $schedule)
     {
-        return new ScheduleResource($schedule);
+        return new ScheduleResource($schedule->load('routeVariant.route'));
     }
 
     /**
@@ -110,7 +113,7 @@ class ScheduleController extends AuthController
      */
     public function publicIndex(Request $request)
     {
-        $query = Schedule::query();
+        $query = Schedule::query()->with('routeVariant.route');
 
         // Filter by route_variant_id
         if ($request->has('route_variant_id')) {
@@ -121,20 +124,23 @@ class ScheduleController extends AuthController
         $query->where('is_active', true);
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('headsign', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('headsign', 'like', "%{$search}%")
                   ->orWhere('gtfs_trip_id', 'like', "%{$search}%")
                   ->orWhere('service_id', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'id');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'route_variant_id', 'service_id', 'headsign', 'start_date', 'end_date', 'is_active', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'id';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $schedules = $query->paginate($perPage);
 
         return response()->json([
@@ -173,7 +179,7 @@ class ScheduleController extends AuthController
 
         return response()->json([
             'success' => true,
-            'data' => new ScheduleResource($schedule)
+            'data' => new ScheduleResource($schedule->load('routeVariant.route'))
         ]);
     }
 }

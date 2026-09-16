@@ -34,13 +34,20 @@ class DatabaseSeeder extends Seeder
             FareSeeder::class,
         ]);
 
+        $adminPassword = env('SEED_ADMIN_PASSWORD');
+        if (empty($adminPassword)) {
+            $adminPassword = app()->isProduction()
+                ? \Illuminate\Support\Str::random(32)
+                : 'password';
+        }
+
         // Create or update an admin user so SystemConfig can reference it
         $adminUser = User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin User',
                 'phone' => '+201234567890',
-                'password_hash' => Hash::make('password'), // default password, should be changed in production
+                'password_hash' => Hash::make($adminPassword),
                 'status' => 'active',
                 'email_verified_at' => Carbon::now(),
             ]

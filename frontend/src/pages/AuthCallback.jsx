@@ -19,8 +19,12 @@ export default function AuthCallback() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    const err = searchParams.get('error')
+    // Read from URL hash fragment (#token=...&provider=...) first to prevent tokens
+    // being logged in server access logs / referrers; fallback to searchParams.
+    const hashText = window.location.hash ? window.location.hash.replace(/^#/, '') : ''
+    const hashParams = new URLSearchParams(hashText)
+    const token = hashParams.get('token') || searchParams.get('token')
+    const err = hashParams.get('error') || searchParams.get('error')
 
     if (err) {
       setError(err === 'oauth_not_configured' ? t('auth.oauth_not_configured') : (decodeURIComponent(err) || t('auth.oauth_failed')))

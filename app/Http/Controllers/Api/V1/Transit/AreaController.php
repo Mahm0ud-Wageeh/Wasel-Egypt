@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use App\Http\Requests\AreaRequest;
 use App\Http\Resources\AreaResource;
 
-class AreaController extends AuthController
+class AreaController extends Controller
 {
     /**
      * Display a listing of areas.
      */
     public function index(Request $request)
     {
-        $query = Area::query();
+        $query = Area::query()->with('governorate');
 
         // Filter by governorate_id
         if ($request->has('governorate_id')) {
@@ -29,12 +29,13 @@ class AreaController extends AuthController
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'name', 'governorate_id', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $areas = $query->paginate($perPage);
 
         return response()->json([
@@ -67,7 +68,7 @@ class AreaController extends AuthController
      */
     public function show($id)
     {
-        $area = Area::findOrFail($id);
+        $area = Area::with('governorate')->findOrFail($id);
         return response()->json([
             'success' => true,
             'data' => new AreaResource($area)
@@ -107,18 +108,19 @@ class AreaController extends AuthController
      */
     public function publicIndex(Request $request)
     {
-        $query = Area::query();
+        $query = Area::query()->with('governorate');
 
         if ($request->has('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'name', 'governorate_id', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $areas = $query->paginate($perPage);
 
         return response()->json([
@@ -138,7 +140,7 @@ class AreaController extends AuthController
      */
     public function publicShow($id)
     {
-        $area = Area::findOrFail($id);
+        $area = Area::with('governorate')->findOrFail($id);
         return response()->json([
             'success' => true,
             'data' => new AreaResource($area)

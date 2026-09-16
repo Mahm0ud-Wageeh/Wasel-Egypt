@@ -203,6 +203,9 @@ class AuthController extends Controller
                 ])->setRememberToken(Str::random(60));
 
                 $user->save();
+
+                // Invalidate all active personal access tokens on password reset
+                $user->tokens()->delete();
             }
         );
 

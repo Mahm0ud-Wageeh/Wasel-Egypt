@@ -11,7 +11,7 @@ import { Alert } from '../components/ui/Alert'
 import { Skeleton, StateBlock } from '../components/ui/Feedback'
 import { Icon } from '../components/ui/Icon'
 import { MapPanel } from '../components/map/LazyMapPanel'
-import { formatDistance } from '../utils/format'
+import { formatDistance, formatDuration } from '../utils/format'
 import {
   getActiveJourneys,
   getActiveJourneyById,
@@ -1034,7 +1034,7 @@ export default function ActiveJourney() {
                               )}
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div className="t-caption t-num">{Math.round((leg.duration_sec || 0) / 60)} min</div>
+                              <div className="t-caption t-num">{formatDuration(leg.duration_sec)}</div>
                               <div className="t-caption">{formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)}</div>
                             </div>
                           </div>

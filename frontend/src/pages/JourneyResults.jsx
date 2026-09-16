@@ -364,7 +364,7 @@ function JourneyDetails({ option, onClose, onSave, onStart, saveState, selectedL
                         )}
                       </div>
                       <span className="t-caption t-num" style={{ fontSize: 11.5 }}>
-                        {formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)} · {Math.round(leg.duration_sec / 60)} min
+                        {formatTime(leg.departure_time)} → {formatTime(leg.arrival_time)} · {formatDuration(leg.duration_sec)}
                       </span>
                     </div>
 

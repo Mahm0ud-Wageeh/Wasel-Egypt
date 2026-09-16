@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Controller;
 use App\Services\Geo\PlaceGeocoderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * single merged suggestion list. The geocoder is keyless (Photon public)
  * and cached here — the client never talks to an external geocoder.
  */
-class PlaceController extends AuthController
+class PlaceController extends Controller
 {
     public function search(Request $request, PlaceGeocoderService $geocoder): JsonResponse
     {

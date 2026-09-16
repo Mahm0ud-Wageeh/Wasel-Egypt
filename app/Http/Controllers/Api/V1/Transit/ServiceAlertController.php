@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\ServiceAlert;
 use Illuminate\Http\Request;
 use App\Http\Requests\ServiceAlertRequest;
 use App\Http\Resources\ServiceAlertResource;
 
-class ServiceAlertController extends AuthController
+class ServiceAlertController extends Controller
 {
     /**
      * Display a listing of service alerts.
@@ -39,19 +39,22 @@ class ServiceAlertController extends AuthController
         }
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('header_text', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('header_text', 'like', "%{$search}%")
                   ->orWhere('description_text', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortOrder = $request->input('sort_order', 'desc');
+        $allowedSortColumns = ['id', 'severity', 'active_period_start', 'active_period_end', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'created_at';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $serviceAlerts = $query->paginate($perPage);
 
         return ServiceAlertResource::collection($serviceAlerts);
@@ -106,7 +109,7 @@ class ServiceAlertController extends AuthController
     public function getActiveAlerts(Request $request)
     {
         $query = ServiceAlert::query()
-            ->with(['serviceAlertRoutes', 'serviceAlertStops'])
+            ->with(['serviceAlertRoutes.routeVariant', 'serviceAlertStops.transitStop.area.governorate'])
             ->where(function ($q) {
                 $q->whereNull('active_period_start')
                   ->orWhere('active_period_start', '<=', now());
@@ -117,19 +120,22 @@ class ServiceAlertController extends AuthController
             });
 
         // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('header_text', 'like', "%{$search}%")
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('header_text', 'like', "%{$search}%")
                   ->orWhere('description_text', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortOrder = $request->input('sort_order', 'desc');
+        $allowedSortColumns = ['id', 'severity', 'active_period_start', 'active_period_end', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'created_at';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $serviceAlerts = $query->paginate($perPage);
 
         return ServiceAlertResource::collection($serviceAlerts);

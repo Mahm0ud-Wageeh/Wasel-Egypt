@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\ServiceAlertStop;
 use Illuminate\Http\Request;
 use App\Http\Requests\ServiceAlertStopRequest;
 use App\Http\Resources\ServiceAlertStopResource;
 
-class ServiceAlertStopController extends AuthController
+class ServiceAlertStopController extends Controller
 {
     /**
      * Display a listing of service alert stops.
      */
     public function index(Request $request)
     {
-        $query = ServiceAlertStop::query();
+        $query = ServiceAlertStop::query()->with('transitStop');
 
         // Filter by service_alert_id
         if ($request->has('service_alert_id')) {
@@ -28,12 +28,13 @@ class ServiceAlertStopController extends AuthController
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'id');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'service_alert_id', 'transit_stop_id', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'id';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $serviceAlertStops = $query->paginate($perPage);
 
         return ServiceAlertStopResource::collection($serviceAlertStops);
@@ -56,7 +57,7 @@ class ServiceAlertStopController extends AuthController
      */
     public function show(ServiceAlertStop $serviceAlertStop)
     {
-        return new ServiceAlertStopResource($serviceAlertStop);
+        return new ServiceAlertStopResource($serviceAlertStop->load('transitStop'));
     }
 
     /**

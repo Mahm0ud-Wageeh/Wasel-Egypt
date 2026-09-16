@@ -92,7 +92,12 @@ class UserController extends Controller
             ], 422);
         }
 
-        $user->update($validator->validated());
+        $data = $validator->validated();
+        if (!$authUser->hasRole('admin')) {
+            unset($data['status']);
+        }
+
+        $user->update($data);
 
         return response()->json([
             'success' => true,
@@ -105,8 +110,10 @@ class UserController extends Controller
      * Remove the specified user from storage.
      * Only for admins.
      */
-    public function destroy(User $user)
+    public function destroy($id)
     {
+        $user = User::findOrFail($id);
+
         // Prevent deleting yourself
         if ($user->id === Auth::id()) {
             return response()->json([

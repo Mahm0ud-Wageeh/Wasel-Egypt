@@ -2,19 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Models\TransitMode;
-use App\Models\TransitOperator;
-use App\Models\TransitStop;
-use App\Models\Route;
-use App\Models\RouteVariant;
-use App\Models\RouteStop;
-use App\Models\RouteGeometry;
-use App\Models\Schedule;
-use App\Models\StopTime;
-use App\Models\ServiceAlert;
-use App\Models\ServiceAlertStop;
-use App\Models\ServiceAlertRoute;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\GtfsImportRequest;
 use App\Services\Transit\GtfsImportService;
@@ -23,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Exception;
 
-class GtfsImportController extends AuthController
+class GtfsImportController extends Controller
 {
     protected $gtfsImportService;
 

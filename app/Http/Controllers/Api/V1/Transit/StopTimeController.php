@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Transit;
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Controller;
 use App\Models\StopTime;
 use Illuminate\Http\Request;
 use App\Http\Requests\StopTimeRequest;
 use App\Http\Resources\StopTimeResource;
 
-class StopTimeController extends AuthController
+class StopTimeController extends Controller
 {
     /**
      * Display a listing of stop times.
      */
     public function index(Request $request)
     {
-        $query = StopTime::query();
+        $query = StopTime::query()->with(['schedule', 'transitStop.area.governorate']);
 
         // Filter by schedule_id
         if ($request->has('schedule_id')) {
@@ -28,12 +28,13 @@ class StopTimeController extends AuthController
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'sequence');
-        $sortOrder = $request->input('sort_order', 'asc');
+        $allowedSortColumns = ['id', 'schedule_id', 'transit_stop_id', 'sequence', 'arrival_time', 'departure_time', 'created_at', 'updated_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSortColumns, true) ? $request->input('sort_by') : 'sequence';
+        $sortOrder = strtolower((string) $request->input('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
         // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = min(100, max(1, (int) $request->input('per_page', 15)));
         $stopTimes = $query->paginate($perPage);
 
         return StopTimeResource::collection($stopTimes);
@@ -56,7 +57,7 @@ class StopTimeController extends AuthController
      */
     public function show(StopTime $stopTime)
     {
-        return new StopTimeResource($stopTime);
+        return new StopTimeResource($stopTime->load(['schedule', 'transitStop.area.governorate']));
     }
 
     /**
