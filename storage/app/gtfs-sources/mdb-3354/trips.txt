@@ -1,0 +1,17 @@
+route_id,service_id,trip_headsign,direction_id,shape_id,trip_id
+L1,summer_std,El Marg,0,T_L1_N_Shape,T_L1_N_summer_std
+L1,summer_std,Helwan,1,T_L1_S_Shape,T_L1_S_summer_std
+L1,summer_vac,El Marg,0,T_L1_N_Shape,T_L1_N_summer_vac
+L1,summer_vac,Helwan,1,T_L1_S_Shape,T_L1_S_summer_vac
+L1,winter_std,El Marg,0,T_L1_N_Shape,T_L1_N_winter_std
+L1,winter_std,Helwan,1,T_L1_S_Shape,T_L1_S_winter_std
+L1,winter_vac,El Marg,0,T_L1_N_Shape,T_L1_N_winter_vac
+L1,winter_vac,Helwan,1,T_L1_S_Shape,T_L1_S_winter_vac
+L2,summer_std,El Mounib,0,T_L2_S_Shape,T_L2_S_summer_std
+L2,summer_std,Shobra El Kheima,1,T_L2_N_Shape,T_L2_N_summer_std
+L2,summer_vac,El Mounib,0,T_L2_S_Shape,T_L2_S_summer_vac
+L2,summer_vac,Shobra El Kheima,1,T_L2_N_Shape,T_L2_N_summer_vac
+L2,winter_std,El Mounib,0,T_L2_S_Shape,T_L2_S_winter_std
+L2,winter_std,Shobra El Kheima,1,T_L2_N_Shape,T_L2_N_winter_std
+L2,winter_vac,El Mounib,0,T_L2_S_Shape,T_L2_S_winter_vac
+L2,winter_vac,Shobra El Kheima,1,T_L2_N_Shape,T_L2_N_winter_vac

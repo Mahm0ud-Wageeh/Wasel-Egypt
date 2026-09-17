@@ -1,0 +1,5 @@
+monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,service_id
+0,0,0,0,1,1,0,20241028,20250425,winter_vac
+0,0,0,0,1,1,0,20250426,20251027,summer_vac
+1,1,1,1,0,0,1,20241028,20250425,winter_std
+1,1,1,1,0,0,1,20250426,20251027,summer_std

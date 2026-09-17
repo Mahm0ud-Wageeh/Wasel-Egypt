@@ -1,0 +1,23 @@
+# Keep the build context small. The 1.5 GB OSRM graph under
+# storage/app/osrm/ must NEVER be sent to the builder (trial runs with
+# OSRM_ENABLED=false and the planner's straight-line fallback).
+.git/
+vendor/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+storage/app/osrm/
+storage/logs/
+storage/framework/cache/data/
+storage/framework/sessions/
+storage/framework/views/
+database/*.sqlite
+.env
+.env.*.local
+frontend/.env
+frontend/.env.*.local
+*.log
+gui-test-screenshots/
+.playwright-mcp/
+.phpunit.result.cache
+.phpunit.cache/

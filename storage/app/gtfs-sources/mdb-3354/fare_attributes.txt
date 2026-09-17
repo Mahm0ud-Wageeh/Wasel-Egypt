@@ -1,0 +1,5 @@
+fare_id,price,currency_type,payment_method,transfers,transfer_duration,agency_id
+M_1,8,EGP,0,,0,NAT
+M_2,10,EGP,0,,0,NAT
+M_3,15,EGP,0,,0,NAT
+M_4,20,EGP,0,,0,NAT

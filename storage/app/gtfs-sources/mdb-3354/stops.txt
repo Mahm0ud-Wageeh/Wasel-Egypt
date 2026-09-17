@@ -1,0 +1,109 @@
+stop_name,zone_id,stop_id,stop_lat,stop_lon
+Ain Helwan,detriment.gadgets.unfocused,detriment.gadgets.unfocused,29.862598,31.325024
+Ain Helwan,november.defensive.panthers,november.defensive.panthers,29.862606,31.325073
+Ain Shams,ombudsman.hazy.equivocal,ombudsman.hazy.equivocal,30.131042,31.319027
+Ain Shams,redeemed.camped.dunk,redeemed.camped.dunk,30.131008,31.3191
+Al-Sayeda Zeinab,divorcing.gossip.rankings,divorcing.gossip.rankings,30.029293,31.235329
+Al-Sayeda Zeinab,mentioned.meanest.incurs,mentioned.meanest.incurs,30.029215,31.235464
+Al-Shohadaa,fidelity.asking.cheek,fidelity.asking.cheek,30.061058,31.246288
+Al-Shohadaa,trusts.imperious.tarnished,trusts.imperious.tarnished,30.061108,31.245897
+Attaba,marketing.dribble.gossiped,marketing.dribble.gossiped,30.052423,31.246843
+Attaba,wink.driftwood.shredding,wink.driftwood.shredding,30.05242,31.246881
+Bohooth,breaches.cubic.qualify,breaches.cubic.qualify,30.035769,31.200365
+Bohooth,irrigated.snake.dynamics,irrigated.snake.dynamics,30.035902,31.200325
+Cairo University,courtyard.brightens.recapture,courtyard.brightens.recapture,30.026001,31.201183
+Cairo University,overcomes.constants.foggy,overcomes.constants.foggy,30.026182,31.20112
+Dar El-Salam,intervene.jigsaw.bloodshot,intervene.jigsaw.bloodshot,29.982098,31.242212
+Dar El-Salam,marble.processor.culminate,marble.processor.culminate,29.98204,31.242134
+Dokki,indeed.stands.endearing,indeed.stands.endearing,30.038206,31.212105
+Dokki,survived.birthing.timer,survived.birthing.timer,30.03847,31.212038
+El-Demerdash,hostels.grounded.flocking,hostels.grounded.flocking,30.077274,31.277815
+El-Demerdash,isolating.awaited.shun,isolating.awaited.shun,30.077248,31.277828
+El-Giza,badminton.justifies.lunge,badminton.justifies.lunge,30.010649,31.207119
+El-Giza,void.anguished.squeaks,void.anguished.squeaks,30.010635,31.207077
+El-Maasara,approach.throat.schematic,approach.throat.schematic,29.906183,31.29962
+El-Maasara,spouse.camp.wicked,spouse.camp.wicked,29.906315,31.299704
+El-Malek El-Saleh,blink.accent.photo,blink.accent.photo,30.01768,31.23123
+El-Malek El-Saleh,driveways.referral.occupy,driveways.referral.occupy,30.017712,31.231182
+El-Marg,scared.sometimes.standing,scared.sometimes.standing,30.152117,31.33574
+El-Marg,trouser.public.chatters,trouser.public.chatters,30.152107,31.335814
+El-Matareyya,dramatic.added.fiery,dramatic.added.fiery,30.121166,31.3138
+El-Matareyya,smiling.limelight.fast,smiling.limelight.fast,30.12115,31.313957
+El-Mounib,amused.extremes.flagpole,amused.extremes.flagpole,29.980957,31.212038
+El-Mounib,pigs.total.shunning,pigs.total.shunning,29.981007,31.212156
+El-Zahraa,contain.parsnip.organisms,contain.parsnip.organisms,29.995539,31.231236
+El-Zahraa,quick.bathtubs.kiosk,quick.bathtubs.kiosk,29.995565,31.231274
+Ezbet El-Nakhl,forgotten.flattery.premiums,forgotten.flattery.premiums,30.139273,31.324512
+Ezbet El-Nakhl,selects.unloaded.shark,selects.unloaded.shark,30.139303,31.324486
+Faisal,bridge.struck.greyhound,bridge.struck.greyhound,30.017384,31.203978
+Faisal,crackled.nickname.groomed,crackled.nickname.groomed,30.017395,31.204023
+Ghamra,interlude.melts.scrubbing,interlude.melts.scrubbing,30.06894,31.26467
+Ghamra,rivals.worldwide.revolting,rivals.worldwide.revolting,30.068975,31.264656
+Hadayek El-Maadi,booth.police.nanny,booth.police.nanny,29.970165,31.250591
+Hadayek El-Maadi,dishes.shower.educates,dishes.shower.educates,29.970186,31.250628
+Hadayek Helwan,amplifier.motorist.fancy,amplifier.motorist.fancy,29.897203,31.304096
+Hadayek Helwan,reconnect.reserve.providing,reconnect.reserve.providing,29.897186,31.304033
+Hadayeq El-Zaitoun,marmalade.albums.galloped,marmalade.albums.galloped,30.105936,31.310436
+Hadayeq El-Zaitoun,secretly.luckier.relishes,secretly.luckier.relishes,30.105907,31.310476
+Hammamat El-Qobba,automate.pylons.bandstand,automate.pylons.bandstand,30.091175,31.299006
+Hammamat El-Qobba,grit.grins.examiner,grit.grins.examiner,30.091154,31.299032
+Helmeyet El-Zaitoun,arriving.arranges.wolves,arriving.arranges.wolves,30.113253,31.313995
+Helmeyet El-Zaitoun,clinic.talent.merely,clinic.talent.merely,30.113255,31.313942
+Helwan,fittingly.burst.octopus,fittingly.burst.octopus,29.849207,31.334427
+Helwan,sideboard.axed.redouble,sideboard.axed.redouble,29.849146,31.334108
+Helwan University,bead.mimic.name,bead.mimic.name,29.869253,31.320244
+Helwan University,cowering.deploying.clauses,cowering.deploying.clauses,29.869083,31.320303
+Khalafawy,conveys.vesting.ideas,conveys.vesting.ideas,30.097881,31.24541
+Khalafawy,smashes.dwell.prevented,smashes.dwell.prevented,30.097885,31.245378
+Kobri El-Qobba,code.dazzling.pixel,code.dazzling.pixel,30.086945,31.293816
+Kobri El-Qobba,polar.feels.goose,polar.feels.goose,30.086975,31.293787
+Kolleyyet El-Zeraa,childcare.drop.scam,childcare.drop.scam,30.113703,31.248636
+Kolleyyet El-Zeraa,mash.flagging.rigs,mash.flagging.rigs,30.113691,31.24867
+Kozzika,ahead.loads.pixel,ahead.loads.pixel,29.936178,31.281712
+Kozzika,yummy.transit.oath,yummy.transit.oath,29.93617,31.281673
+Maadi,bags.shortcuts.bead,bags.shortcuts.bead,29.960009,31.257984
+Maadi,clays.earphones.perfumes,clays.earphones.perfumes,29.959965,31.257961
+Manshiet El-Sadr,cabs.drank.muddle,cabs.drank.muddle,30.081985,31.287535
+Manshiet El-Sadr,investors.spill.give,investors.spill.give,30.081959,31.287563
+Mar Girgis,castle.actors.hurricane,castle.actors.hurricane,30.00615,31.229551
+Mar Girgis,upper.displays.scorecard,upper.displays.scorecard,30.006151,31.229603
+Masarra,duet.living.early,duet.living.early,30.070887,31.245071
+Masarra,manhole.melts.sunflower,manhole.melts.sunflower,30.070887,31.245031
+Mezallat,fabric.inch.spurted,fabric.inch.spurted,30.10391,31.246056
+Mezallat,voltage.budgeted.encoder,voltage.budgeted.encoder,30.103922,31.246038
+Mohamed Naguib,hindering.thatched.library,hindering.thatched.library,30.04532,31.244211
+Mohamed Naguib,shrug.reporting.bootleg,shrug.reporting.bootleg,30.045311,31.244265
+Nasser,regime.scarred.truckload,regime.scarred.truckload,30.053375,31.238632
+Nasser,uncle.trees.clipped,uncle.trees.clipped,30.053394,31.23861
+New El-Marg,backpacks.donor.likening,backpacks.donor.likening,30.163568,31.338224
+New El-Marg,grazes.skewing.grocers,grazes.skewing.grocers,30.163507,31.338375
+Omm El-Misryeen,icons.handyman.sweat,icons.handyman.sweat,30.005342,31.20792
+Omm El-Misryeen,surpassed.legwork.alerting,surpassed.legwork.alerting,30.005344,31.207975
+Opera,shop.sinkhole.courage,shop.sinkhole.courage,30.041948,31.22498
+Opera,sundial.downcast.untruth,sundial.downcast.untruth,30.041887,31.225021
+Orabi,immune.runners.limit,immune.runners.limit,30.056992,31.242352
+Orabi,unframed.regaining.district,unframed.regaining.district,30.057024,31.242321
+Rod El Farag,finishing.myself.spaceship,finishing.myself.spaceship,30.08059,31.245426
+Rod El Farag,writings.combos.flop,writings.combos.flop,30.08059,31.245459
+Saad Zaghloul,crashing.universal.crows,crashing.universal.crows,30.03692,31.238148
+Saad Zaghloul,volcano.choppers.slings,volcano.choppers.slings,30.0369,31.238207
+Sadat,extent.shorter.remark,extent.shorter.remark,30.043879,31.23563
+Sadat,scooped.duet.rushed,scooped.duet.rushed,30.04392,31.235615
+Sadat,survived.badge.backtrack,survived.badge.backtrack,30.043865,31.23577
+Sadat,wedding.painter.apparatus,wedding.painter.apparatus,30.043856,31.235708
+Sakanat El-Maadi,taped.plums.prance,taped.plums.prance,29.952854,31.263474
+Sakanat El-Maadi,worthy.fizzled.foreheads,worthy.fizzled.foreheads,29.952873,31.263409
+Sakiat Mekki,degrading.surnames.hardly,degrading.surnames.hardly,29.99557,31.208584
+Sakiat Mekki,music.lighten.sprouted,music.lighten.sprouted,29.995577,31.208635
+Saray El-Qobba,mango.taller.vine,mango.taller.vine,30.097717,31.304464
+Saray El-Qobba,manual.diplomas.deranged,manual.diplomas.deranged,30.097694,31.304495
+Shubra El-Kheima,proposals.commander.optimally,proposals.commander.optimally,30.122551,31.244772
+Shubra El-Kheima,spruced.yards.formed,spruced.yards.formed,30.122568,31.244804
+St. Teresa,grant.courts.extremes,grant.courts.extremes,30.087948,31.24548
+St. Teresa,pony.reporter.ruling,pony.reporter.ruling,30.087955,31.245514
+Tora El-Asmant,headers.tunes.otters,headers.tunes.otters,29.925982,31.2876
+Tora El-Asmant,intruders.justifies.pulps,intruders.justifies.pulps,29.925983,31.287632
+Tora El-Balad,burying.bordering.aura,burying.bordering.aura,29.946705,31.272858
+Tora El-Balad,messy.deprives.barn,messy.deprives.barn,29.946764,31.27292
+Wadi Hof,another.second.swooning,another.second.swooning,29.879438,31.313383
+Wadi Hof,cake.otter.croutons,cake.otter.croutons,29.879457,31.313412

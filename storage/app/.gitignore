@@ -2,3 +2,11 @@
 !private/
 !public/
 !.gitignore
+
+# ── Trial-deploy data: archived sources baked into the Docker image ──
+!gtfs-sources/
+!gtfs-sources/mdb-3355-latest.zip
+!gtfs-sources/mdb-3354/
+!gtfs-sources/mdb-3354/*
+!osm-sources/
+!osm-sources/cairo-metro-relations.json

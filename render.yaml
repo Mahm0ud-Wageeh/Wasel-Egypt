@@ -1,0 +1,51 @@
+# Render Blueprint — Wasel Egypt free trial deployment.
+# Single Docker web service: Laravel API + React SPA on one origin
+# (https://wasel-egypt.onrender.com) with data baked into a SQLite file.
+# OSRM is disabled on the trial (planner uses the labeled estimate fallback).
+services:
+  - type: web
+    name: wasel-egypt
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_NAME
+        value: Wasel Egypt
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://wasel-egypt.onrender.com
+      - key: FRONTEND_URL
+        value: https://wasel-egypt.onrender.com
+      - key: LOG_LEVEL
+        value: warning
+      # Paste the output of `php artisan key:generate --show` (required).
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/html/database/database.sqlite
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: OSRM_ENABLED
+        value: false
+      - key: GEOCODING_ENABLED
+        value: true
+      - key: GTFS_RT_ENABLED
+        value: false
+      # Keyless demo assistant. To enable live AI answers, set
+      # AI_PROVIDER=groq plus the keys below (all sync:false secrets).
+      - key: AI_PROVIDER
+        value: mock
+      - key: AI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

@@ -1,0 +1,2 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone,agency_email
+NAT,Cairo Metro,https://cairometro.gov.eg/,Africa/Cairo,en,25748354 (202),contact.us@cairometro.gov.eg

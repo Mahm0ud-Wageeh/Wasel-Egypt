@@ -1,0 +1,5838 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-06T00:13:50Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "relation",
+  "id": 421705,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 46,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "members": [
+    {
+      "type": "node",
+      "ref": 3755981998,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316637584,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031094,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316637588,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316638393,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316638531,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5344953918,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194246943,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316638638,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 2208367177,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 2208367184,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5348846066,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316388053,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 493207780,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316388031,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 2460595904,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316639686,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031085,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194295704,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316641712,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5353485468,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194295698,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031079,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331190,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331196,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331198,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331199,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331202,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331206,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031071,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331216,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331217,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331220,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331528,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979331537,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 372063170,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 235670232,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 235670231,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 28449832,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508645787,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1545629357,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 28798880,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508674363,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508650905,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "from": "حلوان",
+    "name": "الخط الأول",
+    "name:ar": "الخط الأول",
+    "name:de": "Erste Metrolinie",
+    "name:en": "Line 1: Helwan → New El-Marg",
+    "name:fr": "Ligne 1 : Helwan → New El-Marg",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "1",
+    "route": "subway",
+    "to": "المرج الجديدة",
+    "type": "route",
+    "wikidata": "Q5017774",
+    "wikipedia": "en:Cairo Metro Line 1"
+  }
+},
+{
+  "type": "relation",
+  "id": 421706,
+  "timestamp": "2026-04-28T06:35:46Z",
+  "version": 50,
+  "changeset": 181923078,
+  "user": "salma_z",
+  "uid": 9945354,
+  "members": [
+    {
+      "type": "node",
+      "ref": 5355860835,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904698,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979416433,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 3759917281,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904701,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904702,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5355866947,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904709,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979414360,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031082,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076939018,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 317755256,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194295701,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076939028,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076939029,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076939031,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316634827,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 6288254841,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1641694429,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1641694433,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 981259846,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1504822486,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508685044,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981259843,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981259848,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508645789,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 45928742,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 28798086,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 28798404,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 151346930,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981259851,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "colour": "#FF7000",
+    "from": "المنيب",
+    "name": "الخط الثاني : المنيب‎ ← شبرا الخيمة‎",
+    "name:ar": "الخط الثاني : المنيب‎ ← شبرا الخيمة‎",
+    "name:de": "Linie 2: El Mounib → Shubra El-Kheima",
+    "name:en": "Line 2: El Mounib → Shubra El-Kheima",
+    "name:fr": "Ligne 2 : El Mounib → Shubra El-Kheima",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "2",
+    "route": "subway",
+    "to": "شبرا الخيمة",
+    "type": "route",
+    "wikidata": "Q5017773",
+    "wikipedia": "en:Cairo Metro Line 2"
+  }
+},
+{
+  "type": "relation",
+  "id": 2063304,
+  "timestamp": "2025-10-27T11:51:36Z",
+  "version": 32,
+  "changeset": 173834390,
+  "user": "Claudius Henrichs",
+  "uid": 18069,
+  "members": [
+    {
+      "type": "node",
+      "ref": 7559190648,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190660,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190666,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190674,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190677,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559205785,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135245,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135247,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135248,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7308408910,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979511781,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979511774,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979511765,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483255,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483242,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483239,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483237,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483234,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194348150,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279469,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077161247,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077189601,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077189602,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077161277,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077189581,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077189570,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077391794,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077274203,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11495591794,
+      "role": "stop_exit_only"
+    },
+    {
+      "type": "way",
+      "ref": 1445400592,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 836869835,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 808386165,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 765943709,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508695381,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981337896,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508692275,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981294419,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285747197,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1103660253,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981304193,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981304194,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1237636599,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1237636598,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "colour": "#00AF23",
+    "from": "عدلى منصور",
+    "name": "الخط الثالث : عدلى منصور ← الكيت كات",
+    "name:ar": "الخط الثالث",
+    "name:de": "Linie 3",
+    "name:en": "Line 3: Adly Mansour → Kit-kat",
+    "name:fr": "Ligne 3 : Adli Mansour → Kit-kat",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "3",
+    "route": "subway",
+    "to": "العتبة",
+    "type": "route",
+    "wikidata": "Q5017776",
+    "wikipedia": "en:Cairo Metro Line 3"
+  }
+},
+{
+  "type": "relation",
+  "id": 2826217,
+  "timestamp": "2026-06-09T11:20:55Z",
+  "version": 33,
+  "changeset": 183870211,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "members": [
+    {
+      "type": "node",
+      "ref": 316643127,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643120,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643111,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1642286403,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643099,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031072,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643077,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643073,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643069,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316643067,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316642888,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1642383282,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316642043,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194295699,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5353485469,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978062181,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031083,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031084,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031089,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031091,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5348846064,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194246949,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194246948,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5348846067,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5348846065,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5348846063,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5349031095,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194246944,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5344953917,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5348846069,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5344953907,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978062099,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316637586,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5344953910,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5344953912,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 45928753,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 45928744,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 28799039,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 536113244,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508650900,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508506488,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 536104892,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 536104891,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "from": "المرج الجديدة",
+    "name": "الخط الأول",
+    "name:ar": "الخط الأول",
+    "name:de": "Erste Metrolinie",
+    "name:en": "Line 1: New El-Marg → Helwan",
+    "name:fr": "Ligne 1 : New El-Marg → Helwan",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "1",
+    "route": "subway",
+    "to": "حلوان",
+    "type": "route",
+    "wikidata": "Q5017774",
+    "wikipedia": "en:Cairo Metro Line 1"
+  }
+},
+{
+  "type": "relation",
+  "id": 7686561,
+  "timestamp": "2025-10-27T11:51:36Z",
+  "version": 25,
+  "changeset": 173834390,
+  "user": "Claudius Henrichs",
+  "uid": 18069,
+  "members": [
+    {
+      "type": "node",
+      "ref": 9077372453,
+      "role": "stop_entry_only"
+    },
+    {
+      "type": "node",
+      "ref": 11495591821,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11495591840,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11495591843,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11495591856,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11495611080,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279486,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279483,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279471,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279467,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194348151,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803722,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803723,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803732,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803733,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1654760303,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1654760266,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1654764997,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 2400937187,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7308408911,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135249,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7153641095,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135246,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7926259279,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7926259258,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076234476,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076234491,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076234501,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076255925,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 981316778,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981316777,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1237636600,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1237636601,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1237636602,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285747196,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1103660254,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 369371344,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981337897,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 107539416,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 765943710,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 849583569,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 967904919,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1445400591,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "colour": "#00AF23",
+    "from": "العتبة",
+    "name": "الخط الثالث : الكيت كات ← عدلى منصور",
+    "name:ar": "الخط الثالث",
+    "name:de": "Linie 3",
+    "name:en": "Line 3: Kit-kat → Adly Mansour",
+    "name:fr": "Ligne 3 : Kit-kat → Adli Mansour",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "3",
+    "route": "subway",
+    "to": "عدلى منصور",
+    "type": "route",
+    "wikidata": "Q5017776",
+    "wikipedia": "en:Cairo Metro Line 3"
+  }
+},
+{
+  "type": "relation",
+  "id": 7927231,
+  "timestamp": "2024-05-21T19:59:37Z",
+  "version": 10,
+  "changeset": 151645837,
+  "user": "Claudius Henrichs",
+  "uid": 18069,
+  "members": [
+    {
+      "type": "node",
+      "ref": 9076939068,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978060958,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076939045,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978060972,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978060976,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978060979,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4978060988,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194295700,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979414356,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076939019,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194295705,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904711,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904710,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5355866946,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316632489,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316631596,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 316631600,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904700,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076904699,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1131555201,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 981259850,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508506483,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508506485,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508506484,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981259847,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508645786,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 48144276,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981259844,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 28797944,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981259845,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 151409764,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "colour": "#FF7000",
+    "from": "شبرا الخيمة",
+    "name": "الخط الثاني : شبرا الخيمة‎ ← المنيب",
+    "name:ar": "الخط الثاني : شبرا الخيمة‎ ← المنيب",
+    "name:de": "Linie 2: Shubra El-Kheima → El Mounib",
+    "name:en": "Line 2: Shubra El-Kheima → El Mounib",
+    "name:fr": "Ligne 2 : Shubra El-Kheima → El Mounib",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "2",
+    "route": "subway",
+    "to": "المنيب",
+    "type": "route",
+    "wikidata": "Q5017773",
+    "wikipedia": "en:Cairo Metro Line 2"
+  }
+},
+{
+  "type": "relation",
+  "id": 17625744,
+  "timestamp": "2025-10-27T11:51:36Z",
+  "version": 7,
+  "changeset": 173834390,
+  "user": "Claudius Henrichs",
+  "uid": 18069,
+  "members": [
+    {
+      "type": "node",
+      "ref": 11926706152,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11923472312,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11923472281,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11923457959,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11926766473,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279486,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279483,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279471,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279467,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194348151,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803722,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803723,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803732,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1235803733,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1654760303,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1654760266,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 1654764997,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 2400937187,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7308408911,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135249,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7153641095,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135246,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7926259279,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7926259258,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076234476,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076234491,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076234501,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9076255925,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 1285338826,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338823,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338816,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338820,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338818,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338813,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285747196,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1103660254,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 369371344,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981337897,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 107539416,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 765943710,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 849583569,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 967904919,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1445400591,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "colour": "#00AF23",
+    "from": "العتبة",
+    "name": "الخط الثالث : الكيت كات ← عدلى منصور",
+    "name:ar": "الخط الثالث",
+    "name:de": "Linie 3: Universität Kairo → Adli Mansur",
+    "name:en": "Line 3: Cairo University → Adly Mansour",
+    "name:fr": "Ligne 3 : Université du Caire → Adli Mansour",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "3",
+    "route": "subway",
+    "to": "عدلى منصور",
+    "type": "route",
+    "wikidata": "Q5017776",
+    "wikipedia": "en:Cairo Metro Line 3"
+  }
+},
+{
+  "type": "relation",
+  "id": 17625746,
+  "timestamp": "2025-10-27T11:51:36Z",
+  "version": 5,
+  "changeset": 173834390,
+  "user": "Claudius Henrichs",
+  "uid": 18069,
+  "members": [
+    {
+      "type": "node",
+      "ref": 7559190648,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190660,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190666,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190674,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559190677,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7559205785,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135245,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135247,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7302135248,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 7308408910,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979511781,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979511774,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979511765,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483255,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483242,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483239,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483237,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 4979483234,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 5194348150,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 10099279469,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077161247,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077189601,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 9077189602,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11926766472,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11923457958,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11923472282,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11923472302,
+      "role": "stop"
+    },
+    {
+      "type": "node",
+      "ref": 11926706153,
+      "role": "stop"
+    },
+    {
+      "type": "way",
+      "ref": 1445400592,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 836869835,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 808386165,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 765943709,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508695381,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981337896,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 508692275,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 981294419,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285747197,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338819,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338814,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338821,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338817,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338824,
+      "role": ""
+    },
+    {
+      "type": "way",
+      "ref": 1285338825,
+      "role": ""
+    }
+  ],
+  "tags": {
+    "colour": "#00AF23",
+    "from": "عدلى منصور",
+    "name": "الخط الثالث : عدلى منصور ← جامعة القاهرة",
+    "name:ar": "الخط الثالث",
+    "name:de": "Linie 3: Adli Mansur → Universität Kairo",
+    "name:en": "Line 3: Adly Mansour → Cairo University",
+    "name:fr": "Ligne 3 : Adli Mansour → Université du Caire",
+    "network": "الشركة المصرية لإدارة وتشغيل المترو",
+    "public_transport:version": "2",
+    "ref": "3",
+    "route": "subway",
+    "to": "جامعة القاهرة",
+    "type": "route",
+    "wikidata": "Q5017776",
+    "wikipedia": "en:Cairo Metro Line 3"
+  }
+},
+{
+  "type": "node",
+  "id": 1131555201,
+  "lat": 29.9811114,
+  "lon": 31.2119042,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "96",
+    "int_name": "ElMounib",
+    "name": "المنيب",
+    "name:ar": "المنيب",
+    "name:de": "Al-Mounib",
+    "name:en": "Al-Mounib",
+    "name:fr": "Al-Mounib",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5355860835,
+  "lat": 29.9811614,
+  "lon": 31.2120279,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "35",
+    "name": "المنيب",
+    "name:ar": "المنيب",
+    "name:de": "Al-Mounib",
+    "name:en": "Al-Mounib",
+    "name:fr": "Al-Mounib",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979416433,
+  "lat": 30.0051374,
+  "lon": 31.2079888,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "أم المصريين",
+    "gtfs:stop_id": "60",
+    "name": "أم المصريين",
+    "name:ar": "أم المصريين",
+    "name:de": "Omm El Misryeen",
+    "name:en": "Omm El Misryeen",
+    "name:fr": "Omm El Misryeen",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904700,
+  "lat": 30.0051382,
+  "lon": 31.2079337,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "أم المصريين",
+    "gtfs:stop_id": "121",
+    "name": "أم المصريين",
+    "name:ar": "أم المصريين",
+    "name:de": "Omm El Misryeen",
+    "name:en": "Omm El Misryeen",
+    "name:fr": "Omm El Misryeen",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904698,
+  "lat": 29.9954876,
+  "lon": 31.2086404,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "ساقية مكي",
+    "gtfs:stop_id": "36",
+    "name": "ساقية مكي",
+    "name:ar": "ساقية مكي",
+    "name:de": "Sakiat Mekki",
+    "name:en": "Sakiat Mekki",
+    "name:fr": "Sakiat Mekki",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904699,
+  "lat": 29.9954846,
+  "lon": 31.2085886,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "ساقية مكي",
+    "gtfs:stop_id": "97",
+    "name": "ساقية مكي",
+    "name:ar": "ساقية مكي",
+    "name:de": "Sakiat Mekki",
+    "name:en": "Sakiat Mekki",
+    "name:fr": "Sakiat Mekki",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316388053,
+  "lat": 29.9819862,
+  "lon": 31.2421744,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 30,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "fixme": "Probably part of the metro line",
+    "gtfs:stop_id": "73",
+    "name": "دار السلام",
+    "name:ar": "دار السلام",
+    "name:de": "Dar Al-Salam",
+    "name:en": "Dar Al-Salam",
+    "name:fr": "Dar Al-Salam",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194246948,
+  "lat": 29.9820233,
+  "lon": 31.2422664,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "13",
+    "name": "دار السلام",
+    "name:ar": "دار السلام",
+    "name:de": "Dar Al-Salam",
+    "name:en": "Dar Al-Salam",
+    "name:fr": "Dar Al-Salam",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 493207780,
+  "lat": 29.9954263,
+  "lon": 31.2313392,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "الزهراء",
+    "fixme": "Probably part of the metro line",
+    "gtfs:stop_id": "74",
+    "int_name": "El-Zahraa'",
+    "name": "الزهراء",
+    "name:ar": "الزهراء",
+    "name:de": "Al-Zahraa",
+    "name:en": "Al-Zahraa",
+    "name:fr": "Al-Zahraa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194246949,
+  "lat": 29.9954533,
+  "lon": 31.2313780,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "الزهراء",
+    "gtfs:stop_id": "14",
+    "int_name": "El-Zahraa'",
+    "name": "الزهراء",
+    "name:ar": "الزهراء",
+    "name:de": "Al-Zahraa",
+    "name:en": "Al-Zahraa",
+    "name:fr": "Al-Zahraa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316637584,
+  "lat": 29.8626458,
+  "lon": 31.3249899,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 15,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "محطة عين حلوان",
+    "gtfs:stop_id": "62",
+    "int_name": "Ain Helwan",
+    "name": "محطة عين حلوان",
+    "name:ar": "محطة عين حلوان",
+    "name:de": "Ain Helwan",
+    "name:en": "Ain Helwan",
+    "name:fr": "Ain Helwan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5344953910,
+  "lat": 29.8626701,
+  "lon": 31.3250277,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "محطة عين حلوان",
+    "gtfs:stop_id": "2",
+    "int_name": "Ain Helwan",
+    "name": "محطة عين حلوان",
+    "name:ar": "محطة عين حلوان",
+    "name:de": "Ain Helwan",
+    "name:en": "Ain Helwan",
+    "name:fr": "Ain Helwan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316637586,
+  "lat": 29.8690253,
+  "lon": 31.3203770,
+  "timestamp": "2026-08-20T10:01:52Z",
+  "version": 15,
+  "changeset": 187733975,
+  "user": "Claudius Henrichs",
+  "uid": 18069,
+  "tags": {
+    "gtfs:stop_id": "3",
+    "int_name": "Helwan University",
+    "name": "جامعة حلوان",
+    "name:ar": "جامعة حلوان",
+    "name:de": "Helwan Universität",
+    "name:en": "Helwan University",
+    "name:fa": "دانشگاه حلوان",
+    "name:fr": "Université Helwan",
+    "name:ml": "ഹെൽവാൻ സർവകലാശാല",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031094,
+  "lat": 29.8690126,
+  "lon": 31.3203559,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "63",
+    "name": "جامعة حلوان",
+    "name:ar": "جامعة حلوان",
+    "name:de": "Helwan Universität",
+    "name:en": "Helwan University",
+    "name:fr": "Université Helwan",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3755981998,
+  "lat": 29.8498844,
+  "lon": 31.3340772,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "61",
+    "int_name": "Helwan",
+    "name": "حلوان",
+    "name:ar": "حلوان",
+    "name:en": "Helwan",
+    "name:fr": "Helwan",
+    "network": "First Line",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5344953912,
+  "lat": 29.8498941,
+  "lon": 31.3343863,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "1",
+    "int_name": "Helwan",
+    "name": "حلوان",
+    "name:ar": "حلوان",
+    "name:de": "Helwan",
+    "name:en": "Helwan",
+    "name:fr": "Helwan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316637588,
+  "lat": 29.8794305,
+  "lon": 31.3133885,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 12,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "64",
+    "int_name": "Wadi Hof",
+    "name": "وادي حوف",
+    "name:ar": "وادي حوف",
+    "name:de": "Wadi Hof",
+    "name:en": "Wadi Hof",
+    "name:fr": "Wadi Hof",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978062099,
+  "lat": 29.8794450,
+  "lon": 31.3134192,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "4",
+    "int_name": "Wadi Hof",
+    "name": "وادي حوف",
+    "name:ar": "وادي حوف",
+    "name:de": "Wadi Hof",
+    "name:en": "Wadi Hof",
+    "name:fr": "Wadi Hof",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316638393,
+  "lat": 29.8971768,
+  "lon": 31.3040386,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 10,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "65",
+    "int_name": "Hadayeq Helwan",
+    "name": "حدائق حلوان",
+    "name:ar": "حدائق حلوان",
+    "name:de": "Hadayeq Helwan",
+    "name:en": "Hadayeq Helwan",
+    "name:fr": "Hadayeq Helwan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5344953907,
+  "lat": 29.8971961,
+  "lon": 31.3041003,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "5",
+    "int_name": "Hadayeq Helwan",
+    "name": "حدائق حلوان",
+    "name:ar": "حدائق حلوان",
+    "name:de": "Hadayeq Helwan",
+    "name:en": "Hadayeq Helwan",
+    "name:fr": "Hadayeq Helwan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316638531,
+  "lat": 29.9060831,
+  "lon": 31.2996691,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 12,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "66",
+    "int_name": "El-Maasara",
+    "name": "المعصرة",
+    "name:ar": "المعصرة",
+    "name:de": "Al-Maasara",
+    "name:en": "Al-Maasara",
+    "name:fr": "Al-Maasara",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5348846069,
+  "lat": 29.9061192,
+  "lon": 31.2998009,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "6",
+    "int_name": "El-Maasara",
+    "name": "المعصرة",
+    "name:ar": "المعصرة",
+    "name:de": "Al-Maasara",
+    "name:en": "Al-Maasara",
+    "name:fr": "Al-Maasara",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5344953917,
+  "lat": 29.9258553,
+  "lon": 31.2877081,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "7",
+    "name": "طرا الأسمنت",
+    "name:ar": "طرا الأسمنت",
+    "name:de": "Tora El-Asmant",
+    "name:en": "Tora El-Asmant",
+    "name:fr": "Tora El-Asmant",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5344953918,
+  "lat": 29.9258421,
+  "lon": 31.2876817,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "fixme": "Probably part of the metro line",
+    "gtfs:stop_id": "67",
+    "name": "طرا الأسمنت",
+    "name:ar": "طرا الأسمنت",
+    "name:de": "Tora El-Asmant",
+    "name:en": "Tora El-Asmant",
+    "name:fr": "Tora El-Asmant",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316638638,
+  "lat": 29.9462853,
+  "lon": 31.2735537,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 13,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "طرا البلد",
+    "gtfs:stop_id": "69",
+    "int_name": "Tora El-Balad",
+    "name": "طرة البلد",
+    "name:ar": "طرة البلد",
+    "name:de": "Tora El-Balad",
+    "name:en": "Tora El-Balad",
+    "name:fr": "Tora El-Balad",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031095,
+  "lat": 29.9463575,
+  "lon": 31.2736003,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "طرا البلد",
+    "gtfs:stop_id": "9",
+    "int_name": "Tora El-Balad",
+    "name": "طرة البلد",
+    "name:ar": "طرة البلد",
+    "name:de": "Tora El-Balad",
+    "name:en": "Tora El-Balad",
+    "name:fr": "Tora El-Balad",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2208367177,
+  "lat": 29.9528287,
+  "lon": 31.2634489,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "70",
+    "name": "ثكنات المعادي",
+    "name:ar": "ثكنات المعادي",
+    "name:de": "Thakanat El-Maadi",
+    "name:en": "Thakanat El-Maadi",
+    "name:fr": "Thakanat El-Maadi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "source": "guess (to make public transport work)",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5348846063,
+  "lat": 29.9528518,
+  "lon": 31.2634773,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "10",
+    "name": "ثكنات المعادي",
+    "name:ar": "ثكنات المعادي",
+    "name:de": "Thakanat El-Maadi",
+    "name:en": "Thakanat El-Maadi",
+    "name:fr": "Thakanat El-Maadi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194246943,
+  "lat": 29.9361426,
+  "lon": 31.2816895,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "68",
+    "name": "كوتسكا",
+    "name:ar": "كوتسكا",
+    "name:de": "Kozzika",
+    "name:en": "Kozzika",
+    "name:fr": "Kozzika",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194246944,
+  "lat": 29.9361576,
+  "lon": 31.2817234,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "8",
+    "name": "كوتسكا",
+    "name:ar": "كوتسكا",
+    "name:de": "Kozzika",
+    "name:en": "Kozzika",
+    "name:fr": "Kozzika",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2208367184,
+  "lat": 29.9598360,
+  "lon": 31.2580577,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 9,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "71",
+    "int_name": "Maadi",
+    "name": "المعادى",
+    "name:ar": "المعادى",
+    "name:de": "Maadi",
+    "name:en": "Maadi",
+    "name:fr": "Maadi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "source": "guess (to make public transport work)",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5348846065,
+  "lat": 29.9598527,
+  "lon": 31.2580979,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "11",
+    "int_name": "Maadi",
+    "name": "المعادى",
+    "name:ar": "المعادى",
+    "name:de": "Maadi",
+    "name:en": "Maadi",
+    "name:fr": "Maadi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "source": "guess (to make public transport work)",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5348846066,
+  "lat": 29.9700863,
+  "lon": 31.2506475,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "72",
+    "int_name": "Hadayeq El-Maadi",
+    "name": "مترو حدائق المعادى",
+    "name:ar": "مترو حدائق المعادى",
+    "name:de": "Maadi Gärten",
+    "name:en": "Hadayek El Maadi",
+    "name:fr": "Jardins Maadi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5348846067,
+  "lat": 29.9701057,
+  "lon": 31.2506865,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "12",
+    "int_name": "Hadayeq El-Maadi",
+    "name": "مترو حدائق المعادى",
+    "name:ar": "حدائق المعادى",
+    "name:de": "Maadi Gärten",
+    "name:en": "Hadayek El Maadi",
+    "name:fr": "Jardins Maadi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316631600,
+  "lat": 30.0105673,
+  "lon": 31.2071014,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 24,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "جيزة",
+    "gtfs:stop_id": "98",
+    "int_name": "Giza",
+    "name": "جيزة",
+    "name:ar": "جيزة",
+    "name:de": "Giza",
+    "name:en": "Giza",
+    "name:fr": "Giza",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3759917281,
+  "lat": 30.0105754,
+  "lon": 31.2071499,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "جيزة",
+    "gtfs:stop_id": "37",
+    "int_name": "Giza",
+    "name": "جيزة",
+    "name:ar": "جيزة",
+    "name:de": "Giza",
+    "name:en": "Giza",
+    "name:fr": "Giza",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316631596,
+  "lat": 30.0172901,
+  "lon": 31.2040068,
+  "timestamp": "2026-07-02T10:18:30Z",
+  "version": 23,
+  "changeset": 184967025,
+  "user": "Gitasaleh Virast",
+  "uid": 22419583,
+  "tags": {
+    "gtfs:stop_id": "99",
+    "name": "فيصل",
+    "name:ar": "فيصل",
+    "name:de": "Faisal",
+    "name:en": "Faisal",
+    "name:fa": "فیصل",
+    "name:fr": "Faisal",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904701,
+  "lat": 30.0172988,
+  "lon": 31.2040557,
+  "timestamp": "2026-07-02T10:18:30Z",
+  "version": 4,
+  "changeset": 184967025,
+  "user": "Gitasaleh Virast",
+  "uid": 22419583,
+  "tags": {
+    "gtfs:stop_id": "38",
+    "name": "فيصل",
+    "name:ar": "فيصل",
+    "name:de": "Faisal",
+    "name:en": "Faisal",
+    "name:fa": "فیصل",
+    "name:fr": "Faisal",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11926706152,
+  "lat": 30.0249062,
+  "lon": 31.2013811,
+  "timestamp": "2024-10-22T15:23:59Z",
+  "version": 2,
+  "changeset": 158216855,
+  "user": "tanzwiese",
+  "uid": 10107184,
+  "tags": {
+    "name": "جامعة القاهرة",
+    "name:ar": "جامعة القاهرة",
+    "name:de": "Kairo Universität",
+    "name:en": "Cairo University",
+    "name:fr": "Université du Caire",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11926706153,
+  "lat": 30.0248923,
+  "lon": 31.2013382,
+  "timestamp": "2024-10-22T15:23:59Z",
+  "version": 2,
+  "changeset": 158216855,
+  "user": "tanzwiese",
+  "uid": 10107184,
+  "tags": {
+    "name": "جامعة القاهرة",
+    "name:ar": "جامعة القاهرة",
+    "name:de": "Kairo Universität",
+    "name:en": "Cairo University",
+    "name:fr": "Université du Caire",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316632489,
+  "lat": 30.0259912,
+  "lon": 31.2011889,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 18,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "100",
+    "name": "جامعة القاهرة",
+    "name:ar": "جامعة القاهرة",
+    "name:de": "Kairo Universität",
+    "name:en": "Cairo University",
+    "name:fr": "Université du Caire",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904702,
+  "lat": 30.0259985,
+  "lon": 31.2012200,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "39",
+    "name": "جامعة القاهرة",
+    "name:ar": "جامعة القاهرة",
+    "name:de": "Kairo Universität",
+    "name:en": "Cairo University",
+    "name:fr": "Université du Caire",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316388031,
+  "lat": 30.0058512,
+  "lon": 31.2294978,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 29,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "75",
+    "int_name": "Mar Girgis",
+    "name": "مار جرجس",
+    "name:ar": "مار جرجس",
+    "name:de": "Mar Girgis",
+    "name:en": "Mar Girgis",
+    "name:fr": "Mar Girgis",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5348846064,
+  "lat": 30.0058480,
+  "lon": 31.2295496,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "15",
+    "int_name": "Mar Girgis",
+    "name": "مار جرجس",
+    "name:ar": "مار جرجس",
+    "name:de": "Mar Girgis",
+    "name:en": "Mar Girgis",
+    "name:fr": "Mar Girgis",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2460595904,
+  "lat": 30.0176858,
+  "lon": 31.2311646,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "76",
+    "int_name": "El-Malek El-Saleh",
+    "name": "الملك الصالح",
+    "name:ar": "الملك الصالح",
+    "name:de": "Al-Malek Al-Saleh",
+    "name:en": "Al-Malek Al-Saleh",
+    "name:fr": "Al-Malek Al-Saleh",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031091,
+  "lat": 30.0176707,
+  "lon": 31.2312260,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "16",
+    "int_name": "El-Malek El-Saleh",
+    "name": "الملك الصالح",
+    "name:ar": "الملك الصالح",
+    "name:de": "Al-Malek Al-Saleh",
+    "name:en": "Al-Malek Al-Saleh",
+    "name:fr": "Al-Malek Al-Saleh",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316639686,
+  "lat": 30.0292919,
+  "lon": 31.2353264,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 14,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "77",
+    "int_name": "AlSayyeda Zeinab",
+    "name": "السيدة زينب",
+    "name:ar": "السيدة زينب",
+    "name:de": "Sayyeda Zeinab",
+    "name:en": "Sayyeda Zeinab",
+    "name:fr": "Sayyeda Zeinab",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031089,
+  "lat": 30.0291989,
+  "lon": 31.2354505,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "17",
+    "int_name": "AlSayyeda Zeinab",
+    "name": "السيدة زينب",
+    "name:ar": "السيدة زينب",
+    "name:de": "Sayyeda Zeinab",
+    "name:en": "Sayyeda Zeinab",
+    "name:fr": "Sayyeda Zeinab",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5355866946,
+  "lat": 30.0357856,
+  "lon": 31.2003070,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "البحوث",
+    "gtfs:stop_id": "101",
+    "int_name": "Bohooth",
+    "name": "البحوث",
+    "name:ar": "البحوث",
+    "name:de": "Behooth",
+    "name:en": "Behooth",
+    "name:fr": "Behooth",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5355866947,
+  "lat": 30.0357431,
+  "lon": 31.2003246,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "البحوث",
+    "gtfs:stop_id": "40",
+    "int_name": "Bohooth",
+    "name": "البحوث",
+    "name:ar": "البحوث",
+    "name:de": "Behooth",
+    "name:en": "Behooth",
+    "name:fr": "Behooth",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11923472302,
+  "lat": 30.0375352,
+  "lon": 31.1954864,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "257",
+    "name": "محطة مترو بولاق الدكرور",
+    "name:ar": "محطة مترو بولاق الدكرور",
+    "name:en": "Bulaq Al-Dakrour",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11923472312,
+  "lat": 30.0375479,
+  "lon": 31.1955251,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "202",
+    "name": "محطة مترو بولاق الدكرور",
+    "name:ar": "محطة مترو بولاق الدكرور",
+    "name:en": "Bulaq Al-Dakrour",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904709,
+  "lat": 30.0381895,
+  "lon": 31.2120231,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "41",
+    "int_name": "Dokki",
+    "name": "الدقى",
+    "name:ar": "الدقى",
+    "name:de": "Dokki",
+    "name:en": "Dokki",
+    "name:fr": "Dokki",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904710,
+  "lat": 30.0382381,
+  "lon": 31.2120051,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "102",
+    "int_name": "Dokki",
+    "name": "الدقى",
+    "name:ar": "الدقى",
+    "name:de": "Dokki",
+    "name:en": "Dokki",
+    "name:fr": "Dokki",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11923472281,
+  "lat": 30.0509454,
+  "lon": 31.1997040,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "203",
+    "name": "جامعة الدول",
+    "name:en": "Gamet El Dowel",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11923472282,
+  "lat": 30.0509633,
+  "lon": 31.1996700,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "258",
+    "name": "جامعة الدول",
+    "name:en": "Gamet El Dowel",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979414360,
+  "lat": 30.0419889,
+  "lon": 31.2251976,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "addr:city": "القاهرة",
+    "city": "القاهرة",
+    "gtfs:stop_id": "42",
+    "int_name": "Gezira",
+    "name": "الأوبرا",
+    "name:ar": "الأوبرا",
+    "name:de": "Oper",
+    "name:en": "Opera",
+    "name:fr": "Opéra",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076904711,
+  "lat": 30.0420584,
+  "lon": 31.2251724,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "addr:city": "القاهرة",
+    "gtfs:stop_id": "103",
+    "int_name": "Gezira",
+    "name": "الأوبرا",
+    "name:ar": "الأوبرا",
+    "name:de": "Oper",
+    "name:en": "Opera",
+    "name:fr": "Opéra",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031084,
+  "lat": 30.0365602,
+  "lon": 31.2381056,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "مترو سعد زغلول",
+    "gtfs:stop_id": "18",
+    "int_name": "Saad Zaghloul",
+    "name": "سعد زغلول",
+    "name:ar": "سعد زغلول",
+    "name:de": "Saad Zaghloul",
+    "name:en": "Saad Zaghloul",
+    "name:fr": "Saad Zaghloul",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031085,
+  "lat": 30.0365735,
+  "lon": 31.2380539,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "مترو سعد زغلول",
+    "gtfs:stop_id": "78",
+    "int_name": "Saad Zaghloul",
+    "name": "سعد زغلول",
+    "name:ar": "سعد زغلول",
+    "name:de": "Saad Zaghloul",
+    "name:en": "Saad Zaghloul",
+    "name:fr": "Saad Zaghloul",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194295704,
+  "lat": 30.0443604,
+  "lon": 31.2355630,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "79",
+    "int_name": "Sadat",
+    "name": "السادات",
+    "name:ar": "السادات",
+    "name:de": "Sadat",
+    "name:en": "Sadat",
+    "name:fr": "Sadat",
+    "name:zh": "萨达特",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194295705,
+  "lat": 30.0438602,
+  "lon": 31.2346406,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "127",
+    "int_name": "Sadat",
+    "name": "السادات",
+    "name:ar": "السادات",
+    "name:de": "Sadat",
+    "name:en": "Sadat",
+    "name:fr": "Sadat",
+    "name:zh": "萨达特",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031082,
+  "lat": 30.0438070,
+  "lon": 31.2346365,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "128",
+    "int_name": "Sadat",
+    "name": "السادات",
+    "name:ar": "السادات",
+    "name:de": "Sadat",
+    "name:en": "Sadat",
+    "name:fr": "Sadat",
+    "name:zh": "萨达特",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031083,
+  "lat": 30.0443715,
+  "lon": 31.2356225,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "19",
+    "int_name": "Sadat",
+    "name": "السادات",
+    "name:ar": "السادات",
+    "name:de": "Sadat",
+    "name:en": "Sadat",
+    "name:fr": "Sadat",
+    "name:zh": "萨达特",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077161247,
+  "lat": 30.0555439,
+  "lon": 31.2322399,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 9,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "278",
+    "int_name": "Gamal AbdAlNasser",
+    "name": "ماسبيرو",
+    "name:ar": "ماسبيرو",
+    "name:de": "Masbero",
+    "name:en": "Masbero",
+    "name:fr": "Masbero",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 10099279471,
+  "lat": 30.0554716,
+  "lon": 31.2322064,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "149",
+    "name": "ماسبيرو",
+    "name:ar": "ماسبيرو",
+    "name:de": "Masbero",
+    "name:en": "Masbero",
+    "name:fr": "Masbero",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939018,
+  "lat": 30.0454058,
+  "lon": 31.2443542,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 4,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "gtfs:stop_id": "43",
+    "name": "نجيب",
+    "name:ar": "محمد نجيب",
+    "name:en": "Mohamed Naguib",
+    "name:fr": "Mohammed Naguib",
+    "name:zh": "内吉布",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939019,
+  "lat": 30.0454431,
+  "lon": 31.2442785,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 4,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "gtfs:stop_id": "104",
+    "name": "نجيب",
+    "name:ar": "محمد نجيب",
+    "name:en": "Mohamed Naguib",
+    "name:fr": "Mohammed Naguib",
+    "name:zh": "内吉布",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316641712,
+  "lat": 30.0535654,
+  "lon": 31.2387916,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 11,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "الإسعاف",
+    "alt_name:ar": "الإسعاف",
+    "alt_name:en": "El Esaaf",
+    "gtfs:stop_id": "80",
+    "int_name": "Gamal AbdAlNasser",
+    "name": "ناصر",
+    "name:ar": "ناصر",
+    "name:de": "Nasser",
+    "name:en": "Nasser",
+    "name:fr": "Nasser",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978062181,
+  "lat": 30.0535483,
+  "lon": 31.2388137,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "الإسعاف",
+    "alt_name:ar": "الإسعاف",
+    "alt_name:en": "El Esaaf",
+    "gtfs:stop_id": "20",
+    "int_name": "Gamal AbdAlNasser",
+    "name": "ناصر",
+    "name:ar": "ناصر",
+    "name:de": "Nasser",
+    "name:en": "Nasser",
+    "name:fr": "Nasser",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 10099279467,
+  "lat": 30.0534366,
+  "lon": 31.2387797,
+  "timestamp": "2025-10-04T05:12:00Z",
+  "version": 2,
+  "changeset": 172816158,
+  "user": "Omar Hassan 995",
+  "uid": 22711502,
+  "tags": {
+    "alt_name": "الإسعاف",
+    "alt_name:ar": "الإسعاف",
+    "alt_name:en": "El Esaaf",
+    "int_name": "Gamal AbdAlNasser",
+    "name": "ناصر",
+    "name:ar": "ناصر",
+    "name:de": "Nasser",
+    "name:en": "Nasser",
+    "name:fr": "Nasser",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 10099279469,
+  "lat": 30.0534693,
+  "lon": 31.2388046,
+  "timestamp": "2025-10-04T05:12:00Z",
+  "version": 2,
+  "changeset": 172816158,
+  "user": "Omar Hassan 995",
+  "uid": 22711502,
+  "tags": {
+    "alt_name": "الإسعاف",
+    "alt_name:ar": "الإسعاف",
+    "alt_name:en": "El Esaaf",
+    "int_name": "Gamal AbdAlNasser",
+    "name": "ناصر",
+    "name:ar": "ناصر",
+    "name:de": "Nasser",
+    "name:en": "Nasser",
+    "name:fr": "Nasser",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 317755256,
+  "lat": 30.0524072,
+  "lon": 31.2468780,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 14,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "gtfs:stop_id": "44",
+    "int_name": "Ataba",
+    "name": "العتبة",
+    "name:ar": "العتبة",
+    "name:de": "Attaba",
+    "name:en": "Attaba",
+    "name:fr": "Attaba",
+    "name:zh": "阿塔巴",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979414356,
+  "lat": 30.0524145,
+  "lon": 31.2468369,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 8,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "gtfs:stop_id": "105",
+    "int_name": "Ataba",
+    "name": "العتبة",
+    "name:ar": "العتبة",
+    "name:de": "Attaba",
+    "name:en": "Attaba",
+    "name:fr": "Attaba",
+    "name:zh": "阿塔巴",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5353485468,
+  "lat": 30.0573777,
+  "lon": 31.2426930,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "81",
+    "name": "عرابي",
+    "name:ar": "عرابي",
+    "name:de": "Orabi",
+    "name:en": "Orabi",
+    "name:fr": "Orabi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5353485469,
+  "lat": 30.0573532,
+  "lon": 31.2427138,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "21",
+    "name": "عرابي",
+    "name:ar": "عرابي",
+    "name:de": "Orabi",
+    "name:en": "Orabi",
+    "name:fr": "Orabi",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077372453,
+  "lat": 30.1018840,
+  "lon": 31.1841424,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "200",
+    "name": "محطه مترو محور الضبعة  (محور روض الفرج)",
+    "name:ar": "محطه مترو محور الضبعة  (محور روض الفرج)",
+    "name:en": "El-Dabaa Axis Metro Station (Rod El-Farag Axis)",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11495591794,
+  "lat": 30.1018799,
+  "lon": 31.1841890,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "170",
+    "name": "محطه مترو محور الضبعة  (محور روض الفرج)",
+    "name:ar": "محطه مترو محور الضبعة  (محور روض الفرج)",
+    "name:en": "El-Dabaa Axis Metro Station (Rod El-Farag Axis)",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11923457958,
+  "lat": 30.0584594,
+  "lon": 31.2009903,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "287",
+    "name": "وادي النيل",
+    "name:en": "Wadi El Nile",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11923457959,
+  "lat": 30.0584629,
+  "lon": 31.2010477,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "194",
+    "name": "وادي النيل",
+    "name:en": "Wadi El Nile",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes",
+    "wikidata": "Q106678997",
+    "wikipedia": "en:Gamat El Dowal station"
+  }
+},
+{
+  "type": "node",
+  "id": 9077161277,
+  "lat": 30.0697981,
+  "lon": 31.2053458,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "172",
+    "name": "Sudan",
+    "name:en": "Sudan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11495611080,
+  "lat": 30.0697610,
+  "lon": 31.2053286,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "195",
+    "name": "Sudan",
+    "name:en": "Sudan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11926766472,
+  "lat": 30.0650897,
+  "lon": 31.2021241,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "197",
+    "name": "التوفيقية",
+    "name:en": "Al-Tawfikia",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11926766473,
+  "lat": 30.0650526,
+  "lon": 31.2021911,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "175",
+    "name": "التوفيقية",
+    "name:en": "Al-Tawfikia",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077189602,
+  "lat": 30.0668281,
+  "lon": 31.2129970,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "construction": "station",
+    "gtfs:stop_id": "223",
+    "layer": "-1",
+    "name": "الکيت کات",
+    "name:ar": "الکيت کات",
+    "name:de": "Kit-kat",
+    "name:en": "Kit-kat",
+    "name:fr": "Kit-kat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 10099279486,
+  "lat": 30.0667647,
+  "lon": 31.2129696,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "construction": "station",
+    "gtfs:stop_id": "151",
+    "layer": "-1",
+    "name": "الکيت کات",
+    "name:ar": "الکيت کات",
+    "name:de": "Kit-kat",
+    "name:en": "Kit-kat",
+    "name:fr": "Kit-kat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077189581,
+  "lat": 30.0759374,
+  "lon": 31.2075704,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "276",
+    "name": "Imbaba",
+    "name:en": "Imbaba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11495591856,
+  "lat": 30.0759629,
+  "lon": 31.2075541,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "196",
+    "name": "Imbaba",
+    "name:en": "Imbaba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077189570,
+  "lat": 30.0821107,
+  "lon": 31.2105089,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "169",
+    "name": "Al-Bohy",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11495591843,
+  "lat": 30.0821212,
+  "lon": 31.2104581,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "199",
+    "name": "Al-Bohy",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077189601,
+  "lat": 30.0624379,
+  "lon": 31.2225310,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "275",
+    "name": "صفاء حجازي",
+    "name:ar": "صفاء حجازي",
+    "name:de": "Safaa Hegazy",
+    "name:en": "Safaa Hegazy",
+    "name:fr": "Safaa Hegazy",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 10099279483,
+  "lat": 30.0623729,
+  "lon": 31.2225000,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "159",
+    "name": "صفاء حجازي",
+    "name:ar": "صفاء حجازي",
+    "name:de": "Safaa Hegazy",
+    "name:en": "Safaa Hegazy",
+    "name:fr": "Safaa Hegazy",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194295698,
+  "lat": 30.0617735,
+  "lon": 31.2465521,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 7,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "alt_name": "رمسيس",
+    "alt_name:ar": "رمسيس",
+    "alt_name:en": "Ramses",
+    "gtfs:stop_id": "82",
+    "name": "الشهداء",
+    "name:ar": "الشهداء",
+    "name:de": "Shuhada",
+    "name:en": "Shuhada",
+    "name:fr": "Shuhada",
+    "name:zh": "烈士",
+    "old_name": "مبارك",
+    "old_name:ar": "مبارك",
+    "old_name:en": "Mubarak",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194295699,
+  "lat": 30.0617611,
+  "lon": 31.2465592,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 6,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "alt_name": "رمسيس",
+    "alt_name:ar": "رمسيس",
+    "alt_name:en": "Ramses",
+    "gtfs:stop_id": "22",
+    "name": "الشهداء",
+    "name:ar": "الشهداء",
+    "name:de": "Shuhada",
+    "name:en": "Shuhada",
+    "name:fr": "Shuhada",
+    "name:zh": "烈士",
+    "old_name": "مبارك",
+    "old_name:ar": "مبارك",
+    "old_name:en": "Mubarak",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194295700,
+  "lat": 30.0618331,
+  "lon": 31.2460043,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "رمسيس",
+    "alt_name:ar": "رمسيس",
+    "alt_name:en": "Ramses",
+    "gtfs:stop_id": "123",
+    "name": "الشهداء",
+    "name:ar": "الشهداء",
+    "name:de": "Shuhada",
+    "name:en": "Shuhada",
+    "name:zh": "烈士",
+    "old_name": "مبارك",
+    "old_name:ar": "مبارك",
+    "old_name:en": "Mubarak",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194295701,
+  "lat": 30.0618579,
+  "lon": 31.2460417,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "رمسيس",
+    "alt_name:ar": "رمسيس",
+    "alt_name:en": "Ramses",
+    "gtfs:stop_id": "124",
+    "name": "الشهداء",
+    "name:ar": "الشهداء",
+    "name:de": "Shuhada",
+    "name:en": "Shuhada",
+    "name:fr": "Shuhada",
+    "name:zh": "烈士",
+    "old_name": "مبارك",
+    "old_name:ar": "مبارك",
+    "old_name:en": "Mubarak",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978060988,
+  "lat": 30.0710389,
+  "lon": 31.2449826,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "106",
+    "int_name": "Massara",
+    "name": "مسره",
+    "name:ar": "مسره",
+    "name:de": "Massara",
+    "name:en": "Massara",
+    "name:fr": "Massara",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939028,
+  "lat": 30.0710432,
+  "lon": 31.2450506,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "45",
+    "int_name": "Massara",
+    "name": "مسره",
+    "name:ar": "مسره",
+    "name:de": "Massara",
+    "name:en": "Massara",
+    "name:fr": "Massara",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978060979,
+  "lat": 30.0805735,
+  "lon": 31.2452966,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "107",
+    "int_name": "Rod El-Farag",
+    "name": "روض الفرج",
+    "name:ar": "روض الفرج",
+    "name:de": "Rawd El-Farag",
+    "name:en": "Rawd El-Farag",
+    "name:fr": "Rawd El-Farag",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939029,
+  "lat": 30.0805670,
+  "lon": 31.2454093,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "46",
+    "int_name": "Rod El-Farag",
+    "name": "روض الفرج",
+    "name:ar": "روض الفرج",
+    "name:de": "Rawd El-Farag",
+    "name:en": "Rawd El-Farag",
+    "name:fr": "Rawd El-Farag",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077274203,
+  "lat": 30.0964429,
+  "lon": 31.1995925,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "171",
+    "name": "Ring Road",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11495591821,
+  "lat": 30.0963844,
+  "lon": 31.1995707,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "201",
+    "name": "Ring Road",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9077391794,
+  "lat": 30.0932302,
+  "lon": 31.2088939,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "168",
+    "name": "Al-Kawmeiah",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11495591840,
+  "lat": 30.0931687,
+  "lon": 31.2088700,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "198",
+    "name": "Al-Kawmeiah",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978060976,
+  "lat": 30.0883471,
+  "lon": 31.2453432,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "سانت تيريزا",
+    "gtfs:stop_id": "108",
+    "int_name": "Sainte Teresa",
+    "name": "سانت تيريزا",
+    "name:ar": "سانت تيريزا",
+    "name:de": "Sainte Teresa",
+    "name:en": "Sainte Teresa",
+    "name:fr": "Sainte Teresa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939031,
+  "lat": 30.0883488,
+  "lon": 31.2454359,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "سانت تيريزا",
+    "gtfs:stop_id": "47",
+    "int_name": "Sainte Teresa",
+    "name": "سانت تيريزا",
+    "name:ar": "سانت تيريزا",
+    "name:de": "Sainte Teresa",
+    "name:en": "Sainte Teresa",
+    "name:fr": "Sainte Teresa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316634827,
+  "lat": 30.0977857,
+  "lon": 31.2454766,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 35,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "48",
+    "int_name": "Khalafawy",
+    "name": "الخلفاوي",
+    "name:ar": "الخلفاوي",
+    "name:de": "Al-Khalafawy",
+    "name:en": "Al-Khalafawy",
+    "name:fr": "Al-Khalafawy",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978060972,
+  "lat": 30.0977865,
+  "lon": 31.2454080,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "109",
+    "int_name": "Khalafawy",
+    "name": "الخلفاوي",
+    "name:ar": "الخلفاوي",
+    "name:de": "Al-Khalafawy",
+    "name:en": "Al-Khalafawy",
+    "name:fr": "Al-Khalafawy",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6288254841,
+  "lat": 30.1040835,
+  "lon": 31.2461636,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "المظلات",
+    "gtfs:stop_id": "49",
+    "int_name": "Mezallat",
+    "name": "المظلات",
+    "name:ar": "المظلات",
+    "name:de": "Al-Mezallat",
+    "name:en": "Al-Mezallat",
+    "name:fr": "Al-Mezallat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939045,
+  "lat": 30.1041099,
+  "lon": 31.2461240,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "المظلات",
+    "gtfs:stop_id": "110",
+    "int_name": "Mezallat",
+    "name": "المظلات",
+    "name:ar": "المظلات",
+    "name:de": "Al-Mezallat",
+    "name:en": "Al-Mezallat",
+    "name:fr": "Al-Mezallat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1641694433,
+  "lat": 30.1241026,
+  "lon": 31.2435209,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 9,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "51",
+    "int_name": "Shobra El Kheima",
+    "name": "شبرا الخيمة",
+    "name:ar": "شبرا الخيمة",
+    "name:de": "Shobra Al-Kheima",
+    "name:en": "Shobra Al-Kheima",
+    "name:fr": "Shobra Al-Kheima",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076939068,
+  "lat": 30.1240791,
+  "lon": 31.2434677,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "112",
+    "int_name": "Shobra El Kheima",
+    "name": "شبرا الخيمة",
+    "name:ar": "شبرا الخيمة",
+    "name:de": "Shobra Al-Kheima",
+    "name:en": "Shobra Al-Kheima",
+    "name:fr": "Shobra Al-Kheima",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194348150,
+  "lat": 30.0527638,
+  "lon": 31.2492981,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "126",
+    "int_name": "Ataba",
+    "name": "محطة مترو العتبة",
+    "name:ar": "محطة مترو العتبة",
+    "name:de": "Attaba subway station",
+    "name:en": "Attaba subway station",
+    "name:fr": "Attaba subway station",
+    "name:zh": "阿塔巴",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5194348151,
+  "lat": 30.0527463,
+  "lon": 31.2492816,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "125",
+    "int_name": "Ataba",
+    "name": "محطة مترو العتبة",
+    "name:ar": "محطة مترو العتبة",
+    "name:de": "Attaba subway station",
+    "name:en": "Attaba subway station",
+    "name:fr": "Attaba subway station -",
+    "name:zh": "阿塔巴",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1235803722,
+  "lat": 30.0537014,
+  "lon": 31.2558868,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 10,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "59",
+    "int_name": "Bab El Shaaria",
+    "name": "باب الشعرية",
+    "name:ar": "باب الشعرية",
+    "name:de": "Bab el Shaaria",
+    "name:en": "Bab el Shaaria",
+    "name:fr": "Bab el Shaaria",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979483234,
+  "lat": 30.0537209,
+  "lon": 31.2558654,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "120",
+    "int_name": "Bab El Shaaria",
+    "name": "باب الشعرية",
+    "name:ar": "باب الشعرية",
+    "name:de": "Bab el Shaaria",
+    "name:en": "Bab el Shaaria",
+    "name:fr": "Bab el Shaaria",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1235803723,
+  "lat": 30.0622519,
+  "lon": 31.2679812,
+  "timestamp": "2026-07-29T08:25:13Z",
+  "version": 11,
+  "changeset": 186569275,
+  "user": "Franamberes",
+  "uid": 14545705,
+  "tags": {
+    "gtfs:stop_id": "58",
+    "int_name": "El Geish",
+    "name": "الجيش",
+    "name:ar": "الجيش",
+    "name:de": "El Geish",
+    "name:en": "El Geish",
+    "name:fr": "El Geish",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979483237,
+  "lat": 30.0622816,
+  "lon": 31.2679582,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "119",
+    "int_name": "El Geish",
+    "name": "الجيش",
+    "name:ar": "الجيش",
+    "name:de": "El Geish",
+    "name:en": "El Geish",
+    "name:fr": "El Geish",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316642043,
+  "lat": 30.0689464,
+  "lon": 31.2646840,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 29,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "23",
+    "int_name": "Ghamra",
+    "name": "الغمرة",
+    "name:ar": "الغمرة",
+    "name:de": "Ghamra",
+    "name:en": "Ghamra",
+    "name:fr": "Ghamra",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031079,
+  "lat": 30.0689798,
+  "lon": 31.2646654,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "83",
+    "int_name": "Ghamra",
+    "name": "الغمرة",
+    "name:ar": "الغمرة",
+    "name:de": "Ghamra",
+    "name:en": "Ghamra",
+    "name:fr": "Ghamra",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1235803732,
+  "lat": 30.0653563,
+  "lon": 31.2765054,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 13,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "57",
+    "int_name": "Abdou Pasha",
+    "name": "عبده باشا",
+    "name:ar": "عبده باشا",
+    "name:de": "Abdo Basha",
+    "name:en": "Abdou Pasha",
+    "name:fr": "Abdou Pasha",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979483239,
+  "lat": 30.0653851,
+  "lon": 31.2764995,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "118",
+    "int_name": "Abdou Pasha",
+    "name": "عبده باشا",
+    "name:ar": "عبده باشا",
+    "name:de": "Abdo Basha",
+    "name:en": "Abdou Pasha",
+    "name:fr": "Abdou Pasha",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1642383282,
+  "lat": 30.0772438,
+  "lon": 31.2778219,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "24",
+    "int_name": "El-Demerdash",
+    "name": "الدمرداش",
+    "name:ar": "الدمرداش",
+    "name:de": "Al-Demerdash",
+    "name:en": "Al-Demerdash",
+    "name:fr": "Al-Demerdash",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331190,
+  "lat": 30.0772709,
+  "lon": 31.2778066,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "84",
+    "int_name": "El-Demerdash",
+    "name": "الدمرداش",
+    "name:ar": "الدمرداش",
+    "name:de": "Al-Demerdash",
+    "name:en": "Al-Demerdash",
+    "name:fr": "Al-Demerdash",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1235803733,
+  "lat": 30.0727635,
+  "lon": 31.2841070,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 11,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "56",
+    "int_name": "Abbassiya",
+    "name": "العباسية",
+    "name:ar": "العباسية",
+    "name:de": "Abbassia",
+    "name:en": "Abbassia",
+    "name:fr": "Abbassia",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979483242,
+  "lat": 30.0727971,
+  "lon": 31.2840784,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "117",
+    "int_name": "Abbassiya",
+    "name": "العباسية",
+    "name:ar": "العباسية",
+    "name:de": "Abbassia",
+    "name:en": "Abbassia",
+    "name:fr": "Abbassia",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316642888,
+  "lat": 30.0821976,
+  "lon": 31.2878510,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 30,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "25",
+    "int_name": "Manshiet El-Sadr",
+    "name": "منشية الصدر",
+    "name:ar": "منشية الصدر",
+    "name:de": "Manshiet Al-Sadr",
+    "name:en": "Manshiet Al-Sadr",
+    "name:fr": "Manshiet Al-Sadr",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331196,
+  "lat": 30.0822214,
+  "lon": 31.2878246,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "85",
+    "int_name": "Manshiet El-Sadr",
+    "name": "منشية الصدر",
+    "name:ar": "منشية الصدر",
+    "name:de": "Manshiet Al-Sadr",
+    "name:en": "Manshiet Al-Sadr",
+    "name:fr": "Manshiet Al-Sadr",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643067,
+  "lat": 30.0869499,
+  "lon": 31.2938354,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 27,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "26",
+    "int_name": "Kobri El-Qobba",
+    "name": "كوبري القبة",
+    "name:ar": "كوبري القبة",
+    "name:de": "Kobri Al-Qobba",
+    "name:en": "Kobri Al-Qobba",
+    "name:fr": "Kobri Al-Qobba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643069,
+  "lat": 30.0903238,
+  "lon": 31.2981183,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 27,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "87",
+    "int_name": "Hammamat El-Qobba",
+    "name": "حمامات القبة",
+    "name:ar": "حمامات القبة",
+    "name:de": "Hammamat Al-Qobba",
+    "name:en": "Hammamat Al-Qobba",
+    "name:fr": "Hammamat Al-Qobba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331198,
+  "lat": 30.0869874,
+  "lon": 31.2938021,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "86",
+    "int_name": "Kobri El-Qobba",
+    "name": "كوبري القبة",
+    "name:ar": "كوبري القبة",
+    "name:de": "Kobri Al-Qobba",
+    "name:en": "Kobri Al-Qobba",
+    "name:fr": "Kobri Al-Qobba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331199,
+  "lat": 30.0903503,
+  "lon": 31.2980990,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "122",
+    "int_name": "Hammamat El-Qobba",
+    "name": "حمامات القبة",
+    "name:ar": "حمامات القبة",
+    "name:de": "Hammamat Al-Qobba",
+    "name:en": "Hammamat Al-Qobba",
+    "name:fr": "Hammamat Al-Qobba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1654760303,
+  "lat": 30.0733161,
+  "lon": 31.3011546,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 10,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "52",
+    "int_name": "Cairo Fair",
+    "name": "أرض المعارض",
+    "name:ar": "أرض المعارض",
+    "name:de": "Kairo Kirmesplatz",
+    "name:en": "Cairo Fairground",
+    "name:fr": "Caire champ de foire",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979483255,
+  "lat": 30.0733413,
+  "lon": 31.3011435,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "113",
+    "int_name": "Cairo Fair",
+    "name": "أرض المعارض",
+    "name:ar": "أرض المعارض",
+    "name:de": "Kairo Kirmesplatz",
+    "name:en": "Cairo Fairground",
+    "name:fr": "Caire champ de foire",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1654760266,
+  "lat": 30.0729378,
+  "lon": 31.3174037,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "54",
+    "name": "الإستاد",
+    "name:ar": "الإستاد",
+    "name:de": "Stadion",
+    "name:en": "Stadium",
+    "name:fr": "Stade",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979511765,
+  "lat": 30.0729602,
+  "lon": 31.3173864,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "115",
+    "name": "الإستاد",
+    "name:ar": "الإستاد",
+    "name:de": "Stadion",
+    "name:en": "Stadium",
+    "name:fr": "Stade",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1654764997,
+  "lat": 30.0836641,
+  "lon": 31.3288288,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 9,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "53",
+    "name": "كلية البنات",
+    "name:en": "Koleyet El Banat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979511774,
+  "lat": 30.0836760,
+  "lon": 31.3288009,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "114",
+    "name": "كلية البنات",
+    "name:en": "Koleyet El Banat",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643073,
+  "lat": 30.0980536,
+  "lon": 31.3047806,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 23,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "direction": "Marg",
+    "gtfs:stop_id": "27",
+    "int_name": "Saray El-Qobba",
+    "name": "سراي القبة",
+    "name:ar": "سراي القبة",
+    "name:de": "Saray Al-Qobba",
+    "name:en": "Saray Al-Qobba",
+    "name:fr": "Saray Al-Qobba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331202,
+  "lat": 30.0980768,
+  "lon": 31.3047335,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "direction": "Helwan",
+    "gtfs:stop_id": "88",
+    "int_name": "Saray El-Qobba",
+    "name": "سراي القبة",
+    "name:ar": "سراي القبة",
+    "name:de": "Saray Al-Qobba",
+    "name:en": "Saray Al-Qobba",
+    "name:fr": "Saray Al-Qobba",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643077,
+  "lat": 30.1051939,
+  "lon": 31.3099540,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 21,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "28",
+    "int_name": "Hadayeq El-Zaitoun",
+    "name": "حدائق الزيتون",
+    "name:ar": "حدائق الزيتون",
+    "name:de": "Hadayeq Al-Zaitoun",
+    "name:en": "Hadayeq Al-Zaitoun",
+    "name:fr": "Hadayeq Al-Zaitoun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331206,
+  "lat": 30.1052146,
+  "lon": 31.3099181,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "89",
+    "int_name": "Hadayeq El-Zaitoun",
+    "name": "حدائق الزيتون",
+    "name:ar": "حدائق الزيتون",
+    "name:de": "Hadayeq Al-Zaitoun",
+    "name:en": "Hadayeq Al-Zaitoun",
+    "name:fr": "Hadayeq Al-Zaitoun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2400937187,
+  "lat": 30.0913265,
+  "lon": 31.3265175,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 9,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "55",
+    "int_name": "Al Ahram",
+    "name": "الاهرام",
+    "name:ar": "الاهرام",
+    "name:de": "Al Ahram",
+    "name:en": "Al Ahram",
+    "name:fr": "Al Ahram",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979511781,
+  "lat": 30.0913003,
+  "lon": 31.3264769,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "116",
+    "int_name": "Al Ahram",
+    "name": "الاهرام",
+    "name:ar": "الاهرام",
+    "name:de": "Al Ahram",
+    "name:en": "Al Ahram",
+    "name:fr": "Al Ahram",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7308408910,
+  "lat": 30.1011332,
+  "lon": 31.3327178,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "130",
+    "name": "هارون",
+    "name:ar": "هارون",
+    "name:en": "Haroun",
+    "name:fr": "Haroun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7308408911,
+  "lat": 30.1010814,
+  "lon": 31.3328032,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "129",
+    "name": "هارون",
+    "name:ar": "هارون",
+    "name:en": "Haroun",
+    "name:fr": "Haroun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7302135248,
+  "lat": 30.1079630,
+  "lon": 31.3381049,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "147",
+    "name": "محطة مترو هليوبوليس",
+    "name:ar": "محطة مترو هليوبوليس",
+    "name:en": "Heliopolis subway station",
+    "name:fr": "Heliopolis subway station",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7302135249,
+  "lat": 30.1079572,
+  "lon": 31.3382227,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "148",
+    "name": "محطة مترو هليوبوليس",
+    "name:ar": "ميدان هليوبوليس",
+    "name:en": "Heliopolis subway station",
+    "name:fr": "Heliopolis subway station",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1641694429,
+  "lat": 30.1137699,
+  "lon": 31.2487214,
+  "timestamp": "2023-02-01T23:39:16Z",
+  "version": 9,
+  "changeset": 131982008,
+  "user": "Msalmanq",
+  "uid": 10368595,
+  "tags": {
+    "int_name": "Koliet El-Zeraa",
+    "name": "كلية الزراعة",
+    "name:ar": "كلية الزراعة",
+    "name:de": "Koliet El-Zeraa",
+    "name:en": "Koliet El-Zeraa",
+    "name:fr": "Koliet El-Zeraa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4978060958,
+  "lat": 30.1137797,
+  "lon": 31.2486630,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "111",
+    "int_name": "Koliet El-Zeraa",
+    "name": "كلية الزراعة",
+    "name:ar": "كلية الزراعة",
+    "name:de": "Koliet El-Zeraa",
+    "name:en": "Koliet El-Zeraa",
+    "name:fr": "Koliet El-Zeraa",
+    "public_transport": "stop_position",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031071,
+  "lat": 30.1143443,
+  "lon": 31.3138798,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "direction": "Marg",
+    "gtfs:stop_id": "90",
+    "int_name": "Helmeyet El-Zaitoun",
+    "name": "حلمية الزيتون",
+    "name:ar": "حلمية الزيتون",
+    "name:de": "Helmeyet Al-Zaitoun",
+    "name:en": "Helmeyet Al-Zaitoun",
+    "name:fr": "Helmeyet Al-Zaitoun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5349031072,
+  "lat": 30.1143456,
+  "lon": 31.3139117,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 8,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "direction": "Helwan",
+    "gtfs:stop_id": "29",
+    "int_name": "Helmeyet El-Zaitoun",
+    "name": "حلمية الزيتون",
+    "name:ar": "حلمية الزيتون",
+    "name:de": "Helmeyet Al-Zaitoun",
+    "name:en": "Helmeyet Al-Zaitoun",
+    "name:fr": "Helmeyet Al-Zaitoun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643099,
+  "lat": 30.1213759,
+  "lon": 31.3139785,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 19,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "30",
+    "int_name": "El-Matareyya",
+    "name": "المطرية",
+    "name:ar": "المطرية",
+    "name:de": "El-Matareyya",
+    "name:en": "El-Matareyya",
+    "name:fr": "El-Matareyya",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331216,
+  "lat": 30.1213931,
+  "lon": 31.3139257,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "91",
+    "int_name": "El-Matareyya",
+    "name": "المطرية",
+    "name:ar": "المطرية",
+    "name:de": "El-Matareyya",
+    "name:en": "El-Matareyya",
+    "name:fr": "El-Matareyya",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1642286403,
+  "lat": 30.1310105,
+  "lon": 31.3191090,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 10,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "عين شمس",
+    "gtfs:stop_id": "31",
+    "int_name": "Ain Shams",
+    "name": "عين شمس",
+    "name:ar": "عين شمس",
+    "name:ar1": "عين شمس",
+    "name:de": "Ain Shams",
+    "name:en": "Ain Shams",
+    "name:fr": "Ain Shams",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331217,
+  "lat": 30.1310506,
+  "lon": 31.3190319,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "عين شمس",
+    "gtfs:stop_id": "92",
+    "int_name": "Ain Shams",
+    "name": "عين شمس",
+    "name:ar": "عين شمس",
+    "name:ar1": "عين شمس",
+    "name:de": "Ain Shams",
+    "name:en": "Ain Shams",
+    "name:fr": "Ain Shams",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7153641095,
+  "lat": 30.1180545,
+  "lon": 31.3398748,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "133",
+    "name": "محطة مترو ألف مسكن",
+    "name:ar": "محطة مترو ألف مسكن",
+    "name:en": "Alf Maskan subway station",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7302135245,
+  "lat": 30.1223389,
+  "lon": 31.3439452,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "132",
+    "name": "نادي الشمس‎",
+    "name:en": "El Shams Club",
+    "name:fr": "El Shams Club",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7302135246,
+  "lat": 30.1222697,
+  "lon": 31.3439972,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "131",
+    "name": "نادي الشمس‎",
+    "name:en": "El Shams Club",
+    "name:fr": "El Shams Club",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7302135247,
+  "lat": 30.1180753,
+  "lon": 31.3397765,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "134",
+    "name": "محطة مترو ألف مسكن",
+    "name:ar": "محطة مترو ألف مسكن",
+    "name:en": "Alf Maskan subway station",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643111,
+  "lat": 30.1392468,
+  "lon": 31.3245258,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 18,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "محطة عزبة النخل",
+    "gtfs:stop_id": "32",
+    "int_name": "Ezbet El-Nakhl",
+    "name": "محطة عزبة النخل",
+    "name:ar": "محطة عزبة النخل",
+    "name:de": "Ezbet en Nakhl",
+    "name:en": "Ezbet en Nakhl",
+    "name:fr": "Ezbet en Nakhl",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331220,
+  "lat": 30.1392981,
+  "lon": 31.3244798,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "محطة عزبة النخل",
+    "gtfs:stop_id": "93",
+    "int_name": "Ezbet El-Nakhl",
+    "name": "محطة عزبة النخل",
+    "name:ar": "محطة عزبة النخل",
+    "name:de": "Ezbet en Nakhl",
+    "name:en": "Ezbet en Nakhl",
+    "name:fr": "Ezbet en Nakhl",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643120,
+  "lat": 30.1520732,
+  "lon": 31.3357913,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 18,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "المرج",
+    "gtfs:stop_id": "33",
+    "int_name": "El-Marg",
+    "name": "المرج",
+    "name:ar": "المرج",
+    "name:de": "Al Marj",
+    "name:en": "Al Marj",
+    "name:fr": "Al Marj",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331528,
+  "lat": 30.1520884,
+  "lon": 31.3357319,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "alt_name": "المرج",
+    "gtfs:stop_id": "94",
+    "int_name": "El-Marg",
+    "name": "المرج",
+    "name:ar": "المرج",
+    "name:de": "Al Marj",
+    "name:en": "Al Marj",
+    "name:fr": "Al Marj",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 316643127,
+  "lat": 30.1635067,
+  "lon": 31.3383759,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 13,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "34",
+    "int_name": "New El-Marg",
+    "name": "المرج الجديدة",
+    "name:ar": "المرج الجديدة",
+    "name:de": "New El-Marg",
+    "name:en": "New El-Marg",
+    "name:fr": "New El-Marg",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4979331537,
+  "lat": 30.1635686,
+  "lon": 31.3382243,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 7,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "95",
+    "int_name": "New El-Marg",
+    "name": "المرج الجديدة",
+    "name:ar": "المرج الجديدة",
+    "name:de": "New El-Marg",
+    "name:en": "New El-Marg",
+    "name:fr": "New El-Marg",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7559205785,
+  "lat": 30.1281362,
+  "lon": 31.3605164,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "144",
+    "name": "مترو النزهة",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "مترو النزهة",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7926259279,
+  "lat": 30.1280974,
+  "lon": 31.3605236,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "143",
+    "name": "النزهة‎",
+    "name:en": "El Nozha",
+    "name:fr": "El Nozha",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7559190677,
+  "lat": 30.1309896,
+  "lon": 31.3730790,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "141",
+    "name": "هشام بركات‎",
+    "name:en": "Hesham Barakat",
+    "name:fr": "Hicham Barakat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7926259258,
+  "lat": 30.1309411,
+  "lon": 31.3731045,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "142",
+    "name": "هشام بركات‎",
+    "name:en": "Hesham Barakat",
+    "name:fr": "Hicham Barakat",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7559190674,
+  "lat": 30.1347813,
+  "lon": 31.3840519,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "139",
+    "name": "مترو قباء‎",
+    "name:en": "Qubaa",
+    "name:fr": "Qubaa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076234476,
+  "lat": 30.1347414,
+  "lon": 31.3840733,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "140",
+    "name": "مترو قباء‎",
+    "name:en": "Qubaa",
+    "name:fr": "Qubaa",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7559190666,
+  "lat": 30.1404326,
+  "lon": 31.3944754,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 4,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "137",
+    "name": "عمر بن الخطاب‎",
+    "name:en": "Omar Ebn Elkhatab",
+    "name:fr": "Omar ibn al-Khattâb",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076234491,
+  "lat": 30.1403815,
+  "lon": 31.3944867,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "138",
+    "name": "مترو عمر بن الخطاب ‎",
+    "name:en": "Omar Ebn Elkhatab",
+    "name:fr": "Omar ibn al-Khattâb",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7559190660,
+  "lat": 30.1439091,
+  "lon": 31.4048415,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 5,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "135",
+    "name": "مترو الهايكستب ‎",
+    "name:ar": "محطة مترو الهايكستب ‎",
+    "name:en": "El Haykestep",
+    "name:fr": "El Haykestep",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076234501,
+  "lat": 30.1438538,
+  "lon": 31.4048588,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 3,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "136",
+    "name": "الهايكستب‎",
+    "name:en": "El Haykestep",
+    "name:fr": "El Haykestep",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 7559190648,
+  "lat": 30.1469763,
+  "lon": 31.4215953,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 6,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "145",
+    "name": "عدلى منصور",
+    "name:en": "Adly Mansour",
+    "name:fr": "Adli Mansour",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9076255925,
+  "lat": 30.1469305,
+  "lon": 31.4215998,
+  "timestamp": "2026-06-17T19:10:18Z",
+  "version": 2,
+  "changeset": 184241522,
+  "user": "yassin_metro",
+  "uid": 23227782,
+  "tags": {
+    "gtfs:stop_id": "146",
+    "name": "عدلى منصور",
+    "name:en": "Adly Mansour",
+    "name:fr": "Adli Mansour",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+}
+
+  ]
+}
