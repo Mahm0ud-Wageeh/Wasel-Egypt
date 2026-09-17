@@ -30,7 +30,8 @@ class JourneyController extends AuthController
      */
     public function search(JourneySearchRequest $request)
     {
-        $result = $this->planner->search(Auth::user(), $request->validated());
+        $user = $request->user('sanctum') ?? Auth::user();
+        $result = $this->planner->search($user, $request->validated());
 
         return response()->json([
             'success' => true,
@@ -39,6 +40,7 @@ class JourneyController extends AuthController
             ]),
         ]);
     }
+
 
     /**
      * Save a journey from a deterministic re-plan of the same search

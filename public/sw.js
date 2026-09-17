@@ -1,8 +1,9 @@
 /* Wasel Egypt service worker — offline shell for the SPA.
    Strategy: network-first for navigation/API, cache-first for static
    assets (JS/CSS/icons). Simple, no exotic dependencies; tile requests
-   are deliberately NOT cached (provider terms + freshness). */
-const CACHE = 'wasel-shell-v1';
+   are deliberately NOT cached (provider terms + freshness).
+   v2: router-era shell — old v1 caches are purged on activate. */
+const CACHE = 'wasel-shell-v2';
 const SHELL = ['/', '/index.html'];
 
 self.addEventListener('install', (event) => {

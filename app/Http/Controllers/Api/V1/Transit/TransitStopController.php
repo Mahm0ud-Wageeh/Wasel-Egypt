@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Transit;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActiveJourney;
+use App\Models\JourneyProgress;
 use App\Models\TransitStop;
 use App\Services\Journey\GeoCalculator;
 use App\Services\Transit\StopDeparturesService;
@@ -240,6 +242,69 @@ class TransitStopController extends Controller
                 ],
                 'generated_at' => now()->toISOString(),
                 'departures' => $departures,
+            ],
+        ]);
+    }
+
+    /**
+     * Live crowdsourced presence near a stop (public, privacy-safe).
+     *
+     * GET /stops/{id}/live?window_minutes=10&radius_meters=400
+     * Aggregates anonymized GPS pings from in-flight journeys only:
+     * distinct riders + freshest ping age. No identities, no trajectories.
+     * Empty (not zero-invented) when nobody is sharing nearby.
+     */
+    public function liveCrowd(Request $request, $id)
+    {
+        $stop = TransitStop::find($id);
+
+        if (!$stop) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transit stop not found',
+            ], 404);
+        }
+
+        $windowMin = min(30, max(1, (int) $request->input('window_minutes', 10)));
+        $radiusM = min(1000, max(50, (int) $request->input('radius_meters', 400)));
+        $since = now()->subMinutes($windowMin);
+
+        $stopLat = (float) $stop->latitude;
+        $stopLng = (float) $stop->longitude;
+
+        $pings = JourneyProgress::query()
+            ->where('recorded_at', '>=', $since)
+            ->whereHas('activeJourney', fn ($q) => $q->whereIn('status', ['active', 'deviated', 'rerouted']))
+            ->select(['id', 'active_journey_id', 'latitude', 'longitude', 'recorded_at'])
+            ->orderByDesc('recorded_at')
+            ->limit(500)
+            ->get();
+
+        $geo = GeoCalculator::class;
+        $nearby = [];
+        foreach ($pings as $ping) {
+            if ($ping->latitude === null || $ping->longitude === null) {
+                continue;
+            }
+            $dist = $geo::distanceMeters($stopLat, $stopLng, (float) $ping->latitude, (float) $ping->longitude);
+            if ($dist <= $radiusM) {
+                $nearby[] = $ping;
+            }
+        }
+
+        $journeyIds = collect($nearby)->pluck('active_journey_id')->unique()->values();
+        $freshest = collect($nearby)->map(fn ($p) => $p->recorded_at)->filter()->sortDesc()->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'stop_id' => $stop->id,
+                'riders_nearby' => $journeyIds->count(),
+                'pings' => count($nearby),
+                'freshest_ping_seconds_ago' => $freshest ? max(0, now()->diffInSeconds($freshest)) : null,
+                'window_minutes' => $windowMin,
+                'radius_meters' => $radiusM,
+                'generated_at' => now()->toISOString(),
             ],
         ]);
     }

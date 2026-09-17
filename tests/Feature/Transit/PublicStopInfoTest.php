@@ -57,6 +57,91 @@ class PublicStopInfoTest extends TestCase
     }
 
     /** @test */
+    public function live_crowd_returns_honest_empty_state_without_pings()
+    {
+        [$stop] = $this->makeServingNetwork('Tahrir');
+
+        $response = $this->getJson("/api/v1/stops/{$stop->id}/live");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('data.stop_id', $stop->id);
+        $response->assertJsonPath('data.riders_nearby', 0);
+        $response->assertJsonPath('data.pings', 0);
+        $this->assertNull($response->json('data.freshest_ping_seconds_ago'));
+    }
+
+    /** @test */
+    public function live_crowd_counts_nearby_in_flight_pings_anonymously()
+    {
+        [$stop] = $this->makeServingNetwork('Tahrir');
+
+        $user = \App\Models\User::factory()->create();
+        $journey = \App\Models\Journey::factory()->create(['user_id' => $user->id]);
+        $active = \App\Models\ActiveJourney::create([
+            'journey_id' => $journey->id,
+            'user_id' => $user->id,
+            'status' => 'active',
+        ]);
+        \App\Models\JourneyProgress::create([
+            'active_journey_id' => $active->id,
+            'recorded_at' => now()->subMinutes(2),
+            'latitude' => 30.0445,
+            'longitude' => 31.2358,
+        ]);
+
+        $response = $this->getJson("/api/v1/stops/{$stop->id}/live");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.riders_nearby', 1);
+        $response->assertJsonPath('data.pings', 1);
+        // Privacy: no identities or coordinates leak into the payload.
+        $this->assertArrayNotHasKey('journeys', $response->json('data'));
+        $this->assertArrayNotHasKey('pings_detail', $response->json('data'));
+    }
+
+    /** @test */
+    public function live_crowd_ignores_stale_and_finished_journeys()
+    {
+        [$stop] = $this->makeServingNetwork('Tahrir');
+
+        $user = \App\Models\User::factory()->create();
+        $journey = \App\Models\Journey::factory()->create(['user_id' => $user->id]);
+        $stale = \App\Models\ActiveJourney::create([
+            'journey_id' => $journey->id,
+            'user_id' => $user->id,
+            'status' => 'active',
+        ]);
+        \App\Models\JourneyProgress::create([
+            'active_journey_id' => $stale->id,
+            'recorded_at' => now()->subHours(3),
+            'latitude' => 30.0445,
+            'longitude' => 31.2358,
+        ]);
+        $done = \App\Models\ActiveJourney::create([
+            'journey_id' => $journey->id,
+            'user_id' => $user->id,
+            'status' => 'completed',
+        ]);
+        \App\Models\JourneyProgress::create([
+            'active_journey_id' => $done->id,
+            'recorded_at' => now()->subMinute(),
+            'latitude' => 30.0445,
+            'longitude' => 31.2358,
+        ]);
+
+        $this->getJson("/api/v1/stops/{$stop->id}/live")
+            ->assertStatus(200)
+            ->assertJsonPath('data.riders_nearby', 0);
+    }
+
+    /** @test */
+    public function live_crowd_for_unknown_stop_returns_404()
+    {
+        $this->getJson('/api/v1/stops/999999/live')->assertStatus(404);
+    }
+
+    /** @test */
     public function stop_detail_includes_serving_routes_when_requested()
     {
         [$stop] = $this->makeServingNetwork('Sadat');

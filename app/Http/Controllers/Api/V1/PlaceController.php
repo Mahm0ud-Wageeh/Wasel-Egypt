@@ -58,11 +58,95 @@ class PlaceController extends Controller
         // Escape LIKE wildcards so a literal % _ \ in the query cannot turn
         // the lookup into an unintended full-table wildcard scan.
         $like = addcslashes($query, '%_\\');
-        $stops = DB::table('transit_stops')
+
+        // Bilingual alias support for Egyptian transit stations
+        $aliasMap = [
+            'رمسيس' => 'Ramses',
+            'الشهداء' => 'Shohadaa',
+            'التحرير' => 'Tahrir',
+            'السادات' => 'Sadat',
+            'الجيزة' => 'Giza',
+            'العاصمة' => 'Capital',
+            'عدلي منصور' => 'Adly Mansour',
+            'حلوان' => 'Helwan',
+            'المرج' => 'Marg',
+            'شبرا' => 'Shubra',
+            'المعادي' => 'Maadi',
+            'المطرية' => 'Matariya',
+            'عين شمس' => 'Ain Shams',
+            'سراي القبة' => 'Saray',
+            'الأوبرا' => 'Opera',
+            'الدقي' => 'Dokki',
+            'البحوث' => 'Bohooth',
+            'جامعة القاهرة' => 'Cairo University',
+            'فيصل' => 'Faisal',
+            'أم المصريين' => 'Omm El-Misryeen',
+            'ساقية مكي' => 'Mekki',
+            'المنيب' => 'Mounib',
+            'العتبة' => 'Attaba',
+            'باب الشعرية' => 'Shaariya',
+            'الجيش' => 'Geish',
+            'عبده باشا' => 'Abdou',
+            'العباسية' => 'Abbassiya',
+            'أرض المعارض' => 'Fair Zone',
+            'استاد' => 'Stadium',
+            'كلية البنات' => 'Banat',
+            'الأهرام' => 'Ahram',
+            'هارون' => 'Haroun',
+            'هليوبوليس' => 'Heliopolis',
+            'ألف مسكن' => 'Maskan',
+            'نادي الشمس' => 'Shams',
+            'النزهة' => 'Nozha',
+            'هشام بركات' => 'Hesham Barakat',
+            'قباء' => 'Qobaa',
+            'عمر بن الخطاب' => 'Omar',
+            'الهايكستب' => 'Hikestep',
+            'الكيت كات' => 'Kit Kat',
+            'السودان' => 'Sudan',
+            'إمبابة' => 'Imbaba',
+            'البوهي' => 'Bohy',
+            'القومية' => 'Qawmeya',
+            'الدائري' => 'Ring Rd',
+            'روض الفرج' => 'Farag',
+            'التوفيقية' => 'Tawfikiya',
+            'وادي النيل' => 'Wadi',
+            'جامعة الدول' => 'Dowal',
+            'بولاق' => 'Bulaq',
+            'الشروق' => 'Shorouq',
+            'بدر' => 'Badr',
+            'العاشر' => '10th',
+            'المستقبل' => 'Mostaqbal',
+            'الروبيكي' => 'Roubiky',
+            'حدائق العاصمة' => 'Capital',
+            'مطار' => 'Airport',
+            'مدينة نصر' => 'Nasr City',
+            'مصر الجديدة' => 'Heliopolis',
+            'التجمع' => 'Tagamoa',
+            'القاهرة الجديدة' => 'New Cairo',
+            'أكتوبر' => 'October',
+            'زايد' => 'Zayed',
+        ];
+
+        $englishTerm = null;
+        foreach ($aliasMap as $ar => $en) {
+            if (mb_stripos($query, $ar) !== false) {
+                $englishTerm = $en;
+                break;
+            }
+        }
+
+        $stopsQuery = DB::table('transit_stops')
             ->leftJoin('areas', 'transit_stops.area_id', '=', 'areas.id')
-            ->where('transit_stops.name', 'like', '%' . $like . '%')
+            ->where(function ($q) use ($like, $englishTerm) {
+                $q->where('transit_stops.name', 'like', '%' . $like . '%');
+                if ($englishTerm) {
+                    $q->orWhere('transit_stops.name', 'like', '%' . $englishTerm . '%');
+                }
+            });
+
+        $stops = $stopsQuery
             ->orderBy('transit_stops.name')
-            ->limit(6)
+            ->limit(8)
             ->get([
                 'transit_stops.id',
                 'transit_stops.name',

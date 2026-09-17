@@ -37,11 +37,15 @@ class JourneySearchTest extends TestCase
     }
 
     /** @test */
-    public function search_requires_authentication()
+    public function search_is_public_for_guests()
     {
+        // Deliberate product decision: journey search is public so guests
+        // can plan (see routes/api.php "Public journey planning").
+        // Saving/starting journeys still requires authentication.
         $response = $this->postJson('/api/v1/journeys/search', $this->searchPayload());
 
-        $response->assertStatus(401);
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
     }
 
     /** @test */

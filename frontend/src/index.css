@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-navy: #0A1E46;
+  --color-navy-dark: #071530;
+  --color-primary: #1E6BFF;
+  --color-primary-dark: #1557D6;
+  --color-primary-light: #DBEAFE;
+  --color-primary-50: #EFF6FF;
+  --color-primary-100: #DBEAFE;
+  --color-primary-500: #1E6BFF;
+  --color-primary-600: #1557D6;
+  --color-primary-700: #0E41A8;
+
+  --color-emerald: #059669;
+  --color-amber: #D97706;
+  --color-danger: #DC2626;
+
+  --color-bg-light: #F5F7FC;
+  --color-surface-light: #FFFFFF;
+  --color-bg-dark: #0A1120;
+  --color-surface-dark: #131E33;
+  --color-border-dark: #26314D;
+
+  --color-metro: #E11D48;
+  --color-train: #7C3AED;
+  --color-lrt: #059669;
+  --color-monorail: #D97706;
+  --color-brt: #0891B2;
+  --color-bus: #6366F1;
+  --color-minibus: #84CC16;
+  --color-microbus: #F59E0B;
+  --color-walking: #64748B;
+
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-info: #0284C7;
+
+  --color-neutral-50: #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+
+  --font-heading: 'El Messiri', sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-arabic: 'IBM Plex Sans Arabic', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: #F5F7FC;
+  color: #0A1E46;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  line-height: 1.75;
+  font-size: 15px;
+  overflow-x: hidden;
+}
+
+/* Mandatory zero letter-spacing for all Arabic text */
+[dir="rtl"],
+[dir="rtl"] * {
+  letter-spacing: 0 !important;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: 'El Messiri', sans-serif;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+h1 { font-size: clamp(1.75rem, 4vw, 2.15rem); }
+h2 { font-size: clamp(1.4rem, 3vw, 1.75rem); }
+h3 { font-size: clamp(1.15rem, 2.5vw, 1.35rem); }
+
+/* Unified fast transitions (150-250ms, transform/opacity only) */
+.transition-smooth,
+button,
+a,
+input,
+select {
+  transition-property: transform, opacity, background-color, border-color, color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Transport badge colors */
+.badge-metro { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.badge-train { background: #EDE9FE; color: #5B21B6; border: 1px solid #DDD6FE; }
+.badge-lrt { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+.badge-monorail { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+.badge-brt { background: #CFFAFE; color: #164E63; border: 1px solid #A5F3FC; }
+.badge-bus { background: #E0E7FF; color: #3730A3; border: 1px solid #C7D2FE; }
+.badge-walking { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+
+/* Image fallback hero gradient */
+.image-fallback-navy {
+  background: linear-gradient(135deg, #0A1E46 0%, #153874 50%, #1E6BFF 100%);
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Route line */
+.route-line {
+  width: 2px;
+  background: currentColor;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ============================================================
+   Dark Mode overrides — activated by [data-theme="dark"] on root
+   ============================================================ */
+[data-theme="dark"] body {
+  background: #0A1120;
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #131E33 25%, #26314D 50%, #131E33 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #26314D;
+}
+
+[data-theme="dark"] .badge-metro { background: #4c0519; color: #fda4af; border-color: #881337; }
+[data-theme="dark"] .badge-train { background: #2e1065; color: #c4b5fd; border-color: #4c1d95; }
+[data-theme="dark"] .badge-lrt   { background: #022c22; color: #6ee7b7; border-color: #065f46; }
+[data-theme="dark"] .badge-monorail { background: #451a03; color: #fcd34d; border-color: #78350f; }
+[data-theme="dark"] .badge-brt   { background: #164e63; color: #67e8f9; border-color: #0e7490; }
+[data-theme="dark"] .badge-bus   { background: #1e1b4b; color: #a5b4fc; border-color: #3730a3; }
+[data-theme="dark"] .badge-walking { background: #131E33; color: #94a3b8; border-color: #26314D; }
+
+/* Metro line colors */
+.metro-l1 { color: #E11D48; }
+.metro-l2 { color: #1E6BFF; }
+.metro-l3 { color: #059669; }
+.bg-metro-l1 { background: #E11D48; }
+.bg-metro-l2 { background: #1E6BFF; }
+.bg-metro-l3 { background: #059669; }
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn { animation: fadeIn 0.2s ease-out both; }
+
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }

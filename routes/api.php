@@ -33,12 +33,12 @@ Route::prefix('v1')->group(function () {
 
     // Journey planning (user-owned resources: self-or-admin authorization in the controller)
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('journeys/search', [App\Http\Controllers\Api\V1\JourneyController::class, 'search'])->middleware('throttle:30,1');
         Route::get('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'index']);
         Route::post('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'store'])->middleware('throttle:20,1');
         Route::get('journeys/{id}', [App\Http\Controllers\Api\V1\JourneyController::class, 'show']);
         Route::get('journeys/{id}/alternatives', [App\Http\Controllers\Api\V1\JourneyController::class, 'alternatives']);
         Route::delete('journeys/{id}', [App\Http\Controllers\Api\V1\JourneyController::class, 'destroy'])->middleware('throttle:30,1');
+
 
         // Journey execution (owner-only mutations, owner-or-admin reads)
         Route::post('journeys/{id}/start', [App\Http\Controllers\Api\V1\ActiveJourneyController::class, 'start'])->middleware('throttle:15,1');
@@ -179,8 +179,13 @@ Route::prefix('v1')->group(function () {
     Route::get('community-reports', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'publicIndex']);
     Route::get('community-reports/{id}', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'publicShow']);
 
+    // Public journey planning (accessible to passengers, guests, and authenticated users)
+    Route::post('journeys/search', [App\Http\Controllers\Api\V1\JourneyController::class, 'search'])
+        ->middleware('throttle:30,1');
+
     // Public transit stops
     Route::get('stops', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicIndex']);
+
 
     // Unified place + stop search (geocoder proxied server-side, throttled
     // to respect the keyless Photon public instance's fair-use policy).
@@ -191,6 +196,8 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:30,1');
     Route::get('stops/{id}', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicShow']);
     Route::get('stops/{id}/departures', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicDepartures']);
+    Route::get('stops/{id}/live', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'liveCrowd'])
+        ->middleware('throttle:60,1');
 
     // Public transit modes
     Route::get('transit-modes', [App\Http\Controllers\Api\V1\Transit\TransitModeController::class, 'publicIndex']);

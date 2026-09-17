@@ -1,43 +1,37 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
+<!doctype html>
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#14558B" />
-    <title>Wasel Egypt | واصل مصر — Multi-Modal Public Transit Navigation</title>
-    <meta name="description" content="Plan and navigate multi-modal public transit across Greater Cairo, Giza, and Fayoum with verified schedules, live guidance, deviation detection, and smart rerouting." />
-    <link rel="canonical" href="https://wasel.example.com/" />
+    <meta name="theme-color" content="#0A1E46" />
+    <title>واصل مصر | Wasel Egypt - دليلك الذكي لوسائل النقل والمواصلات</title>
+    <meta name="description" content="منظومة النقل الذكية الأولى في مصر: تخطيط الرحلات، خريطة المترو والقطارات والـ LRT والمونوريل، الأسعار الرسمية، ومساعد واصل AI الذكي." />
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://wasel.example.com/" />
-    <meta property="og:title" content="Wasel Egypt | واصل مصر — Multi-Modal Public Transit Navigation" />
-    <meta property="og:description" content="Plan and navigate multi-modal public transit across Greater Cairo, Giza, and Fayoum with verified schedules, live guidance, deviation detection, and smart rerouting." />
-    <meta property="og:image" content="/icons/icon-512.png" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:locale:alternate" content="ar_EG" />
-
-    <!-- Twitter Cards -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Wasel Egypt | واصل مصر — Multi-Modal Public Transit Navigation" />
-    <meta name="twitter:description" content="Plan and navigate multi-modal public transit across Greater Cairo, Giza, and Fayoum with verified schedules, live guidance, deviation detection, and smart rerouting." />
-    <meta name="twitter:image" content="/icons/icon-512.png" />
-
+    <!-- PWA & Mobile Web App -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <script type="module" crossorigin src="/assets/index-DRhP_jQZ.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BbgsYP6o.css">
+    <meta name="apple-mobile-web-app-title" content="واصل مصر" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="واصل مصر | Wasel Egypt — الملاحة الذكية لمنظومة النقل في مصر" />
+    <meta property="og:description" content="دليل المواصلات والنقل العام الأول في مصر: مترو القاهرة، المونوريل، القطار الخفيف، الأتوبيس الترددي، والقطارات السريعة." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+
+    <!-- Google Fonts: El Messiri + IBM Plex Sans Arabic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- MapLibre GL CSS is bundled locally (see src/components/map/InteractiveMap.tsx) -->
+    <script type="module" crossorigin src="/assets/index-Cr__iCqa.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C1jO3osu.css">
   </head>
-  <body>
+  <body class="bg-neutral-50 text-neutral-900 antialiased selection:bg-blue-500 selection:text-white">
     <div id="root"></div>
   </body>
 </html>
+

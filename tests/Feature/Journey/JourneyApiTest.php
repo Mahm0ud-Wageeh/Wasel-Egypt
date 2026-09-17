@@ -259,7 +259,8 @@ class JourneyApiTest extends TestCase
     {
         $this->postJson('/api/v1/journeys', $this->searchPayload())->assertStatus(401);
         $this->getJson('/api/v1/journeys')->assertStatus(401);
-        $this->postJson('/api/v1/journeys/search', $this->searchPayload())->assertStatus(401);
+        // Search itself is deliberately public (guests can plan).
+        $this->postJson('/api/v1/journeys/search', $this->searchPayload())->assertStatus(200);
         $this->getJson('/api/v1/journeys/1')->assertStatus(401);
         $this->getJson('/api/v1/journeys/1/alternatives')->assertStatus(401);
         $this->deleteJson('/api/v1/journeys/1')->assertStatus(401);

@@ -83,7 +83,7 @@ class JourneyPlannerService
      *                      preferred_modes, avoided_modes, alternatives).
      * @return array ['origin' => ..., 'destination' => ..., 'requested_at' => ..., 'options' => [...]]
      */
-    public function search(User $user, array $params): array
+    public function search(?User $user, array $params): array
     {
         // Time-frame contract: GTFS static times (schedules, stop_times,
         // frequency windows, service calendars) are Cairo wall-clock times.
@@ -96,7 +96,7 @@ class JourneyPlannerService
             ? Carbon::parse($params['requested_at'], 'Africa/Cairo')->setTimezone('Africa/Cairo')
             : Carbon::now('Africa/Cairo');
 
-        $prefs = $user->preferences()->first();
+        $prefs = $user ? $user->preferences()->first() : null;
 
         $options = $this->plan(
             (float) $params['origin_lat'],
@@ -116,7 +116,7 @@ class JourneyPlannerService
 
         // Usage analytics: a lightweight search event per planner search.
         AnalyticsEvent::create([
-            'user_id' => $user->id,
+            'user_id' => $user?->id,
             'event_type' => 'journey_search',
             'properties' => [
                 'options_returned' => count($options),
@@ -124,6 +124,7 @@ class JourneyPlannerService
             ],
             'occurred_at' => Carbon::now(),
         ]);
+
 
         // Single-recommendation contract: the ranking is deterministic
         // (score, then duration, transfers, walk, departure) and the first

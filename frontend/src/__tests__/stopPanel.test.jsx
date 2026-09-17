@@ -47,7 +47,7 @@ describe('StopPanel (stop information, design v3 §10)', () => {
             id: 42,
             name: 'Attaba',
             serving_routes: [
-              { route_id: 1, short_name: 'M1', long_name: 'Line 1', color: '#c62828', modes: ['metro'], variants_count: 2 },
+              { route_id: 1, short_name: 'M1', long_name: 'Line 1', color: 'crimson', modes: ['metro'], variants_count: 2 },
             ],
           },
         })

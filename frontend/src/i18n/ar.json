@@ -609,7 +609,7 @@
   "route.reliability": "الموثوقية",
   "results.wait_minutes": "انتظار {n} دقيقة",
   "ai.launch": "افتح مساعد واصل الذكي",
-  "ai.launch_label": "مساعد واصل الذكي ✦",
+  "ai.launch_label": "مساعد واصل الذكي",
   "ai.title": "مساعد واصل الذكي",
   "ai.checking": "جارٍ التحقق من التوفر…",
   "ai.unavailable": "المساعد غير متاح",
