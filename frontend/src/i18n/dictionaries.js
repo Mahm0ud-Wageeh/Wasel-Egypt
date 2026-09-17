@@ -785,6 +785,15 @@ export const en = {
   "admin.geo_save_error": "Could not save the geometry.",
   "admin.geo_load_error": "Could not load geometry.",
   "admin.search_fares": "Search fares by label or tier...",
+  "ai.new_chat": "New Chat",
+  "ai.chat_history": "Chat History",
+  "ai.no_history": "No previous conversations",
+  "ai.delete_chat": "Delete conversation",
+  "ai.delete_chat_confirm": "Are you sure you want to delete this conversation?",
+  "ai.clear_all": "Clear all conversations",
+  "ai.back_to_chat": "Back to conversation",
+  "ai.active_chat": "Current conversation",
+  "ai.messages_count": "{count} messages",
 }
 
 export const ar = {
@@ -1570,4 +1579,13 @@ export const ar = {
   "admin.geo_save_error": "تعذر حفظ المسار الهندسي.",
   "admin.geo_load_error": "تعذر تحميل المسارات الهندسية.",
   "admin.search_fares": "ابحث في الأجور بالاسم أو الفئة...",
+  "ai.new_chat": "محادثة جديدة",
+  "ai.chat_history": "سجل المحادثات",
+  "ai.no_history": "لا توجد محادثات سابقة",
+  "ai.delete_chat": "حذف المحادثة",
+  "ai.delete_chat_confirm": "هل أنت متأكد من حذف هذه المحادثة؟",
+  "ai.clear_all": "مسح كل المحادثات",
+  "ai.back_to_chat": "العودة للمحادثة",
+  "ai.active_chat": "المحادثة الحالية",
+  "ai.messages_count": "{count} رسائل",
 }

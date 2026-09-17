@@ -780,5 +780,14 @@
   "admin.geo_deleted": "Geometry deleted.",
   "admin.geo_save_error": "Could not save the geometry.",
   "admin.geo_load_error": "Could not load geometry.",
-  "admin.search_fares": "Search fares by label or tier..."
+  "admin.search_fares": "Search fares by label or tier...",
+  "ai.new_chat": "New Chat",
+  "ai.chat_history": "Chat History",
+  "ai.no_history": "No previous conversations",
+  "ai.delete_chat": "Delete conversation",
+  "ai.delete_chat_confirm": "Are you sure you want to delete this conversation?",
+  "ai.clear_all": "Clear all conversations",
+  "ai.back_to_chat": "Back to conversation",
+  "ai.active_chat": "Current conversation",
+  "ai.messages_count": "{count} messages"
 }

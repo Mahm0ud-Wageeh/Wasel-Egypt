@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '../api/client'
 import { endpoints } from '../api/endpoints'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { emitMapCommand } from '../map/basemaps'
 import { useI18n } from '../i18n/LanguageContext'
+import { AuthContext } from '../auth/AuthContext'
 
 /**
  * AI transport assistant — product-level integration.
@@ -46,8 +47,68 @@ const CLIENT_ACTIONS = {
   get_next_stop: [],
 }
 
-const HISTORY_KEY = 'wasel.ai.history'
-const HISTORY_LIMIT = 30
+const SESSIONS_STORAGE_PREFIX = 'wasel.ai.sessions.'
+const LEGACY_HISTORY_KEY = 'wasel.ai.history'
+const SESSIONS_LIMIT = 50
+const MESSAGES_PER_SESSION_LIMIT = 40
+
+function createEmptySession(title = '') {
+  const now = Date.now()
+  return {
+    id: `chat_${now}_${Math.random().toString(36).substring(2, 7)}`,
+    title,
+    createdAt: now,
+    updatedAt: now,
+    messages: [],
+  }
+}
+
+function getStorageKey(user) {
+  return user?.id ? `${SESSIONS_STORAGE_PREFIX}user_${user.id}` : `${SESSIONS_STORAGE_PREFIX}guest`
+}
+
+function loadSessions(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
+    }
+  } catch {
+    /* ignore parse errors */
+  }
+
+  // If this is guest scope and legacy single-history exists, migrate it
+  if (storageKey.endsWith('.guest')) {
+    try {
+      const legacyRaw = localStorage.getItem(LEGACY_HISTORY_KEY)
+      if (legacyRaw) {
+        const legacyMessages = JSON.parse(legacyRaw)
+        if (Array.isArray(legacyMessages) && legacyMessages.length > 0) {
+          const firstUserMsg = legacyMessages.find((m) => m.role === 'user')
+          const title = firstUserMsg ? firstUserMsg.content.slice(0, 32) : ''
+          const migrated = [
+            {
+              id: `chat_${Date.now()}`,
+              title,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              messages: legacyMessages.slice(-MESSAGES_PER_SESSION_LIMIT),
+            },
+          ]
+          localStorage.removeItem(LEGACY_HISTORY_KEY)
+          return migrated
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return []
+}
 
 // Shared device position for "stops near me" queries; the geolocation
 // hook is mount-safe (no permission prompt until locate() is called).
@@ -58,26 +119,51 @@ export function AiAssistantProvider({ children }) {
   const { language, isRtl, t } = useI18n()
   const geo = useGeolocation()
 
+  // Safely consume AuthContext without throwing in unauthenticated test harnesses
+  const auth = useContext(AuthContext)
+  const user = auth?.user ?? null
+  const currentScopeKey = getStorageKey(user)
+
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState(() => {
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY)
-      const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) ? parsed.slice(-HISTORY_LIMIT) : []
-    } catch {
-      return []
-    }
+  const [sessions, setSessions] = useState(() => {
+    const loaded = loadSessions(currentScopeKey)
+    if (loaded.length > 0) return loaded
+    return [createEmptySession()]
+  })
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    const loaded = loadSessions(currentScopeKey)
+    return loaded[0]?.id || null
   })
   const [sending, setSending] = useState(false)
   const [status, setStatus] = useState(null) // {available, provider}
   const [journeyContext, setJourneyContext] = useState(null)
 
+  // Track previous user to isolate chat storage and auto-start fresh session on login/logout
+  const prevUserIdRef = useRef(user?.id ? `user_${user.id}` : 'guest')
+
+  useEffect(() => {
+    const currentUserId = user?.id ? `user_${user.id}` : 'guest'
+    if (prevUserIdRef.current !== currentUserId) {
+      prevUserIdRef.current = currentUserId
+      const newScopeKey = getStorageKey(user)
+      const existing = loadSessions(newScopeKey)
+      let nextSessions
+      // If the latest existing session is already empty, reuse it; otherwise create a fresh one
+      if (existing.length > 0 && existing[0].messages.length === 0) {
+        nextSessions = existing
+      } else {
+        const fresh = createEmptySession()
+        nextSessions = [fresh, ...existing].slice(0, SESSIONS_LIMIT)
+      }
+      setSessions(nextSessions)
+      setActiveSessionId(nextSessions[0].id)
+    }
+  }, [user])
+
   // "Near me" questions need a position: request it lazily once the
   // assistant panel is first opened (browser-gated, never forced).
   useEffect(() => {
     if (isOpen && geo.status === 'idle' && !devicePosition) {
-      // No-op prompt guard: only auto-locate when the browser already
-      // granted permission for this origin (permission query API).
       navigator.permissions?.query?.({ name: 'geolocation' })
         .then((p) => {
           if (p.state === 'granted') geo.locate()
@@ -101,139 +187,226 @@ export function AiAssistantProvider({ children }) {
     }
   }, [isOpen, status])
 
+  // Persist sessions for the current scope
   useEffect(() => {
     try {
-      if (messages.length === 0) {
-        localStorage.removeItem(HISTORY_KEY)
+      const toSave = sessions
+        .filter((s, idx) => s.messages.length > 0 || idx === 0)
+        .slice(0, SESSIONS_LIMIT)
+      if (toSave.length === 0 || (toSave.length === 1 && toSave[0].messages.length === 0)) {
+        localStorage.removeItem(currentScopeKey)
       } else {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-HISTORY_LIMIT)))
+        localStorage.setItem(currentScopeKey, JSON.stringify(toSave))
       }
     } catch {
-      /* storage full/private mode — conversation just isn't persisted */
+      /* storage full or private mode */
     }
-  }, [messages])
+  }, [sessions, currentScopeKey])
 
-  const send = useCallback(async (text) => {
-    const trimmed = (text ?? '').trim()
-    if (!trimmed || sending) return null
-    if (trimmed.length > 2000) return null
+  const activeSession = useMemo(() => {
+    return sessions.find((s) => s.id === activeSessionId) || sessions[0] || null
+  }, [sessions, activeSessionId])
 
-    const userMessage = { id: `u-${Date.now()}`, role: 'user', content: trimmed }
-    // Window sent to the backend: recent turns + the new message.
-    const window = [...messages, userMessage]
-      .filter((m) => m.role === 'user' || m.role === 'assistant')
-      .slice(-10)
-      .map(({ role, content }) => ({ role, content }))
+  const messages = useMemo(() => {
+    return activeSession?.messages ?? []
+  }, [activeSession])
 
-    setMessages((prev) => [...prev, userMessage])
-    setSending(true)
-
-    // Direct active navigation telemetry grounding:
-    // If navigation is running and the user asks about live telemetry (next stop, ETA, off-route),
-    // ground directly from client telemetry state with zero delay or network dependency.
-    if (journeyContext) {
-      const isAr = language === 'ar' || /[\u0600-\u06FF]/.test(trimmed)
-      const isNextStopQuery = /next stop|where.*stop|station|المحطة.*(التالية|القادمة|الجاية)|محطت/i.test(trimmed)
-      const isEtaQuery = /eta|time.*left|remaining|how long|arrive|فاضل.*(قد|إيه|ايه)|الوقت.*المتبقي|كم.*(باقي|متبقي|وقت)|متى.*أصل/i.test(trimmed)
-      const isDeviationQuery = /off route|deviat|lost|wrong|on track|توهت|تايه|خارج.*المسار|المسار.*الصحيح/i.test(trimmed)
-
-      if (isNextStopQuery) {
-        const stopName = journeyContext.nextStop || journeyContext.toStop || 'destination'
-        const reply = isAr
-          ? `محطتك القادمة هي "${stopName}". أنت في المرحلة ${(journeyContext.currentLegIndex ?? 0) + 1} (${journeyContext.currentLegMode || 'مواصلة'}).`
-          : `Your next stop is "${stopName}". You are on leg ${(journeyContext.currentLegIndex ?? 0) + 1} (${journeyContext.currentLegMode || 'transit'}).`
-        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
-        setMessages((prev) => [...prev, assistantMsg])
-        setSending(false)
-        return { message: assistantMsg, applied: [] }
-      }
-
-      if (isEtaQuery) {
-        const mins = journeyContext.remainingMinutes ?? '—'
-        const pct = journeyContext.progressPercent ?? 0
-        const reply = isAr
-          ? `الوقت المقدر المتبقي لرحلتك هو حوالي ${mins} دقيقة (${pct}% مكتملة).`
-          : `Estimated time remaining for your journey is about ${mins} minutes (${pct}% completed).`
-        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
-        setMessages((prev) => [...prev, assistantMsg])
-        setSending(false)
-        return { message: assistantMsg, applied: [] }
-      }
-
-      if (isDeviationQuery) {
-        const reply = journeyContext.isOffRoute || journeyContext.isDeviated
-          ? (isAr
-              ? 'تنبيه: أنت خارج المسار المحدد حالياً. يمكنك استخدام زر إعادة التوجيه في لوحة الملاحة لتحديث خطتك.'
-              : 'Alert: You are currently detected off-route. You can tap Reroute in the navigation HUD to recalculate.')
-          : (isAr
-              ? 'أنت على المسار الصحيح تماماً وتتبع خطة الرحلة بسلاسة.'
-              : 'You are on track and following the planned route smoothly.')
-        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
-        setMessages((prev) => [...prev, assistantMsg])
-        setSending(false)
-        return { message: assistantMsg, applied: [] }
-      }
-    }
-
-    try {
-      const res = await apiRequest(endpoints.ai.chat, {
-        method: 'POST',
-        body: {
-          messages: window,
-          language,
-          lat: devicePosition?.lat ?? null,
-          lng: devicePosition?.lng ?? null,
-          active_journey_id: journeyContext?.journeyId ?? null,
-        },
+  const setMessages = useCallback(
+    (updater) => {
+      setSessions((prevSessions) => {
+        const targetId = activeSessionId || prevSessions[0]?.id
+        return prevSessions.map((session) => {
+          if (session.id !== targetId) return session
+          const nextMsgs = typeof updater === 'function' ? updater(session.messages) : updater
+          return {
+            ...session,
+            messages: Array.isArray(nextMsgs) ? nextMsgs.slice(-MESSAGES_PER_SESSION_LIMIT) : [],
+            updatedAt: Date.now(),
+          }
+        })
       })
+    },
+    [activeSessionId],
+  )
 
-      if (res?.available === false) {
-        const unavailable = {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          content: t('ai.unavailable_body'),
-          unavailable: true,
-        }
-        setMessages((prev) => [...prev, unavailable])
-        return null
-      }
-
-      const assistantMessage = {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        content: res?.reply ?? '',
-        provider: res?.provider,
-      }
-      setMessages((prev) => [...prev, assistantMessage])
-
-      // Execute validated actions immediately after the reply lands.
-      const applied = executeActions(res?.actions ?? [], { navigate, t })
-      return { message: assistantMessage, applied }
-    } catch (err) {
-      const is429 = err?.status === 429 || err?.message?.includes('429')
-      const error = {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        content: is429
-          ? (language === 'ar' ? 'تم تجاوز الحد المسموح للطلبات. يرجى الانتظار دقيقة والمحاولة مجدداً.' : 'Rate limit exceeded. Please wait a minute before sending another request.')
-          : t('ai.error_body'),
-        isError: true,
-      }
-      setMessages((prev) => [...prev, error])
-      return null
-    } finally {
-      setSending(false)
+  const newChat = useCallback(() => {
+    const current = sessions.find((s) => s.id === activeSessionId)
+    if (current && current.messages.length === 0) {
+      return
     }
-  }, [messages, sending, language, navigate, t, journeyContext])
+    const fresh = createEmptySession()
+    setActiveSessionId(fresh.id)
+    setSessions((prev) => [fresh, ...prev].slice(0, SESSIONS_LIMIT))
+  }, [sessions, activeSessionId])
+
+  const switchChat = useCallback((sessionId) => {
+    setActiveSessionId(sessionId)
+  }, [])
+
+  const deleteChat = useCallback(
+    (sessionId) => {
+      const filtered = sessions.filter((s) => s.id !== sessionId)
+      if (filtered.length === 0) {
+        const fresh = createEmptySession()
+        setActiveSessionId(fresh.id)
+        setSessions([fresh])
+      } else {
+        if (activeSessionId === sessionId) {
+          setActiveSessionId(filtered[0].id)
+        }
+        setSessions(filtered)
+      }
+    },
+    [sessions, activeSessionId],
+  )
+
+  const clearAllChats = useCallback(() => {
+    const fresh = createEmptySession()
+    setActiveSessionId(fresh.id)
+    setSessions([fresh])
+    try {
+      localStorage.removeItem(LEGACY_HISTORY_KEY)
+      localStorage.removeItem(currentScopeKey)
+    } catch {
+      /* ignore */
+    }
+  }, [currentScopeKey])
 
   const clear = useCallback(() => {
     setMessages([])
     try {
-      localStorage.removeItem(HISTORY_KEY)
+      localStorage.removeItem(LEGACY_HISTORY_KEY)
     } catch {
       /* ignore */
     }
-  }, [])
+  }, [setMessages])
+
+  const send = useCallback(
+    async (text) => {
+      const trimmed = (text ?? '').trim()
+      if (!trimmed || sending) return null
+      if (trimmed.length > 2000) return null
+
+      const userMessage = { id: `u-${Date.now()}`, role: 'user', content: trimmed }
+      // Window sent to the backend: recent turns + the new message.
+      const window = [...messages, userMessage]
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map(({ role, content }) => ({ role, content }))
+
+      setSessions((prev) => {
+        const targetId = activeSessionId || prev[0]?.id
+        return prev.map((s) => {
+          if (s.id !== targetId) return s
+          const isFirst = s.messages.length === 0
+          const autoTitle = (!s.title || isFirst) ? (trimmed.length > 35 ? `${trimmed.slice(0, 35)}…` : trimmed) : s.title
+          return {
+            ...s,
+            title: autoTitle || s.title,
+            updatedAt: Date.now(),
+            messages: [...s.messages, userMessage],
+          }
+        })
+      })
+      setSending(true)
+
+      // Direct active navigation telemetry grounding:
+      if (journeyContext) {
+        const isAr = language === 'ar' || /[\u0600-\u06FF]/.test(trimmed)
+        const isNextStopQuery = /next stop|where.*stop|station|المحطة.*(التالية|القادمة|الجاية)|محطت/i.test(trimmed)
+        const isEtaQuery = /eta|time.*left|remaining|how long|arrive|فاضل.*(قد|إيه|ايه)|الوقت.*المتبقي|كم.*(باقي|متبقي|وقت)|متى.*أصل/i.test(trimmed)
+        const isDeviationQuery = /off route|deviat|lost|wrong|on track|توهت|تايه|خارج.*المسار|المسار.*الصحيح/i.test(trimmed)
+
+        if (isNextStopQuery) {
+          const stopName = journeyContext.nextStop || journeyContext.toStop || 'destination'
+          const reply = isAr
+            ? `محطتك القادمة هي "${stopName}". أنت في المرحلة ${(journeyContext.currentLegIndex ?? 0) + 1} (${journeyContext.currentLegMode || 'مواصلة'}).`
+            : `Your next stop is "${stopName}". You are on leg ${(journeyContext.currentLegIndex ?? 0) + 1} (${journeyContext.currentLegMode || 'transit'}).`
+          const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
+          setMessages((prev) => [...prev, assistantMsg])
+          setSending(false)
+          return { message: assistantMsg, applied: [] }
+        }
+
+        if (isEtaQuery) {
+          const mins = journeyContext.remainingMinutes ?? '—'
+          const pct = journeyContext.progressPercent ?? 0
+          const reply = isAr
+            ? `الوقت المقدر المتبقي لرحلتك هو حوالي ${mins} دقيقة (${pct}% مكتملة).`
+            : `Estimated time remaining for your journey is about ${mins} minutes (${pct}% completed).`
+          const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
+          setMessages((prev) => [...prev, assistantMsg])
+          setSending(false)
+          return { message: assistantMsg, applied: [] }
+        }
+
+        if (isDeviationQuery) {
+          const reply = journeyContext.isOffRoute || journeyContext.isDeviated
+            ? (isAr
+                ? 'تنبيه: أنت خارج المسار المحدد حالياً. يمكنك استخدام زر إعادة التوجيه في لوحة الملاحة لتحديث خطتك.'
+                : 'Alert: You are currently detected off-route. You can tap Reroute in the navigation HUD to recalculate.')
+            : (isAr
+                ? 'أنت على المسار الصحيح تماماً وتتبع خطة الرحلة بسلاسة.'
+                : 'You are on track and following the planned route smoothly.')
+          const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: reply, provider: { label: 'Active Navigation Telemetry' } }
+          setMessages((prev) => [...prev, assistantMsg])
+          setSending(false)
+          return { message: assistantMsg, applied: [] }
+        }
+      }
+
+      try {
+        const res = await apiRequest(endpoints.ai.chat, {
+          method: 'POST',
+          body: {
+            messages: window,
+            language,
+            lat: devicePosition?.lat ?? null,
+            lng: devicePosition?.lng ?? null,
+            active_journey_id: journeyContext?.journeyId ?? null,
+          },
+        })
+
+        if (res?.available === false) {
+          const unavailable = {
+            id: `a-${Date.now()}`,
+            role: 'assistant',
+            content: t('ai.unavailable_body'),
+            unavailable: true,
+          }
+          setMessages((prev) => [...prev, unavailable])
+          return null
+        }
+
+        const assistantMessage = {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          content: res?.reply ?? '',
+          provider: res?.provider,
+        }
+        setMessages((prev) => [...prev, assistantMessage])
+
+        // Execute validated actions immediately after the reply lands.
+        const applied = executeActions(res?.actions ?? [], { navigate, t })
+        return { message: assistantMessage, applied }
+      } catch (err) {
+        const is429 = err?.status === 429 || err?.message?.includes('429')
+        const error = {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          content: is429
+            ? (language === 'ar' ? 'تم تجاوز الحد المسموح للطلبات. يرجى الانتظار دقيقة والمحاولة مجدداً.' : 'Rate limit exceeded. Please wait a minute before sending another request.')
+            : t('ai.error_body'),
+          isError: true,
+        }
+        setMessages((prev) => [...prev, error])
+        return null
+      } finally {
+        setSending(false)
+      }
+    },
+    [messages, sending, language, navigate, t, journeyContext, activeSessionId, setMessages],
+  )
 
   const value = useMemo(
     () => ({
@@ -241,16 +414,39 @@ export function AiAssistantProvider({ children }) {
       setOpen: setIsOpen,
       isOpen,
       setIsOpen,
+      sessions,
+      activeSessionId: activeSession?.id || activeSessionId,
+      activeSession,
       messages,
       sending,
       status,
       send,
       clear,
+      newChat,
+      switchChat,
+      deleteChat,
+      clearAllChats,
       isRtl,
       journeyContext,
       setJourneyContext,
     }),
-    [isOpen, messages, sending, status, send, clear, isRtl, journeyContext],
+    [
+      isOpen,
+      sessions,
+      activeSession,
+      activeSessionId,
+      messages,
+      sending,
+      status,
+      send,
+      clear,
+      newChat,
+      switchChat,
+      deleteChat,
+      clearAllChats,
+      isRtl,
+      journeyContext,
+    ],
   )
 
   return <AiAssistantContext.Provider value={value}>{children}</AiAssistantContext.Provider>

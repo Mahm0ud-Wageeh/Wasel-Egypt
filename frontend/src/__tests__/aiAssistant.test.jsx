@@ -6,6 +6,7 @@ import { LanguageProvider } from '../i18n/LanguageContext'
 import { AiAssistantProvider, useAiAssistant } from '../ai/AiAssistantContext'
 import { AiAssistantDrawer, AiAssistantLauncher } from '../ai/AiAssistantDrawer'
 import { BASEMAPS, getPreferredLayer, setPreferredLayer } from '../map/basemaps'
+import { AuthContext } from '../auth/AuthContext'
 import * as client from '../api/client'
 
 /* ------------------------------------------------------------------ */
@@ -18,13 +19,21 @@ vi.mock('../api/client', () => ({
 
 const mockedRequest = vi.mocked(client.apiRequest)
 
-function Harness({ children }) {
+function Harness({ children, user = null }) {
+  const authValue = {
+    user,
+    status: user ? 'authenticated' : 'guest',
+    isAuthenticated: !!user,
+    isGuest: !user,
+  }
   return (
-    <LanguageProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <AiAssistantProvider>{children}</AiAssistantProvider>
-      </MemoryRouter>
-    </LanguageProvider>
+    <AuthContext.Provider value={authValue}>
+      <LanguageProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <AiAssistantProvider>{children}</AiAssistantProvider>
+        </MemoryRouter>
+      </LanguageProvider>
+    </AuthContext.Provider>
   )
 }
 
@@ -305,6 +314,202 @@ describe('AI assistant active journey awareness', () => {
     await waitFor(() => {
       expect(screen.getByText(/Alert: You are currently detected off-route/i)).toBeTruthy()
     })
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* AI assistant multi-session & user isolation                         */
+/* ------------------------------------------------------------------ */
+
+describe('AI assistant multi-session and user isolation', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+  })
+
+  it('creates new sessions, switches between them, and deletes sessions', async () => {
+    mockedRequest.mockResolvedValue({
+      available: true,
+      reply: 'Echo response',
+      actions: [],
+      provider: { id: 'mock', label: 'X', simulated: true },
+    })
+
+    let ctx = null
+    render(
+      <Harness>
+        <Probe onReady={(c) => { ctx = c }} />
+        <AiAssistantDrawer />
+      </Harness>
+    )
+
+    // Initially 1 empty session
+    expect(ctx.sessions.length).toBe(1)
+    const firstSessionId = ctx.activeSessionId
+
+    // Send a message in first session
+    await act(async () => {
+      await ctx.send('Trip to Cairo')
+    })
+    expect(ctx.messages.length).toBe(2) // user + assistant
+
+    // Start a new chat
+    act(() => {
+      ctx.newChat()
+    })
+
+    // Active session has changed and is fresh
+    expect(ctx.activeSessionId).not.toBe(firstSessionId)
+    expect(ctx.messages.length).toBe(0)
+    expect(ctx.sessions.length).toBe(2)
+
+    // Send a message in second session
+    await act(async () => {
+      await ctx.send('Trip to Alexandria')
+    })
+    expect(ctx.messages.length).toBe(2)
+
+    // Switch back to first session
+    act(() => {
+      ctx.switchChat(firstSessionId)
+    })
+    expect(ctx.activeSessionId).toBe(firstSessionId)
+    expect(ctx.messages[0].content).toBe('Trip to Cairo')
+
+    // Delete the first session
+    act(() => {
+      ctx.deleteChat(firstSessionId)
+    })
+    expect(ctx.sessions.length).toBe(1)
+    expect(ctx.sessions[0].title).toContain('Trip to Alexandria')
+  })
+
+  it('isolates chats between guest and logged-in user, auto-starting a fresh chat on login/logout', async () => {
+    mockedRequest.mockResolvedValue({
+      available: true,
+      reply: 'AI reply',
+      actions: [],
+      provider: { id: 'mock', label: 'X', simulated: true },
+    })
+
+    let userState = null
+    let setUserState = null
+    let ctx = null
+
+    function DynamicAuthHarness() {
+      const [currentUser, setCurrentUser] = React.useState(null)
+      userState = currentUser
+      setUserState = setCurrentUser
+
+      return (
+        <Harness user={currentUser}>
+          <Probe onReady={(c) => { ctx = c }} />
+          <AiAssistantDrawer />
+        </Harness>
+      )
+    }
+
+    render(<DynamicAuthHarness />)
+
+    // 1. Guest sends a message
+    expect(userState).toBeNull()
+    await act(async () => {
+      await ctx.send('Guest query about fares')
+    })
+    expect(ctx.messages.length).toBe(2)
+
+    // Verify saved under guest key, not user key
+    expect(localStorage.getItem('wasel.ai.sessions.guest')).toContain('Guest query about fares')
+    expect(localStorage.getItem('wasel.ai.sessions.user_42')).toBeNull()
+
+    // 2. User 42 logs in
+    act(() => {
+      setUserState({ id: 42, name: 'Fatima' })
+    })
+
+    // User 42 immediately starts with a fresh empty chat!
+    await waitFor(() => {
+      expect(ctx.messages.length).toBe(0)
+    })
+
+    // User 42 sends their own query
+    await act(async () => {
+      await ctx.send('Fatima trip to Zamalek')
+    })
+    expect(ctx.messages.length).toBe(2)
+
+    // Scoped storage is isolated
+    expect(localStorage.getItem('wasel.ai.sessions.user_42')).toContain('Fatima trip to Zamalek')
+    expect(localStorage.getItem('wasel.ai.sessions.user_42')).not.toContain('Guest query')
+    expect(localStorage.getItem('wasel.ai.sessions.guest')).not.toContain('Fatima trip')
+
+    // 3. User 42 logs out (becomes guest)
+    act(() => {
+      setUserState(null)
+    })
+
+    // Fresh chat is active for guest upon logout, not leaking User 42's private chat!
+    await waitFor(() => {
+      expect(ctx.messages.length).toBe(0)
+    })
+
+    // Guest's prior chat is still accessible in guest history
+    expect(ctx.sessions.some((s) => s.title.includes('Guest query'))).toBe(true)
+
+    // 4. User 42 logs back in
+    act(() => {
+      setUserState({ id: 42, name: 'Fatima' })
+    })
+
+    // User 42 starts with a fresh chat, and their previous chat is retained in history
+    await waitFor(() => {
+      expect(ctx.messages.length).toBe(0)
+      expect(ctx.sessions.some((s) => s.title.includes('Fatima trip'))).toBe(true)
+    })
+  })
+
+  it('renders multi-session UI controls in the drawer (New Chat, History list, and card deletion)', async () => {
+    mockedRequest.mockResolvedValue({
+      available: true,
+      reply: 'Answer to question',
+      actions: [],
+      provider: { id: 'mock', label: 'X', simulated: true },
+    })
+
+    renderAssistant()
+    fireEvent.click(screen.getByRole('button', { name: /open the wasel assistant/i }))
+
+    // Verify "+ New Chat" button is present in the drawer header
+    const newChatBtn = screen.getByRole('button', { name: /new chat/i })
+    expect(newChatBtn).toBeTruthy()
+
+    // Verify "Chat History" button is present
+    const historyBtn = screen.getByRole('button', { name: /chat history/i })
+    expect(historyBtn).toBeTruthy()
+
+    // Send a message
+    const input = await screen.findByLabelText(/ask about routes/i)
+    fireEvent.change(input, { target: { value: 'How to get to Dokki' } })
+    fireEvent.submit(input.closest('form'))
+    await waitFor(() => expect(screen.getByText('Answer to question')).toBeTruthy())
+
+    // Open history view
+    fireEvent.click(historyBtn)
+    await waitFor(() => {
+      expect(screen.getByText('How to get to Dokki')).toBeTruthy()
+      expect(screen.getByText(/current conversation/i)).toBeTruthy()
+    })
+
+    // Click "+ New Chat" from inside history view
+    fireEvent.click(newChatBtn)
+
+    // Drawer returns to a fresh chat — the new empty session welcome state is visible
+    // Use findByRole which has its own built-in async wait
+    expect(await screen.findByRole('button', { name: 'From Maadi to Tahrir' })).toBeTruthy()
   })
 })
 

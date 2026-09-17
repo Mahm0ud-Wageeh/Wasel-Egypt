@@ -113,10 +113,27 @@ function FormattedMessage({ content, isAr, navigate, setOpen }) {
 
 export function AiAssistantDrawer() {
   const navigate = useNavigate()
-  const { open, setOpen, messages, sending, status, send, clear, isRtl, journeyContext } = useAiAssistant()
+  const {
+    open,
+    setOpen,
+    messages,
+    sessions,
+    activeSessionId,
+    sending,
+    status,
+    send,
+    clear,
+    newChat,
+    switchChat,
+    deleteChat,
+    clearAllChats,
+    isRtl,
+    journeyContext,
+  } = useAiAssistant()
   const { t, language } = useI18n()
   const [draft, setDraft] = useState('')
   const [appliedChips, setAppliedChips] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
   const listRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -126,23 +143,31 @@ export function AiAssistantDrawer() {
     }
   }, [open])
 
+  useEffect(() => {
+    setAppliedChips([])
+    setDraft('')
+  }, [activeSessionId])
+
   // Auto-scroll to the newest message; focus the composer when opened.
   useEffect(() => {
-    if (open) {
+    if (open && !showHistory) {
       listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight, behavior: 'smooth' })
       setTimeout(() => inputRef.current?.focus?.(), 250)
     }
-  }, [open, messages.length, sending])
+  }, [open, messages.length, sending, showHistory])
 
   // Escape closes the drawer (keyboard access).
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        if (showHistory) setShowHistory(false)
+        else setOpen(false)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, setOpen])
+  }, [open, showHistory, setOpen])
 
   const suggestions = journeyContext
     ? (language === 'ar'
@@ -176,6 +201,8 @@ export function AiAssistantDrawer() {
     ? t('ai.mock_note')
     : (status?.provider?.label || 'AI Model')
 
+  const validSessions = (sessions || []).filter((s) => s.messages && s.messages.length > 0)
+
   return (
     <div className="ai-drawer__scrim" onClick={() => setOpen(false)}>
       <aside
@@ -206,6 +233,31 @@ export function AiAssistantDrawer() {
             </div>
           </div>
           <div className="ai-drawer__head-actions">
+            <button
+              type="button"
+              className="ai-drawer__head-btn"
+              onClick={() => {
+                newChat()
+                setShowHistory(false)
+              }}
+              aria-label={t('ai.new_chat')}
+              title={t('ai.new_chat')}
+            >
+              <Icon name="plus" size={15} aria-hidden="true" />
+              <span className="ai-drawer__btn-text">{t('ai.new_chat')}</span>
+            </button>
+            <button
+              type="button"
+              className={`ai-drawer__ghost-btn ${showHistory ? 'ai-drawer__ghost-btn--active' : ''}`}
+              onClick={() => setShowHistory((prev) => !prev)}
+              aria-label={t('ai.chat_history')}
+              title={t('ai.chat_history')}
+            >
+              <Icon name="history" size={16} aria-hidden="true" />
+              {validSessions.length > 0 && (
+                <span className="ai-drawer__badge">{validSessions.length}</span>
+              )}
+            </button>
             {messages.length > 0 && (
               <button
                 type="button"
@@ -214,7 +266,7 @@ export function AiAssistantDrawer() {
                 aria-label={t('action.clear')}
                 title={t('action.clear')}
               >
-                <Icon name="history" size={16} aria-hidden="true" />
+                <Icon name="trash" size={16} aria-hidden="true" />
               </button>
             )}
             <button
@@ -229,24 +281,129 @@ export function AiAssistantDrawer() {
           </div>
         </header>
 
-        <div className="ai-drawer__list" ref={listRef}>
-          {messages.length === 0 && !sending && (
-            <div className="ai-drawer__empty">
-              <p className="ai-drawer__empty-title">{t('ai.welcome')}</p>
-              <p className="ai-drawer__empty-body">{t('ai.welcome_body')}</p>
-              <div className="ai-drawer__suggestions" role="list">
-                {suggestions.map((s) => (
-                  <button key={s} type="button" className="ai-drawer__chip" onClick={() => onSuggestion(s)}>
-                    {s}
-                  </button>
-                ))}
-              </div>
+        {showHistory ? (
+          <div className="ai-drawer__history-view">
+            <div className="ai-history__head">
+              <span className="ai-history__heading">{t('ai.chat_history')}</span>
+              <button
+                type="button"
+                className="ai-history__back-btn"
+                onClick={() => setShowHistory(false)}
+              >
+                <Icon name={isRtl ? 'arrowRight' : 'arrowLeft'} size={15} aria-hidden="true" />
+                <span>{t('ai.back_to_chat')}</span>
+              </button>
             </div>
-          )}
 
-          {messages.map((m) => (
-            <div key={m.id} className={`ai-msg ai-msg--${m.role}${m.isError ? ' ai-msg--error' : ''}`}>
-              <div className="ai-msg__bubble">
+            <div className="ai-history__list">
+              {validSessions.length === 0 ? (
+                <div className="ai-history__empty">
+                  <p>{t('ai.no_history')}</p>
+                  <button
+                    type="button"
+                    className="ai-drawer__chip"
+                    onClick={() => {
+                      newChat()
+                      setShowHistory(false)
+                    }}
+                  >
+                    {t('ai.new_chat')}
+                  </button>
+                </div>
+              ) : (
+                validSessions.map((s) => {
+                  const isActive = s.id === activeSessionId
+                  const displayTitle = s.title || t('ai.new_chat')
+                  const timeStr = new Date(s.updatedAt || s.createdAt).toLocaleDateString(
+                    language === 'ar' ? 'ar-EG' : 'en-US',
+                    { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+                  )
+                  const msgCountText = t('ai.messages_count').replace('{count}', s.messages.length)
+
+                  return (
+                    <div
+                      key={s.id}
+                      className={`ai-history-card ${isActive ? 'ai-history-card--active' : ''}`}
+                      onClick={() => {
+                        switchChat(s.id)
+                        setShowHistory(false)
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          switchChat(s.id)
+                          setShowHistory(false)
+                        }
+                      }}
+                    >
+                      <div className="ai-history-card__body">
+                        <div className="ai-history-card__title-row">
+                          <span className="ai-history-card__title">{displayTitle}</span>
+                          {isActive && (
+                            <span className="ai-history-card__badge">{t('ai.active_chat')}</span>
+                          )}
+                        </div>
+                        <div className="ai-history-card__meta">
+                          <span>{timeStr}</span>
+                          <span>•</span>
+                          <span>{msgCountText}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="ai-history-card__delete"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteChat(s.id)
+                        }}
+                        aria-label={t('ai.delete_chat')}
+                        title={t('ai.delete_chat')}
+                      >
+                        <Icon name="trash" size={15} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {validSessions.length > 0 && (
+              <div className="ai-history__footer">
+                <button
+                  type="button"
+                  className="ai-history__clear-all-btn"
+                  onClick={() => {
+                    clearAllChats()
+                    setShowHistory(false)
+                  }}
+                >
+                  <Icon name="trash" size={14} aria-hidden="true" />
+                  <span>{t('ai.clear_all')}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="ai-drawer__list" ref={listRef}>
+              {messages.length === 0 && !sending && (
+                <div className="ai-drawer__empty">
+                  <p className="ai-drawer__empty-title">{t('ai.welcome')}</p>
+                  <p className="ai-drawer__empty-body">{t('ai.welcome_body')}</p>
+                  <div className="ai-drawer__suggestions" role="list">
+                    {suggestions.map((s) => (
+                      <button key={s} type="button" className="ai-drawer__chip" onClick={() => onSuggestion(s)}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {messages.map((m) => (
+                <div key={m.id} className={`ai-msg ai-msg--${m.role}${m.isError ? ' ai-msg--error' : ''}`}>
+                  <div className="ai-msg__bubble">
                 {m.role === 'assistant' && !m.isError ? (
                   <FormattedMessage
                     content={m.content}
@@ -310,6 +467,8 @@ export function AiAssistantDrawer() {
         <div className="ai-drawer__foot" style={{ maxHeight: MAX_HEIGHT_PHONE }}>
           <span>{t('ai.disclaimer')}</span>
         </div>
+        </>
+      )}
       </aside>
     </div>
   )
