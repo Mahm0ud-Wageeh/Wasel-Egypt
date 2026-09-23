@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Wasel Figma Kit — Contact Sheet</title>
+<style>
+  body { background:#0B0E23; margin:0; padding:32px; font-family:'Cairo',sans-serif; }
+  h1 { color:#fff; font-size:20px; margin:0 0 20px; }
+  .grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:20px; }
+  figure { margin:0; background:#12162E; border-radius:12px; padding:10px; }
+  img { width:100%; display:block; border-radius:8px; }
+  figcaption { color:#8A90B8; font-size:11px; padding:8px 4px 2px; direction:ltr; text-align:left; font-family:monospace; }
+</style>
+</head>
+<body>
+<h1>Wasel Egypt — Figma Kit · 20 SVG boards</h1>
+<div class="grid" id="grid"></div>
+<script>
+const files = ['00-cover','01-design-system','02-welcome','03-home','04-planner','05-journey-active','06-journey-completed','07-history','08-map','09-metro','10-lrt','11-monorail','12-brt','13-train','14-fares','15-community','16-notifications','17-auth','18-profile','19-admin'];
+document.getElementById('grid').innerHTML = files.map(f =>
+  `<figure><img src="svg/${f}.svg" loading="eager"><figcaption>${f}.svg</figcaption></figure>`).join('');
+</script>
+</body>
+</html>

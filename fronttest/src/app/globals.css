@@ -1,0 +1,302 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   WASEL EGYPT — Merged Design System
+   Base: ClickUp™ professional light style (white marble, ink
+   CTAs, 9999px pills, hairline borders, surgical color).
+   Content: Official Egyptian transit line tokens (MoT liveries).
+   Fonts: Cairo (AR display) · Tajawal (AR body) · Plus Jakarta
+   Sans (Latin display) · Inter (Latin body) · JetBrains Mono.
+   ============================================================ */
+
+@theme inline {
+  /* shadcn bridge */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* ===== WASEL neutrals (ClickUp scale) ===== */
+  --color-canvas: #ffffff;
+  --color-ink: #202020;
+  --color-onyx: #090c1d;
+  --color-carbon: #2a2a2a;
+  --color-slateink: #646464;
+  --color-ash: #838383;
+  --color-fog: #b3b3b3;
+  --color-cloud: #d4d4d4;
+  --color-bone: #e8e8e8;
+  --color-mist: #f8f9fa;
+  --color-plaster: #e9ebf0;
+  --color-mercury: #eeeeee;
+
+  /* ===== Brand & interactive (surgical use only) ===== */
+  --color-brand: #6647f0;      /* brand identity moments only */
+  --color-interactive: #0091ff;/* links & interactive accents  */
+  --color-mint: #6ee7b7;
+  --color-emerald: #00c07a;
+
+  /* ===== Official Egyptian transit line tokens ===== */
+  --color-l1: #1d4ed8;   /* Metro Line 1 — Royal Blue  */
+  --color-l2: #dc2626;   /* Metro Line 2 — Crimson Red */
+  --color-l3: #16a34a;   /* Metro Line 3 — Emerald     */
+  --color-l4: #ea580c;   /* Metro Line 4 — Orange      */
+  --color-lrt: #0284c7;  /* Capital LRT — Sky Cyan     */
+  --color-mnr: #7c3aed;  /* Monorail — Electric Violet */
+  --color-brt: #d97706;  /* Ring Road BRT — Amber Gold */
+  --color-enr: #991b1b;  /* National Railways — Maroon */
+  --color-bus: #0d9488;  /* CTA Bus — Teal             */
+  --color-mbus: #d97706; /* Microbus — Amber           */
+  --color-walk: #64748b; /* Walking legs — Slate       */
+
+  /* ===== Fonts ===== */
+  --font-sans: var(--font-inter), var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
+  --font-head: var(--font-cairo), var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-latin: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* shadcn mapping → ClickUp professional light */
+  --background: #ffffff;
+  --foreground: #202020;
+  --card: #ffffff;
+  --card-foreground: #202020;
+  --popover: #ffffff;
+  --popover-foreground: #202020;
+  --primary: #202020;
+  --primary-foreground: #ffffff;
+  --secondary: #f8f9fa;
+  --secondary-foreground: #202020;
+  --muted: #f8f9fa;
+  --muted-foreground: #646464;
+  --accent: #f4f2ff;
+  --accent-foreground: #4c34c9;
+  --destructive: #dc2626;
+  --border: #e8e8e8;
+  --input: #e8e8e8;
+  --ring: #0091ff;
+}
+
+/* ============ Base ============ */
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Arabic text must never receive letter-spacing (connected script) */
+:lang(ar),
+[dir="rtl"] {
+  letter-spacing: 0;
+}
+
+::selection {
+  background: #6647f0;
+  color: #ffffff;
+}
+
+/* ============ Signature utilities ============ */
+
+/* Rotating conic-gradient border — ONE hero element per page max */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes angle-spin {
+  to {
+    --angle: 360deg;
+  }
+}
+.conic-border {
+  position: relative;
+  isolation: isolate;
+}
+.conic-border::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--angle),
+    #7d5be7 0%,
+    #bc3fda 12%,
+    #fa24ce 24%,
+    #fb49a5 34%,
+    #fc6d7b 44%,
+    #fd9a46 54%,
+    #f687c6 64%,
+    #a3a0e0 76%,
+    #4fb9fa 88%,
+    #0091ff 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: angle-spin 3.2s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Light glassmorphism (headers, floating bars, bottom sheets) */
+.glass {
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(32, 32, 32, 0.07);
+}
+
+/* Dark premium panel (contrast sections / admin) */
+.dark-panel {
+  background: linear-gradient(rgba(17, 17, 17) 24%, rgba(0, 0, 0));
+  color: #ffffff;
+}
+
+/* Flat card — defined by hairline, not shadow */
+.card-flat {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+}
+.card-mist {
+  background: #f8f9fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+}
+
+/* Mono meta label — 10px uppercase wide tracking (Latin only) */
+.mono-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #838383;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Numerical HUD — fixed width, no jitter */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Section rhythm: tight inside, spacious between */
+.section-gap {
+  padding-top: 72px;
+  padding-bottom: 72px;
+}
+@media (min-width: 768px) {
+  .section-gap {
+    padding-top: 96px;
+    padding-bottom: 96px;
+  }
+}
+
+/* Motion philosophy: 0.45s slow-out settle */
+.settle {
+  transition: all 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.settle-fast {
+  transition: all 0.15s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise-in {
+  animation: rise-in 0.45s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@keyframes gps-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 145, 255, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(0, 145, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 145, 255, 0);
+  }
+}
+.gps-pulse {
+  animation: gps-pulse 2s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.dash-flow {
+  stroke-dasharray: 8 6;
+  animation: dash-flow 1.2s linear infinite;
+}
+
+/* Slim elegant scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b3b3b3;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
