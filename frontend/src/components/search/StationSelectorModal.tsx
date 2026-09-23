@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import type { Lang } from '../../App'
+export type Lang = 'ar' | 'en'
 import { searchPlaces, PlaceSearchStop, PlaceSearchPlace } from '../../api/places'
 import { EGYPT_STATIONS, TRANSIT_LINES, Station } from '../../data/egyptTransitData'
 import { ModeIcon } from '../icons'

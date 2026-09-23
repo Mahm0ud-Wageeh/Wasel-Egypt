@@ -110,3 +110,27 @@ export async function fetchVariantGeometry(variantId: number | string): Promise<
   }
   return out
 }
+
+/** Real network statistics (landing page metrics). */
+export async function fetchNetworkStats(): Promise<any> {
+  try {
+    const res = await apiRequest<any>(endpoints.public.networkStats, { method: 'GET', auth: false })
+    return unwrapData(res)
+  } catch {
+    return null
+  }
+}
+
+/** Active service alerts. */
+export async function fetchActiveAlerts(): Promise<any[]> {
+  try {
+    const res = await apiRequest<any>(endpoints.public.activeServiceAlerts, { method: 'GET', auth: false })
+    const d = unwrapData(res)
+    if (Array.isArray(d)) return d
+    if (Array.isArray(d?.data)) return d.data
+    return []
+  } catch {
+    return []
+  }
+}
+

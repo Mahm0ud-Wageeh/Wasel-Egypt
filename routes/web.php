@@ -16,15 +16,16 @@ use Illuminate\Support\Facades\Route;
 Route::get('/{any?}', function () {
     $indexPath = public_path('index.html');
     if (!file_exists($indexPath)) {
-        $distPath = base_path('frontend/dist/index.html');
-        if (file_exists($distPath)) {
-            return response()->file($distPath, [
+        $outPath = base_path('frontend/out/index.html');
+        if (file_exists($outPath)) {
+            return response()->file($outPath, [
                 'Content-Type' => 'text/html; charset=UTF-8',
             ]);
         }
-        return response('Wasel Egypt frontend not built yet. Run `npm run build` in the frontend directory.', 404);
+        return response('Wasel Egypt frontend not built yet. Run `npm run build && npm run publish:laravel` in the frontend directory.', 404);
     }
     return response()->file($indexPath, [
         'Content-Type' => 'text/html; charset=UTF-8',
     ]);
 })->where('any', '^(?!api/).*$');
+

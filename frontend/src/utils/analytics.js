@@ -10,7 +10,7 @@
 let isInitialized = false;
 
 export function initGA() {
-  const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+  const measurementId = (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env?.VITE_GA_MEASUREMENT_ID)) || '';
 
   if (!measurementId || typeof window === 'undefined') {
     return false;
@@ -86,7 +86,7 @@ function sanitizeParams(params = {}) {
  * - ai_action_executed
  */
 export function trackEvent(eventName, params = {}) {
-  const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+  const measurementId = (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env?.VITE_GA_MEASUREMENT_ID)) || '';
   if (!measurementId || typeof window === 'undefined' || typeof window.gtag !== 'function') {
     return;
   }
@@ -104,7 +104,7 @@ export function trackEvent(eventName, params = {}) {
  * Track page view for SPA routes
  */
 export function trackPageView(pagePath, pageTitle) {
-  const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+  const measurementId = (typeof process !== 'undefined' && (process.env?.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env?.VITE_GA_MEASUREMENT_ID)) || '';
   if (!measurementId || typeof window === 'undefined' || typeof window.gtag !== 'function') {
     return;
   }

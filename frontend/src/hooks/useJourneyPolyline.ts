@@ -22,7 +22,7 @@ export interface UseJourneyPolylineResult {
   retry: () => void
 }
 
-const isDev = Boolean((import.meta as any)?.env?.DEV)
+const isDev = process.env.NODE_ENV !== 'production'
 
 /**
  * Validate coordinates within reasonable bounds for Egypt transit.

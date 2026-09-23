@@ -1,0 +1,17 @@
+# Antigravity/Gemini — do not index binaries, deps, churn or local artifacts.
+# Agent still reads these explicitly on demand; this only stops background watch/index traffic.
+storage/app/osrm/
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+vendor/
+frontend/node_modules/
+frontend/dist/
+public/build/
+.git/
+gui-test-screenshots/
+.playwright-mcp/
+*.osrm.*
+*.osm.pbf
+*.log

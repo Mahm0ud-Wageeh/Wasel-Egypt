@@ -85,7 +85,7 @@ interface Props {
 const STORAGE_KEY = 'wasel.map.layer'
 
 function defaultLayer(): BasemapType {
-  const envDefault = (import.meta as any).env?.VITE_MAP_DEFAULT_LAYER
+  const envDefault = typeof process !== 'undefined' ? (process.env?.NEXT_PUBLIC_MAP_DEFAULT_LAYER || (process.env as any)?.VITE_MAP_DEFAULT_LAYER) : null
   if (envDefault === 'streets' || envDefault === 'satellite' || envDefault === 'dark') return envDefault
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -95,10 +95,10 @@ function defaultLayer(): BasemapType {
 }
 
 function tileUrl(kind: 'satellite' | 'streets' | 'dark'): string {
-  const env = (import.meta as any).env ?? {}
-  if (kind === 'satellite') return env.VITE_MAP_SATELLITE_TILES_URL || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-  if (kind === 'dark') return env.VITE_MAP_DARK_TILES_URL || 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-  return env.VITE_MAP_TILES_URL || env.VITE_MAP_STREETS_TILES_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+  const env: any = typeof process !== 'undefined' ? (process.env || {}) : {}
+  if (kind === 'satellite') return env.NEXT_PUBLIC_MAP_SATELLITE_TILES_URL || env.VITE_MAP_SATELLITE_TILES_URL || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+  if (kind === 'dark') return env.NEXT_PUBLIC_MAP_DARK_TILES_URL || env.VITE_MAP_DARK_TILES_URL || 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+  return env.NEXT_PUBLIC_MAP_TILES_URL || env.NEXT_PUBLIC_MAP_STREETS_TILES_URL || env.VITE_MAP_TILES_URL || env.VITE_MAP_STREETS_TILES_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 }
 
 // Esri reference overlays: boundaries/places + transportation labels.
@@ -447,7 +447,7 @@ export default function InteractiveMap({
       onMapClickRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng })
     })
 
-    if ((import.meta as any).env?.DEV) (window as any).__waselMap = map
+    if (process.env.NODE_ENV !== 'production') (window as any).__waselMap = map
     try {
       resizeObserver = new ResizeObserver(() => { try { map.resize() } catch { /* ignore */ } })
       if (mapContainer.current) resizeObserver.observe(mapContainer.current)

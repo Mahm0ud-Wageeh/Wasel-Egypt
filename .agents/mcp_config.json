@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "21st": {
+      "url": "https://21st.dev/api/mcp",
+      "headers": {
+        "x-api-key": "21st_sk_9623efeb984024e68ac9d18b24e7d5ed45623f8cc9eb31ad40eb162cd37de590"
+      }
+    },
+    "aas": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package=agentic-awesome-skills@18.2.0",
+        "aas-mcp"
+      ]
+    }
+  }
+}

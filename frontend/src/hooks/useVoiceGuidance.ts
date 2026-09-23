@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Lang } from '../App'
+export type Lang = 'ar' | 'en'
 
 const STORAGE_KEY = 'wasel.voice_guidance.muted'
 

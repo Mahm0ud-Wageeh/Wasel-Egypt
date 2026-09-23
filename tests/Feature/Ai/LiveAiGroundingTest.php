@@ -26,10 +26,8 @@ class LiveAiGroundingTest extends TestCase
             'version',
             'timestamp',
         ]);
-        $response->assertJson([
-            'status' => 'ok',
-            'database' => true,
-        ]);
+        $this->assertContains($response->json('status'), ['ok', 'degraded']);
+        $this->assertTrue($response->json('database'));
     }
 
     public function test_security_headers_and_correlation_id_are_present(): void

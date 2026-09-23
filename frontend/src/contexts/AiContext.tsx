@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { apiRequest } from '../api/client'
 import { endpoints } from '../api/endpoints'
-import type { Screen, Lang } from '../App'
+export type Lang = 'ar' | 'en'
+export type Screen = string
 
 export interface AiAction {
   action: string

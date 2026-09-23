@@ -2,7 +2,9 @@
  * HTTP Client for Wasel Egypt Laravel API v1.
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
+const BASE_URL =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_BASE_URL) ||
+  '/api/v1'
 const TOKEN_STORAGE_KEY = 'wasel.auth.token'
 
 export function getToken(): string | null {
