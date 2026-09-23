@@ -57,32 +57,56 @@ const SCREEN_COMPONENTS: Record<ScreenKey, ComponentType<ScreenProps>> = {
 
 const FloatingHub = dynamic(() => import("@/components/floating-hub"), { ssr: false });
 
-/* ------------------------------ Hash routing ------------------------------ */
+/* ------------------------------ Clean SPA Routing ------------------------------ */
+
+function getRouteSnapshot(): string {
+  if (typeof window === "undefined") return "/";
+  // If hash is present (e.g. #/planner), prioritize it for backwards compatibility
+  if (window.location.hash && window.location.hash !== "#" && window.location.hash !== "#/") {
+    return window.location.hash + (window.location.search || "");
+  }
+  return window.location.pathname + (window.location.search || "");
+}
+
+function getRouteServerSnapshot(): string {
+  return "/";
+}
 
 function subscribe(onStoreChange: () => void) {
   const handler = () => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     onStoreChange();
   };
+  window.addEventListener("popstate", handler);
   window.addEventListener("hashchange", handler);
-  return () => window.removeEventListener("hashchange", handler);
+  return () => {
+    window.removeEventListener("popstate", handler);
+    window.removeEventListener("hashchange", handler);
+  };
 }
 
-function getHashSnapshot(): string {
-  return window.location.hash;
-}
+function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
+  // Normalize hash or clean pathname (e.g. "#/planner" or "/planner" or "/")
+  const clean = loc.replace(/^#\/?/, "").replace(/^\//, "");
+  const [path, qs] = clean.split("?");
 
-function getHashServerSnapshot(): string {
-  return "#/welcome";
-}
+  let key: ScreenKey = "home";
+  if (path && isScreenKey(path)) {
+    key = path as ScreenKey;
+  } else if (path === "" || path === "home") {
+    key = "home";
+  } else if (path === "welcome" || path === "landing") {
+    key = "welcome";
+  }
 
-function parseHash(hash: string): { key: ScreenKey; params: ScreenParams } {
-  const raw = hash.replace(/^#\/?/, "");
-  const [path, qs] = raw.split("?");
-  const key = path && isScreenKey(path) ? path : "welcome";
   const params: ScreenParams = {};
   if (qs) {
     for (const [k, v] of new URLSearchParams(qs).entries()) {
+      params[k] = v;
+    }
+  }
+  if (typeof window !== "undefined" && window.location.search) {
+    for (const [k, v] of new URLSearchParams(window.location.search).entries()) {
       params[k] = v;
     }
   }
@@ -96,12 +120,15 @@ const HIDE_HEADER: ScreenKey[] = ["auth", "welcome", "admin"];
 const HIDE_FOOTER: ScreenKey[] = ["welcome", "auth", "admin", "map"];
 
 export default function WaselApp() {
-  const hash = useSyncExternalStore(subscribe, getHashSnapshot, getHashServerSnapshot);
-  const { key, params } = useMemo(() => parseHash(hash), [hash]);
+  const route = useSyncExternalStore(subscribe, getRouteSnapshot, getRouteServerSnapshot);
+  const { key, params } = useMemo(() => parseLocation(route), [route]);
 
   const navigate = useCallback<NavigateFn>((next, nextParams) => {
     const qs = nextParams ? new URLSearchParams(nextParams).toString() : "";
-    window.location.hash = `/${next}${qs ? `?${qs}` : ""}`;
+    const targetPath = next === "home" ? `/${qs ? `?${qs}` : ""}` : `/${next}${qs ? `?${qs}` : ""}`;
+    window.history.pushState(null, "", targetPath);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    window.dispatchEvent(new Event("popstate"));
   }, []);
 
   const Current = SCREEN_COMPONENTS[key];
