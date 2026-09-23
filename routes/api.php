@@ -65,6 +65,16 @@ Route::prefix('v1')->group(function () {
         Route::post('reports/{id}/moderate', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'moderate'])->middleware(['role:moderator,admin', 'throttle:30,1']);
         Route::get('users/{id}/trust', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'trust']);
 
+        // Favorite locations (Saved Places)
+        Route::get('favorite-locations', [App\Http\Controllers\Api\V1\FavoriteLocationController::class, 'index']);
+        Route::post('favorite-locations', [App\Http\Controllers\Api\V1\FavoriteLocationController::class, 'store'])->middleware('throttle:30,1');
+        Route::delete('favorite-locations/{id}', [App\Http\Controllers\Api\V1\FavoriteLocationController::class, 'destroy'])->middleware('throttle:30,1');
+
+        // Wasel Digital Wallet
+        Route::get('wallet', [App\Http\Controllers\Api\V1\WalletController::class, 'show']);
+        Route::post('wallet/topup', [App\Http\Controllers\Api\V1\WalletController::class, 'topUp'])->middleware('throttle:20,1');
+        Route::post('wallet/pay', [App\Http\Controllers\Api\V1\WalletController::class, 'pay'])->middleware('throttle:30,1');
+
         // Notifications (strictly personal, in-app)
         Route::get('notifications', [App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
         Route::get('notifications/unread-count', [App\Http\Controllers\Api\V1\NotificationController::class, 'unreadCount']);

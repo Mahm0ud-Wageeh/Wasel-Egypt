@@ -6,12 +6,15 @@
  * top-up dialog (presets + custom), and slide-down transaction log.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { PillButton } from "@/components/kit";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { formatEGP, seeded } from "@/lib/transit-data";
+import { formatEGP } from "@/lib/transit-data";
+import { apiRequest } from "@/api/client";
+import { endpoints } from "@/api/endpoints";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -20,29 +23,53 @@ import {
   Plus,
   Ticket,
   Wallet,
+  Loader2,
 } from "lucide-react";
 
-/* ------------------------------ mock data ------------------------------ */
-
-const TRANSACTIONS = [
-  { id: "t1", kind: "charge" as const, title: "شحن المحفظة — فيزا", amount: 100, date: "12 أكتوبر · 09:24" },
-  { id: "t2", kind: "trip" as const, title: "رحلة مترو — الخط الثالث", amount: -15, date: "11 أكتوبر · 18:02" },
-  { id: "t3", kind: "trip" as const, title: "رحلة BRT — الدائري", amount: -10, date: "10 أكتوبر · 08:15" },
-  { id: "t4", kind: "charge" as const, title: "شحن المحفظة — محفظة إلكترونية", amount: 100, date: "5 أكتوبر · 21:40" },
-  { id: "t5", kind: "trip" as const, title: "رحلة مونوريل — النيل الشرقي", amount: -12, date: "3 أكتوبر · 16:33" },
-];
+interface Transaction {
+  id: string | number;
+  type: string;
+  description_ar: string;
+  amount: number;
+  created_at: string;
+}
 
 const PRESETS = [50, 100, 200];
 
-/* ------------------------------ component ------------------------------ */
-
 export function WalletCard() {
-  const [balance, setBalance] = useState(175);
+  const { isLoggedIn } = useAuth();
+  const [balance, setBalance] = useState<number>(() => {
+    const saved = localStorage.getItem("wasel.wallet.balance");
+    return saved ? Number(saved) : 175.0;
+  });
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [chargeOpen, setChargeOpen] = useState(false);
   const [preset, setPreset] = useState<number | null>(null);
   const [custom, setCustom] = useState("");
   const [error, setError] = useState("");
+
+  const fetchWallet = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      setLoading(true);
+      const res = await apiRequest<{ balance: number; transactions: Transaction[] }>(endpoints.wallet.show);
+      if (res) {
+        setBalance(Number(res.balance));
+        setTransactions(res.transactions || []);
+        localStorage.setItem("wasel.wallet.balance", String(res.balance));
+      }
+    } catch {
+      // Offline / unauthenticated fallback
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    fetchWallet();
+  }, [fetchWallet]);
 
   const customAmount = Number(custom.replace(/\D/g, "")) || 0;
   const chosen = preset ?? customAmount;
@@ -54,17 +81,38 @@ export function WalletCard() {
     setChargeOpen(true);
   };
 
-  const confirmCharge = () => {
+  const confirmCharge = async () => {
     if (chosen < 10) {
       setError("أقل قيمة شحن هي 10 ج.م");
       return;
     }
-    setBalance((b) => b + chosen);
-    setChargeOpen(false);
-    toast({
-      title: "تم شحن المحفظة بنجاح",
-      description: `تمت إضافة ${chosen.toFixed(2)} ج.م إلى رصيد بطاقتك الذكية.`,
-    });
+
+    try {
+      if (isLoggedIn) {
+        const res = await apiRequest<{ balance: number; transaction: Transaction }>(endpoints.wallet.topup, {
+          method: "POST",
+          body: { amount: chosen, payment_method: "instapay" },
+        });
+        if (res) {
+          setBalance(Number(res.balance));
+          if (res.transaction) {
+            setTransactions((prev) => [res.transaction, ...prev]);
+          }
+        }
+      } else {
+        const nextBal = balance + chosen;
+        setBalance(nextBal);
+        localStorage.setItem("wasel.wallet.balance", String(nextBal));
+      }
+
+      setChargeOpen(false);
+      toast({
+        title: "تم شحن المحفظة بنجاح",
+        description: `تمت إضافة ${chosen.toFixed(2)} ج.م إلى رصيد بطاقتك الذكية.`,
+      });
+    } catch (err: any) {
+      setError(err?.message || "تعذر إتمام عملية الشحن حالياً");
+    }
   };
 
   return (
@@ -140,41 +188,52 @@ export function WalletCard() {
           >
             <div className="overflow-hidden">
               <div className="space-y-1.5 rounded-2xl border border-white/10 bg-black/30 p-2.5">
-                {TRANSACTIONS.map((t, i) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center gap-3 rounded-xl px-2.5 py-2 hover:bg-white/[0.04]"
-                    style={{ opacity: 1 - i * 0.04 }}
-                  >
-                    <span
-                      className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-full",
-                        t.kind === "charge" ? "bg-emerald/15 text-emerald" : "bg-white/10 text-white/70"
-                      )}
-                    >
-                      {t.kind === "charge" ? (
-                        <ArrowDownLeft className="size-3.5" />
-                      ) : (
-                        <ArrowUpRight className="size-3.5" />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[12.5px] font-bold">{t.title}</div>
-                      <div className="mt-0.5 text-[11px] text-white/40">{t.date}</div>
-                    </div>
-                    <span
-                      className={cn(
-                        "num shrink-0 text-[13px] font-bold",
-                        t.kind === "charge" ? "text-emerald" : "text-white/80"
-                      )}
-                    >
-                      {t.amount > 0 ? "+" : "−"}
-                      {Math.abs(t.amount).toFixed(2)}
-                    </span>
+                {transactions.length === 0 ? (
+                  <div className="py-4 text-center text-[12px] text-white/50">
+                    لا توجد معاملات مسجلة بعد
                   </div>
-                ))}
+                ) : (
+                  transactions.slice(0, 10).map((t, i) => {
+                    const isCharge = t.type === "topup" || t.amount > 0;
+                    return (
+                      <div
+                        key={t.id || i}
+                        className="flex items-center gap-3 rounded-xl px-2.5 py-2 hover:bg-white/[0.04]"
+                        style={{ opacity: 1 - i * 0.04 }}
+                      >
+                        <span
+                          className={cn(
+                            "flex size-8 shrink-0 items-center justify-center rounded-full",
+                            isCharge ? "bg-emerald/15 text-emerald" : "bg-white/10 text-white/70"
+                          )}
+                        >
+                          {isCharge ? (
+                            <ArrowDownLeft className="size-3.5" />
+                          ) : (
+                            <ArrowUpRight className="size-3.5" />
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12.5px] font-bold">{t.description_ar}</div>
+                          <div className="mt-0.5 text-[11px] text-white/40">{t.created_at ? new Date(t.created_at).toLocaleDateString("ar-EG") : "اليوم"}</div>
+                        </div>
+                        <span
+                          className={cn(
+                            "num shrink-0 text-[13px] font-bold",
+                            isCharge ? "text-emerald" : "text-white/80"
+                          )}
+                        >
+                          {isCharge ? "+" : ""}
+                          {Number(t.amount).toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
                 <div className="px-2.5 pb-1 pt-0.5">
-                  <span className="mono-tag !text-white/30">LAST 5 OF {40 + Math.floor(seeded(7) * 9)} TRANSACTIONS</span>
+                  <span className="mono-tag !text-white/30">
+                    {transactions.length} TRANSACTIONS RECORDED
+                  </span>
                 </div>
               </div>
             </div>

@@ -6,7 +6,7 @@
  * and a dashed "add place" card.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { PillButton } from "@/components/kit";
 import {
@@ -23,7 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Briefcase, Home, MapPin, Pencil, Plus, TrainFront } from "lucide-react";
+import { apiRequest } from "@/api/client";
+import { endpoints } from "@/api/endpoints";
+import { useAuth } from "@/contexts/AuthContext";
+import { Briefcase, Home, MapPin, Pencil, Plus, TrainFront, Trash2, Loader2 } from "lucide-react";
 
 /* ------------------------------ local data ------------------------------ */
 
@@ -44,11 +47,14 @@ const STATIONS = [
 ];
 
 interface Place {
-  id: string;
-  label: string;
-  icon: "home" | "work" | "pin";
-  address: string;
-  station: string;
+  id: string | number;
+  name?: string;
+  label?: string;
+  icon?: "home" | "work" | "pin";
+  address?: string;
+  station?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const INITIAL_PLACES: Place[] = [
@@ -77,9 +83,39 @@ const PLACE_ICONS = {
 /* ------------------------------ component ------------------------------ */
 
 export function SavedPlaces() {
+  const { isLoggedIn } = useAuth();
   const [places, setPlaces] = useState<Place[]>(INITIAL_PLACES);
   const [editing, setEditing] = useState<Place | null>(null);
   const [adding, setAdding] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchPlaces = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      setLoading(true);
+      const res = await apiRequest<{ data?: Place[] } | Place[]>(endpoints.favoriteLocations.list);
+      const list = Array.isArray(res) ? res : (res as any)?.data;
+      if (Array.isArray(list) && list.length > 0) {
+        setPlaces(
+          list.map((item: any) => ({
+            id: item.id,
+            label: item.name || item.label || "مكان محفوظ",
+            icon: item.place_type === "home" ? "home" : item.place_type === "work" ? "work" : "pin",
+            address: item.address || `محطة ${item.name}`,
+            station: item.name || "محطة المترو",
+          }))
+        );
+      }
+    } catch {
+      // Keep local state
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    fetchPlaces();
+  }, [fetchPlaces]);
 
   return (
     <>
@@ -132,22 +168,34 @@ export function SavedPlaces() {
           setEditing(null);
           setAdding(false);
         }}
-        onSave={(label, station) => {
-          if (editing) {
-            setPlaces((ps) =>
-              ps.map((p) =>
-                p.id === editing.id
-                  ? { ...p, label: label || p.label, station }
-                  : p
-              )
-            );
-            toast({ title: "تم تحديث المكان", description: `${label || editing.label} — أقرب محطة: ${station}` });
-          } else {
+        onSave={async (label, station) => {
+          const placeLabel = label || station || "مكان محفوظ";
+          try {
+            if (isLoggedIn) {
+              await apiRequest(endpoints.favoriteLocations.create, {
+                method: "POST",
+                body: {
+                  name: placeLabel,
+                  address: `بالقرب من محطة ${station}`,
+                  latitude: 30.0444,
+                  longitude: 31.2357,
+                  place_type: placeLabel.includes("منزل") ? "home" : placeLabel.includes("عمل") ? "work" : "other",
+                },
+              });
+              await fetchPlaces();
+            } else {
+              setPlaces((ps) => [
+                ...ps,
+                { id: `p${ps.length + 1}`, label: placeLabel, icon: "pin", address: `بالقرب من محطة ${station}`, station },
+              ]);
+            }
+            toast({ title: "تم حفظ المكان بنجاح", description: `${placeLabel} — أقرب محطة: ${station}` });
+          } catch {
             setPlaces((ps) => [
               ...ps,
-              { id: `p${ps.length + 1}`, label: label || "مكان جديد", icon: "pin", address: `بالقرب من محطة ${station}`, station },
+              { id: `p${ps.length + 1}`, label: placeLabel, icon: "pin", address: `بالقرب من محطة ${station}`, station },
             ]);
-            toast({ title: "تمت إضافة المكان", description: `${label || "مكان جديد"} — أقرب محطة: ${station}` });
+            toast({ title: "تم حفظ المكان محلياً", description: `${placeLabel}` });
           }
           setEditing(null);
           setAdding(false);

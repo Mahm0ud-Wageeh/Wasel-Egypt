@@ -127,4 +127,18 @@ export const endpoints = {
     dataQuality: '/admin/data/quality',
     dataAudit: '/admin/data/audit',
   },
+
+  // Saved Favorite Locations
+  favoriteLocations: {
+    list: '/favorite-locations',
+    create: '/favorite-locations',
+    remove: (id: string | number) => `/favorite-locations/${id}`,
+  },
+
+  // Digital Wallet
+  wallet: {
+    show: '/wallet',
+    topup: '/wallet/topup',
+    pay: '/wallet/pay',
+  },
 }
