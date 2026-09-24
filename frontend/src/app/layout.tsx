@@ -57,6 +57,43 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var clean = function() {
+                    var els = document.querySelectorAll('[bis_skin_checked]');
+                    for (var i = 0; i < els.length; i++) {
+                      els[i].removeAttribute('bis_skin_checked');
+                    }
+                  };
+                  clean();
+                  if (typeof MutationObserver !== 'undefined') {
+                    var observer = new MutationObserver(function(mutations) {
+                      for (var i = 0; i < mutations.length; i++) {
+                        var m = mutations[i];
+                        if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked') {
+                          m.target.removeAttribute('bis_skin_checked');
+                        }
+                      }
+                    });
+                    if (document.documentElement) {
+                      observer.observe(document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['bis_skin_checked'],
+                        subtree: true
+                      });
+                    }
+                  }
+                  window.addEventListener('DOMContentLoaded', clean);
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         suppressHydrationWarning
         className={`${cairo.variable} ${tajawal.variable} ${jakarta.variable} ${inter.variable} ${jetbrains.variable} antialiased bg-white text-ink`}

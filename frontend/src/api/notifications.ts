@@ -53,3 +53,12 @@ export async function markAllNotificationsRead(): Promise<void> {
 export async function deleteNotification(id: number | string): Promise<void> {
   await apiRequest(endpoints.notifications.remove(id), { method: 'DELETE' })
 }
+
+export async function getNotifications(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.notifications.list, { query })
+  return response
+}
+
+export async function getUnreadCount(): Promise<number> {
+  return fetchUnreadCount()
+}

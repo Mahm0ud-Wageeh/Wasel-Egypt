@@ -96,26 +96,35 @@ export function useVoiceGuidance({
       try {
         window.speechSynthesis.cancel() // cancel previous utterance
 
-        const utterance = new SpeechSynthesisUtterance(text)
-        utterance.lang = isArabic ? 'ar-SA' : 'en-US'
-        utterance.rate = isArabic ? 0.95 : 1.0
-        utterance.pitch = 1.0
-
-        // Best voice matching
-        const matchingVoice = voicesRef.current.find(v =>
-          isArabic ? v.lang?.startsWith('ar') : v.lang?.startsWith('en')
-        )
-        if (matchingVoice) {
-          utterance.voice = matchingVoice
+        const UtteranceClass = (window as any).SpeechSynthesisUtterance || (globalThis as any).SpeechSynthesisUtterance
+        let utterance: any
+        try {
+          utterance = new UtteranceClass(text)
+        } catch {
+          utterance = UtteranceClass(text)
         }
 
-        lastSpokenRef.current = {
-          text,
-          timestamp: now,
-          distanceBucket: null,
-        }
+        if (utterance) {
+          utterance.lang = isArabic ? 'ar-SA' : 'en-US'
+          utterance.rate = isArabic ? 0.95 : 1.0
+          utterance.pitch = 1.0
 
-        window.speechSynthesis.speak(utterance)
+          // Best voice matching
+          const matchingVoice = voicesRef.current.find(v =>
+            isArabic ? v.lang?.startsWith('ar') : v.lang?.startsWith('en')
+          )
+          if (matchingVoice) {
+            utterance.voice = matchingVoice
+          }
+
+          lastSpokenRef.current = {
+            text,
+            timestamp: now,
+            distanceBucket: null,
+          }
+
+          window.speechSynthesis.speak(utterance)
+        }
       } catch {
         // Non-fatal voice playback failure
       }

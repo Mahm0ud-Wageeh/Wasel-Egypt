@@ -126,5 +126,10 @@ export async function apiRequest<T = any>(
     })
   }
 
-  return (parsed?.data !== undefined ? parsed.data : parsed) as T
+  return parsed as T
+}
+
+export async function getData<T = any>(path: string, options?: any): Promise<T> {
+  const payload = await apiRequest<any>(path, options)
+  return (payload?.data !== undefined ? payload.data : payload) as T
 }

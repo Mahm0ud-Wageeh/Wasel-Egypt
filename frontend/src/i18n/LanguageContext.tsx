@@ -20,18 +20,21 @@ const DICTIONARIES: Record<SupportedLanguage, Record<string, string>> = {
   ar: ar as Record<string, string>,
 }
 
-function readStoredLanguage(): SupportedLanguage {
+function readStoredLanguage(fallback: SupportedLanguage = 'en'): SupportedLanguage {
   try {
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY)
     if (saved === 'ar' || saved === 'en') return saved
-    return 'ar' // Default to Arabic for Wasel Egypt
+    return fallback
   } catch {
-    return 'ar'
+    return fallback
   }
 }
 
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<SupportedLanguage>(readStoredLanguage)
+export const LanguageProvider: React.FC<{ children: React.ReactNode; defaultLanguage?: SupportedLanguage }> = ({
+  children,
+  defaultLanguage = 'en',
+}) => {
+  const [language, setLanguage] = useState<SupportedLanguage>(() => readStoredLanguage(defaultLanguage))
 
   useEffect(() => {
     const dir = language === 'ar' ? 'rtl' : 'ltr'

@@ -103,6 +103,22 @@ export const endpoints = {
     moderations: (id: string | number) => `/reports/${id}/moderations`,
   },
 
+  // Incidents (Community v2.1)
+  incidents: {
+    list: '/incidents',
+    create: '/incidents',
+    show: (id: string | number) => `/incidents/${id}`,
+    vote: (id: string | number) => `/incidents/${id}/vote`,
+    publicList: '/public/incidents',
+  },
+
+  // Saved Places (v2.1)
+  savedPlaces: {
+    list: '/saved-places',
+    create: '/saved-places',
+    remove: (id: string | number) => `/saved-places/${id}`,
+  },
+
   // Notifications
   notifications: {
     list: '/notifications',
@@ -110,6 +126,18 @@ export const endpoints = {
     markRead: (id: string | number) => `/notifications/${id}/read`,
     markAllRead: '/notifications/read-all',
     remove: (id: string | number) => `/notifications/${id}`,
+  },
+
+  // Admin Analytics
+  adminAnalytics: {
+    dashboard: '/admin/analytics/dashboard',
+    journeys: '/admin/analytics/journeys',
+    deviations: '/admin/analytics/deviations',
+    usage: '/admin/analytics/usage',
+    reports: '/admin/analytics/reports',
+    trust: '/admin/analytics/trust',
+    notifications: '/admin/analytics/notifications',
+    modes: '/admin/analytics/modes',
   },
 
   // Admin
@@ -121,11 +149,28 @@ export const endpoints = {
     usage: '/admin/analytics/usage',
     reports: '/admin/analytics/reports',
     users: '/admin/users',
+    user: (id: string | number) => `/admin/users/${id}`,
     deleteUser: (id: string | number) => `/admin/users/${id}`,
+    roles: '/admin/roles',
+    role: (id: string | number) => `/admin/roles/${id}`,
+    assignPermission: (roleId: string | number) => `/admin/roles/${roleId}/assign-permission`,
+    removePermission: (roleId: string | number, permissionId: string | number) =>
+      `/admin/roles/${roleId}/remove-permission/${permissionId}`,
+    permissions: '/admin/permissions',
     fares: '/admin/fares',
     dataImports: '/admin/data/imports',
     dataQuality: '/admin/data/quality',
     dataAudit: '/admin/data/audit',
+    rollbackPreview: (id: string | number) => `/admin/data/imports/${id}/rollback-preview`,
+    rollback: (id: string | number) => `/admin/data/imports/${id}/rollback`,
+  },
+
+  // Admin Transit consoles
+  adminTransit: {
+    stopTimes: '/stop-times',
+    stopTime: (id: string | number) => `/stop-times/${id}`,
+    routeGeometry: '/route-geometry',
+    routeGeometryItem: (id: string | number) => `/route-geometry/${id}`,
   },
 
   // Saved Favorite Locations

@@ -1,61 +1,118 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
+export interface PositionCoords {
+  lat: number
+  lng: number
+  accuracy?: number | null
+}
+
+export type GeolocationStatus =
+  | 'idle'
+  | 'locating'
+  | 'requesting'
+  | 'granted'
+  | 'denied'
+  | 'unavailable'
+  | 'timeout'
+  | 'error'
+  | 'simulated'
+
 export interface GeoLocationState {
+  status: GeolocationStatus
+  position: PositionCoords | null
+  message: string | null
   lat: number | null
   lng: number | null
   accuracy: number | null
   heading: number | null
   speed: number | null
-  status: 'idle' | 'requesting' | 'granted' | 'denied' | 'error' | 'simulated'
   error: string | null
 }
 
 // Default center: Downtown Cairo (Tahrir / Ramses)
 export const DEFAULT_CAIRO_COORDS = { lat: 30.0444, lng: 31.2357 }
 
-export function useGeolocation(autoWatch = true) {
+export function positionToSelection(pos: { lat: number; lng: number; accuracy?: number | null } | null) {
+  if (!pos) return null
+  return {
+    latitude: pos.lat,
+    longitude: pos.lng,
+    isCurrent: true,
+    accuracy: pos.accuracy ?? null,
+  }
+}
+
+export function useGeolocation(autoWatch = false) {
   const [state, setState] = useState<GeoLocationState>({
-    lat: DEFAULT_CAIRO_COORDS.lat,
-    lng: DEFAULT_CAIRO_COORDS.lng,
+    status: 'idle',
+    position: null,
+    message: null,
+    lat: null,
+    lng: null,
     accuracy: null,
     heading: null,
     speed: null,
-    status: 'idle',
     error: null,
   })
 
   const watchId = useRef<number | null>(null)
   const isSimulating = useRef(false)
 
-  const requestPosition = useCallback(() => {
-    if (!navigator.geolocation) {
-      setState(s => ({ ...s, status: 'error', error: 'Geolocation is not supported' }))
+  const locate = useCallback(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setState(s => ({
+        ...s,
+        status: 'unavailable',
+        message: 'Geolocation is not supported by your browser',
+        error: 'Geolocation is not supported',
+      }))
       return
     }
 
-    setState(s => ({ ...s, status: 'requesting' }))
+    setState(s => ({ ...s, status: 'locating' }))
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         if (!isSimulating.current) {
-          setState({
+          const coords: PositionCoords = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
-            heading: pos.coords.heading,
-            speed: pos.coords.speed,
+          }
+          setState({
             status: 'granted',
+            position: coords,
+            message: null,
+            lat: coords.lat,
+            lng: coords.lng,
+            accuracy: coords.accuracy ?? null,
+            heading: pos.coords.heading ?? null,
+            speed: pos.coords.speed ?? null,
             error: null,
           })
         }
       },
       (err) => {
         if (!isSimulating.current) {
-          const isDenied = err.code === err.PERMISSION_DENIED
+          let status: GeolocationStatus = 'error'
+          let message = err.message || 'Unable to retrieve location'
+
+          if (err.code === 1 || err.code === (err as any).PERMISSION_DENIED) {
+            status = 'denied'
+            message = 'User denied geolocation request'
+          } else if (err.code === 2 || err.code === (err as any).POSITION_UNAVAILABLE) {
+            status = 'unavailable'
+            message = 'Location information is unavailable'
+          } else if (err.code === 3 || err.code === (err as any).TIMEOUT) {
+            status = 'timeout'
+            message = 'Location request timed out'
+          }
+
           setState(s => ({
             ...s,
-            status: isDenied ? 'denied' : 'error',
-            error: err.message,
+            status,
+            message,
+            error: message,
           }))
         }
       },
@@ -64,28 +121,50 @@ export function useGeolocation(autoWatch = true) {
   }, [])
 
   useEffect(() => {
-    if (!autoWatch || !navigator.geolocation) return
+    if (!autoWatch || typeof navigator === 'undefined' || !navigator.geolocation?.watchPosition) return
 
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         if (!isSimulating.current) {
-          setState({
+          const coords: PositionCoords = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
-            heading: pos.coords.heading,
-            speed: pos.coords.speed,
+          }
+          setState({
             status: 'granted',
+            position: coords,
+            message: null,
+            lat: coords.lat,
+            lng: coords.lng,
+            accuracy: coords.accuracy ?? null,
+            heading: pos.coords.heading ?? null,
+            speed: pos.coords.speed ?? null,
             error: null,
           })
         }
       },
       (err) => {
         if (!isSimulating.current) {
+          let status: GeolocationStatus = 'error'
+          let message = err.message || 'Unable to retrieve location'
+
+          if (err.code === 1 || err.code === (err as any).PERMISSION_DENIED) {
+            status = 'denied'
+            message = 'User denied geolocation request'
+          } else if (err.code === 2 || err.code === (err as any).POSITION_UNAVAILABLE) {
+            status = 'unavailable'
+            message = 'Location information is unavailable'
+          } else if (err.code === 3 || err.code === (err as any).TIMEOUT) {
+            status = 'timeout'
+            message = 'Location request timed out'
+          }
+
           setState(s => ({
             ...s,
-            status: err.code === err.PERMISSION_DENIED ? 'denied' : 'error',
-            error: err.message,
+            status,
+            message,
+            error: message,
           }))
         }
       },
@@ -93,7 +172,7 @@ export function useGeolocation(autoWatch = true) {
     )
 
     return () => {
-      if (watchId.current !== null) {
+      if (watchId.current !== null && navigator.geolocation?.clearWatch) {
         navigator.geolocation.clearWatch(watchId.current)
       }
     }
@@ -101,25 +180,29 @@ export function useGeolocation(autoWatch = true) {
 
   const setSimulatedLocation = useCallback((lat: number, lng: number) => {
     isSimulating.current = true
+    const coords: PositionCoords = { lat, lng, accuracy: 5 }
     setState({
+      status: 'simulated',
+      position: coords,
+      message: null,
       lat,
       lng,
       accuracy: 5,
       heading: null,
       speed: 15,
-      status: 'simulated',
       error: null,
     })
   }, [])
 
   const resetToRealLocation = useCallback(() => {
     isSimulating.current = false
-    requestPosition()
-  }, [requestPosition])
+    locate()
+  }, [locate])
 
   return {
     ...state,
-    requestPosition,
+    locate,
+    requestPosition: locate,
     setSimulatedLocation,
     resetToRealLocation,
   }

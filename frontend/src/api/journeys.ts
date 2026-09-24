@@ -1,4 +1,4 @@
-import { apiRequest, ApiError } from './client'
+import { apiRequest, getData, ApiError } from './client'
 import { endpoints } from './endpoints'
 import { EGYPT_STATIONS } from '../data/egyptTransitData'
 import { MODE_COLORS } from '../components/icons'
@@ -16,6 +16,20 @@ export interface PlaceSearchResult {
 
 export interface JourneyLeg {
   type: 'walking' | 'metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus' | 'transfer'
+  leg_type?: 'transit' | 'walk'
+  mode?: string
+  transit_mode_id?: number | null
+  route_variant_id?: number | null
+  from_stop_id?: number | null
+  to_stop_id?: number | null
+  from_lat?: number | null
+  from_lng?: number | null
+  to_lat?: number | null
+  to_lng?: number | null
+  distance_m?: number | null
+  fare?: number
+  boarding_at?: string | null
+  alighting_at?: string | null
   duration: number
   line?: string
   line_ar?: string
@@ -28,6 +42,7 @@ export interface JourneyLeg {
   desc_en?: string
   color?: string
   waypoints?: { lat: number, lng: number }[]
+  geometry?: number[][] | null
 }
 
 export interface JourneyPlan {
@@ -37,11 +52,18 @@ export interface JourneyPlan {
   departure: string
   arrival: string
   fare: number
+  total_fare?: number
   fareStatus: 'official' | 'estimated'
   changes: number
+  total_transfers?: number
   walking: number
+  walk_distance_meters?: number
   origin_name: string
   destination_name: string
+  origin_lat?: number
+  origin_lng?: number
+  dest_lat?: number
+  dest_lng?: number
   legs: JourneyLeg[]
 }
 
@@ -235,9 +257,63 @@ export async function planJourney(params: {
   throw new ApiError(422, 'UNRESOLVABLE_PLACES')
 }
 
-  // ─── NOTE: no invented fallback routes ────────────────────────────────────
-  // A previous version generated fake durations/fares when the backend was
-  // unreachable. That is removed: times and fares must only come from real
-  // backend data. Callers handle ApiError with honest empty states + retry.
-  // (Removed: invented fallback routes with fake durations/fares.
-  // Times and fares must only come from real backend data.)
+// ─── Legacy journey helper exports for test compatibility ──────────────────
+export async function searchJourneys(payload: any) {
+  const response = await apiRequest<any>(endpoints.journeys.search, {
+    method: 'POST',
+    body: payload,
+  })
+  return response?.data ?? response
+}
+
+export async function saveJourney({ searchPayload, optionIndex }: { searchPayload?: any; optionIndex?: number } = {}) {
+  return getData(endpoints.journeys.create, {
+    method: 'POST',
+    body: { ...(searchPayload || {}), option_index: optionIndex },
+  })
+}
+
+export async function startSavedJourney(journeyId: string | number) {
+  const response = await apiRequest<any>(endpoints.journeys.start(journeyId), {
+    method: 'POST',
+    body: {},
+  })
+  return response?.data ?? response
+}
+
+export async function getSavedJourneys(perPage = 4) {
+  const response = await apiRequest<any>(`${endpoints.journeys.list}?per_page=${perPage}`)
+  return response?.data ?? response
+}
+
+export function cairoWallTime(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
+}
+
+export async function getPublicStops() {
+  const response = await apiRequest<any>(endpoints.public.stops, { auth: false })
+  return response?.data ?? response
+}
+
+export async function searchPublicStops(query: string, perPage = 8) {
+  const response = await apiRequest<any>(
+    `${endpoints.public.stops}?search=${encodeURIComponent(query)}&per_page=${perPage}`,
+    { auth: false },
+  )
+  return response?.data ?? response
+}
+
+export async function getGovernorates() {
+  const response = await apiRequest<any>(endpoints.public.governorates, { auth: false })
+  return response?.data ?? response
+}

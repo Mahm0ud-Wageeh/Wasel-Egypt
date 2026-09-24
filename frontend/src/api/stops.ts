@@ -5,9 +5,16 @@ export interface ApiStop {
   id: number
   gtfs_stop_id?: string
   name: string
+  name_ar?: string
+  name_en?: string
   latitude: string | number
   longitude: string | number
-  location_accuracy?: number | null
+  location_accuracy?: number | string | null
+  parent_station_id?: number | null
+  parent_station?: ApiStop | null
+  platforms?: ApiStop[]
+  is_interchange?: boolean
+  wheelchair_boarding?: number
   wheelchair_accessible?: boolean
   platform_code?: string | null
   area?: {
@@ -15,6 +22,16 @@ export interface ApiStop {
     name: string
     governorate?: { id: number; name: string; code: string }
   }
+}
+
+/**
+ * Returns localized stop name according to the active locale (defaulting to Arabic for 'ar').
+ */
+export function getStopDisplayName(stop: { name: string; name_ar?: string }, locale = 'ar'): string {
+  if (locale === 'ar') {
+    return stop.name_ar || stop.name
+  }
+  return stop.name || stop.name_ar || ''
 }
 
 export interface ApiDeparture {

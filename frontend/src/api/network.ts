@@ -4,27 +4,37 @@ import { endpoints } from './endpoints'
 export interface BackendTransitMode {
   id: number
   name: string
+  name_ar?: string
   code?: string
   color?: string
+  icon?: string
 }
 
 export interface BackendRoute {
   id: number
+  gtfs_route_id?: string
   short_name?: string
   long_name?: string
+  long_name_ar?: string
+  color?: string
+  source?: string
   transit_mode_id?: number
   transit_mode?: BackendTransitMode
-  transit_operator?: { id: number; name: string }
+  operator_id?: number
+  transit_operator?: { id: number; name: string; name_ar?: string; code?: string }
 }
 
 export interface BackendVariant {
   id: number
   name?: string
+  name_ar?: string
   headsign?: string
   direction?: string
   active?: boolean
   reliability_score?: number | null
   has_geometry?: boolean
+  shape?: any
+  point_count?: number
   frequency_windows?: any
 }
 
@@ -32,10 +42,17 @@ export interface BackendRouteStop {
   id: number
   stop_id: number
   stop_name?: string
+  stop_name_ar?: string
   latitude?: number | string
   longitude?: number | string
   stop_sequence?: number
+  travel_time_s?: number | null
+  distance_m?: number | null
   platform_code?: string | null
+  parent_station_id?: number | null
+  parent_station_name?: string | null
+  parent_station_name_ar?: string | null
+  is_interchange?: boolean
 }
 
 function unwrapData(res: any): any {
@@ -92,16 +109,33 @@ export async function fetchRouteStops(id: number | string): Promise<BackendRoute
   return out
 }
 
-/** Normalize stored [[lat,lng],...] geometry to [{lat,lng},...]. */
+/** Normalize stored geometry (GeoJSON LineString or [[lat,lng],...]) to [{lat,lng},...]. */
 export async function fetchVariantGeometry(variantId: number | string): Promise<Array<{ lat: number; lng: number }>> {
   const res = await apiRequest<any>(endpoints.public.variantGeometry(variantId), { method: 'GET', auth: false })
   const d = unwrapData(res)
-  const geom: any[] = d?.geometry ?? []
   const out: Array<{ lat: number; lng: number }> = []
+
+  if (d?.geojson?.coordinates && Array.isArray(d.geojson.coordinates)) {
+    for (const p of d.geojson.coordinates) {
+      if (Array.isArray(p) && p.length >= 2) {
+        const lng = Number(p[0])
+        const lat = Number(p[1])
+        if (Number.isFinite(lat) && Number.isFinite(lng)) out.push({ lat, lng })
+      }
+    }
+    if (out.length >= 2) return out
+  }
+
+  const geom: any[] = d?.shape?.coordinates ?? d?.geometry ?? d?.shape ?? []
   for (const p of geom) {
     if (Array.isArray(p) && p.length >= 2) {
-      const lat = Number(p[0]); const lng = Number(p[1])
-      if (Number.isFinite(lat) && Number.isFinite(lng)) out.push({ lat, lng })
+      const p0 = Number(p[0])
+      const p1 = Number(p[1])
+      if (p0 > 30.5 && p1 < 30.5) {
+        out.push({ lat: p1, lng: p0 })
+      } else {
+        out.push({ lat: p0, lng: p1 })
+      }
     } else if (p && typeof p === 'object') {
       const lat = Number((p as any).lat ?? (p as any).latitude)
       const lng = Number((p as any).lng ?? (p as any).longitude)

@@ -80,6 +80,10 @@ interface Props {
   showControls?: boolean
   lang?: 'ar' | 'en'
   t?: (ar: string, en: string) => string
+  /** v2.0: active transit mode filter from the map screen HUD */
+  modeFilter?: 'all' | 'metro' | 'lrt' | 'monorail' | 'brt' | 'train'
+  /** v2.0: enable 52° 3D pitch view */
+  pitch3D?: boolean
 }
 
 const STORAGE_KEY = 'wasel.map.layer'
@@ -281,6 +285,8 @@ export default function InteractiveMap({
   showControls = true,
   lang = 'ar',
   t,
+  modeFilter: modeFilterProp = 'all',
+  pitch3D: pitch3DProp = false,
 }: Props) {
   const tt = t ?? ((ar: string, _en: string) => ar)
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -289,8 +295,14 @@ export default function InteractiveMap({
   const userMarkerElRef = useRef<HTMLDivElement | null>(null)
   const stationMarkersRef = useRef<Marker[]>([])
 
-  const [activeBasemap, setActiveBasemap] = useState<BasemapType>(() => defaultLayer())
-  const [pitch3D, setPitch3D] = useState(false)
+  // v2.0: When darkMode=true (MapScreen v2), default to dark basemap
+  const [activeBasemap, setActiveBasemap] = useState<BasemapType>(() => {
+    const saved = defaultLayer()
+    if (darkMode && saved !== 'dark' && saved !== 'satellite') return 'dark'
+    return saved
+  })
+  // v2.0: pitch3D can be driven by parent prop (MapScreen HUD toggle)
+  const [pitch3D, setPitch3D] = useState(pitch3DProp)
   const [headingUp, setHeadingUp] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapFailed, setMapFailed] = useState(false)
@@ -313,6 +325,17 @@ export default function InteractiveMap({
   const modeColors = isDarkBase ? MODE_COLORS_DARK : MODE_COLORS
 
   useEffect(() => { setStopsLayerOn(showNearbyStops) }, [showNearbyStops])
+
+  // v2.0: Sync pitch3D from parent prop (MapScreen HUD toggle)
+  useEffect(() => {
+    setPitch3D(pitch3DProp)
+    const map = mapRef.current
+    if (!map) return
+    try { map.easeTo({ pitch: pitch3DProp ? 52 : 0, duration: 600 }) } catch { /* ignore */ }
+  }, [pitch3DProp])
+
+  // v2.0: Sync modeFilter from parent prop to internal state
+  useEffect(() => { setModeFilter(modeFilterProp as TransitModeFilter) }, [modeFilterProp])
 
   const selectLayer = useCallback((id: BasemapType) => {
     persistLayer(id)
@@ -737,7 +760,14 @@ export default function InteractiveMap({
           data: {
             type: 'FeatureCollection',
             features: routeStops.map((s) => ({
-              type: 'Feature', properties: { name: s.name, stop_id: Number.isFinite(Number(s.id)) ? Number(s.id) : null },
+              type: 'Feature',
+              properties: {
+                name: (s as any).name_ar || s.name,
+                name_en: s.name,
+                is_interchange: Boolean((s as any).is_interchange),
+                parent_station_id: (s as any).parent_station_id || null,
+                stop_id: Number.isFinite(Number(s.id)) ? Number(s.id) : null,
+              },
               geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
             })),
           },
@@ -745,8 +775,10 @@ export default function InteractiveMap({
         map.addLayer({
           id: 'stops-halo', type: 'circle', source: 'stops',
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 3.5, 16, 7],
-            'circle-color': MAP_LAYER_COLORS.white, 'circle-stroke-width': 2.5, 'circle-stroke-color': MAP_LAYER_COLORS.originStroke,
+            'circle-radius': ['case', ['get', 'is_interchange'], 6, ['interpolate', ['linear'], ['zoom'], 11, 3.5, 16, 7]],
+            'circle-color': ['case', ['get', 'is_interchange'], MAP_LAYER_COLORS.activeBlue, MAP_LAYER_COLORS.white],
+            'circle-stroke-width': ['case', ['get', 'is_interchange'], 3, 2.5],
+            'circle-stroke-color': ['case', ['get', 'is_interchange'], MAP_LAYER_COLORS.white, MAP_LAYER_COLORS.originStroke],
           } as any,
         })
       }

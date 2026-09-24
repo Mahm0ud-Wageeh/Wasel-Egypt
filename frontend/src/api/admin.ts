@@ -62,3 +62,59 @@ export const fetchAnalyticsJourneys = () => get<any>(endpoints.admin.journeys)
 export const fetchAnalyticsDeviations = () => get<any>(endpoints.admin.deviations)
 export const fetchAnalyticsUsage = () => get<any>(endpoints.admin.usage)
 export const fetchAnalyticsReports = () => get<any>(endpoints.admin.reports)
+
+// ── Legacy exports for unit test compatibility ──────────────────────
+export async function getAdminDashboard(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.dashboard, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsJourneys(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.journeys, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsDeviations(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.deviations, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsUsage(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.usage, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsReports(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.reports, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsTrust(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.trust, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsNotifications(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.notifications, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAnalyticsModes(query: Record<string, any> = {}) {
+  const response = await apiRequest(endpoints.adminAnalytics.modes, { query })
+  return (response as any)?.data ?? response
+}
+
+export async function getAdminUsers() {
+  const response = await apiRequest(endpoints.admin.users)
+  return (response as any)?.data ?? response
+}
+
+export async function getAdminRoles() {
+  const response = await apiRequest(endpoints.admin.roles)
+  return (response as any)?.data ?? response
+}
+
+export async function getAdminPermissions() {
+  const response = await apiRequest(endpoints.admin.permissions)
+  return (response as any)?.data ?? response
+}
