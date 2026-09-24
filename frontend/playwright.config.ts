@@ -53,13 +53,5 @@ export default defineConfig({
       },
     },
   ],
-  // Spin up Next.js dev server automatically when not running in CI
-  webServer: process.env.CI
-    ? undefined
-    : {
-        command: 'npm run dev',
-        url: 'http://localhost:3000',
-        reuseExistingServer: true,
-        timeout: 120_000,
-      },
+  webServer: undefined,
 });

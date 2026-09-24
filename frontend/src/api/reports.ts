@@ -88,6 +88,8 @@ export async function fetchIncidents(params?: { stop_id?: number; route_id?: num
   }
 }
 
+export const fetchCommunityReports = fetchIncidents
+
 export async function voteIncident(incidentId: number | string, vote: 'confirm' | 'deny'): Promise<any> {
   return await apiRequest(endpoints.incidents.vote(incidentId), {
     method: 'POST',
