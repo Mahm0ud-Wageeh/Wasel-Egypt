@@ -12,6 +12,30 @@ import StopPanel from './StopPanel'
 export type BasemapType = 'streets' | 'satellite' | 'dark'
 export type TransitModeFilter = 'all' | 'metro' | 'lrt' | 'monorail' | 'train' | 'brt'
 
+/** Satellite reference tiles include dense place and road labels, so only draw
+ * them when the rider explicitly asks for that level of detail. */
+export function satelliteReferenceVisibility(layer: BasemapType, detailsEnabled: boolean): 'visible' | 'none' {
+  return layer === 'satellite' && detailsEnabled ? 'visible' : 'none'
+}
+
+type MapStationDensity = { isInterchange?: boolean; modes: readonly string[] }
+
+/** Keep a national view legible: interchange points first, local stops on zoom. */
+export function stationsForMapZoom<T extends MapStationDensity>(
+  stations: readonly T[],
+  mode: TransitModeFilter,
+  zoom: number | null,
+): T[] {
+  const matching = stations.filter((station) => mode === 'all' || station.modes.includes(mode))
+  return Number(zoom ?? 0) >= 14 ? matching : matching.filter((station) => station.isInterchange)
+}
+
+/** Network feeds use both `train` and `rail`; present them as one rider-facing mode. */
+export function matchesMapMode(mode: string | undefined, filter: TransitModeFilter): boolean {
+  if (filter === 'all') return true
+  return mode === filter || (filter === 'train' && mode === 'rail')
+}
+
 interface RoutePoint {
   lat: number
   lng: number
@@ -311,6 +335,8 @@ export default function InteractiveMap({
   const [modeFilter, setModeFilter] = useState<TransitModeFilter>('all')
   const [legendOpen, setLegendOpen] = useState(false)
   const [creditsOpen, setCreditsOpen] = useState(false)
+  const [layerMenuOpen, setLayerMenuOpen] = useState(false)
+  const [satelliteDetails, setSatelliteDetails] = useState(false)
   const [displaced, setDisplaced] = useState(false)
   const [tileFallback, setTileFallback] = useState(false)
   const [nearby, setNearby] = useState<Array<{ id: number | string; name: string; lat: number; lng: number }>>([])
@@ -401,8 +427,8 @@ export default function InteractiveMap({
           layers: [
             { id: 'background', type: 'background', paint: { 'background-color': isDarkBase ? MAP_LAYER_COLORS.bgDark : MAP_LAYER_COLORS.bgLight } } as any,
             { id: 'bm-satellite-layer', type: 'raster', source: 'bm-satellite', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('satellite') } } as any,
-            { id: 'bm-sat-roads-layer', type: 'raster', source: 'bm-sat-roads', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('satellite') }, paint: { 'raster-opacity': 0.85 } } as any,
-            { id: 'bm-sat-labels-layer', type: 'raster', source: 'bm-sat-labels', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('satellite') } } as any,
+            { id: 'bm-sat-roads-layer', type: 'raster', source: 'bm-sat-roads', minzoom: 0, maxzoom: 24, layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.85 } } as any,
+            { id: 'bm-sat-labels-layer', type: 'raster', source: 'bm-sat-labels', minzoom: 0, maxzoom: 24, layout: { visibility: 'none' } } as any,
             { id: 'bm-streets-layer', type: 'raster', source: 'bm-streets', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('streets') } } as any,
             { id: 'bm-dark-layer', type: 'raster', source: 'bm-dark', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('dark') } } as any,
           ],
@@ -437,7 +463,10 @@ export default function InteractiveMap({
     map.on('load', () => {
       if (disposed) return
       setMapLoaded(true)
-      try { map.resize() } catch { /* ignore */ }
+      try {
+        setZoomLevel(Math.round(map.getZoom()))
+        map.resize()
+      } catch { /* ignore */ }
     })
     map.on('zoom', () => { try { setZoomLevel(Math.round(map.getZoom())) } catch { /* ignore */ } })
     const interrupt = () => {
@@ -491,20 +520,21 @@ export default function InteractiveMap({
     const map = mapRef.current
     if (!map || !mapLoaded) return
     try {
-      const satVisible = effectiveLayer === 'satellite' ? 'visible' : 'none'
       for (const id of ['satellite', 'streets', 'dark'] as BasemapType[]) {
         if (!map.getLayer(`bm-${id}-layer`)) continue
         map.setLayoutProperty(`bm-${id}-layer`, 'visibility', id === effectiveLayer ? 'visible' : 'none')
       }
-      // Reference overlays follow the satellite layer.
+      // Reference overlays are intentionally opt-in: the provider's road and
+      // place labels become noisy when layered over imagery at a wide zoom.
+      const referenceVisible = satelliteReferenceVisibility(effectiveLayer, satelliteDetails)
       for (const overlay of ['bm-sat-labels-layer', 'bm-sat-roads-layer']) {
-        if (map.getLayer(overlay)) map.setLayoutProperty(overlay, 'visibility', satVisible)
+        if (map.getLayer(overlay)) map.setLayoutProperty(overlay, 'visibility', referenceVisible)
       }
       if (map.getLayer('background')) {
         map.setPaintProperty('background', 'background-color', isDarkBase ? MAP_LAYER_COLORS.bgDark : MAP_LAYER_COLORS.bgLight)
       }
     } catch { /* style not ready */ }
-  }, [effectiveLayer, isDarkBase, mapLoaded])
+  }, [effectiveLayer, isDarkBase, mapLoaded, satelliteDetails])
 
   const onMapClickRef = useRef(onMapClick)
   onMapClickRef.current = onMapClick
@@ -726,7 +756,7 @@ export default function InteractiveMap({
       // Real network shapes from the backend (true geography, mode-colored).
       if (networkShapes.length > 0) {
         const feats = networkShapes
-          .filter((s) => s.coords.length >= 2)
+          .filter((s) => s.coords.length >= 2 && matchesMapMode(s.mode, modeFilter))
           .map((s) => ({
             type: 'Feature',
             properties: { color: s.color, mode: s.mode ?? '', name: s.name ?? '' },
@@ -907,10 +937,7 @@ export default function InteractiveMap({
     stationMarkersRef.current.forEach((m) => { try { m.remove() } catch { /* ignore */ } })
     stationMarkersRef.current = []
 
-    const stationsToDisplay = EGYPT_STATIONS.filter((st) => {
-      if (modeFilter === 'all') return true
-      return st.modes.includes(modeFilter as any)
-    })
+    const stationsToDisplay = stationsForMapZoom(EGYPT_STATIONS, modeFilter, zoomLevel)
 
     stationsToDisplay.forEach((station) => {
       const el = document.createElement('div')
@@ -940,7 +967,7 @@ export default function InteractiveMap({
       } catch { /* ignore */ }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, modeFilter])
+  }, [mapLoaded, modeFilter, zoomLevel])
 
   // ── Google Maps-style live navigation puck ──
   useEffect(() => {
@@ -1118,26 +1145,54 @@ export default function InteractiveMap({
 
       {showControls && mapLoaded && (
         <div className="absolute top-3 end-3 z-20 flex flex-col gap-1.5">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-1 shadow-md flex flex-col gap-1">
-            {([
-              { id: 'streets', Icon: MapIcon, label: tt('خريطة الشوارع', 'Streets') },
-              { id: 'satellite', Icon: Satellite, label: tt('صور الأقمار الصناعية', 'Satellite') },
-              { id: 'dark', Icon: Moon, label: tt('الوضع الداكن', 'Dark') },
-            ] as Array<{ id: BasemapType; Icon: typeof MapIcon; label: string }>).map((b) => (
+          <div className="relative">
+            <button
+              onClick={() => setLayerMenuOpen((open) => !open)}
+              aria-label={tt('اختيار نمط الخريطة', 'Choose map style')}
+              aria-expanded={layerMenuOpen}
+              title={tt('اختيار نمط الخريطة', 'Choose map style')}
+              className="w-10 h-10 bg-white/95 hover:bg-white text-neutral-800 rounded-2xl shadow-md flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            >
+              {effectiveLayer === 'satellite' ? <Satellite size={18} /> : effectiveLayer === 'dark' ? <Moon size={18} /> : <MapIcon size={18} />}
+            </button>
+            {layerMenuOpen && (
+              <div className="absolute end-0 top-12 min-w-40 rounded-2xl border border-neutral-200/70 bg-white/95 p-1.5 shadow-xl backdrop-blur-md">
+                {([
+                  { id: 'streets', Icon: MapIcon, label: tt('خريطة الشوارع', 'Streets') },
+                  { id: 'satellite', Icon: Satellite, label: tt('صور الأقمار الصناعية', 'Satellite') },
+                  { id: 'dark', Icon: Moon, label: tt('الوضع الداكن', 'Dark') },
+                ] as Array<{ id: BasemapType; Icon: typeof MapIcon; label: string }>).map((b) => (
               <button
                 key={b.id}
-                onClick={() => selectLayer(b.id)}
-                title={b.label}
-                aria-label={b.label}
+                onClick={() => { selectLayer(b.id); setLayerMenuOpen(false) }}
+                role="menuitemradio"
+                aria-checked={effectiveLayer === b.id}
                 aria-pressed={effectiveLayer === b.id}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                  effectiveLayer === b.id ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:bg-neutral-100'
+                className={`w-full rounded-xl px-2.5 py-2 flex items-center gap-2 text-xs font-bold transition-all ${
+                  effectiveLayer === b.id ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-700 hover:bg-neutral-100'
                 }`}
               >
-                <b.Icon size={16} />
+                <b.Icon size={15} />
+                <span>{b.label}</span>
               </button>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
+
+          {effectiveLayer === 'satellite' && (
+            <button
+              onClick={() => setSatelliteDetails((enabled) => !enabled)}
+              title={satelliteDetails ? tt('إخفاء أسماء الطرق والأماكن', 'Hide road and place labels') : tt('إظهار أسماء الطرق والأماكن', 'Show road and place labels')}
+              aria-label={satelliteDetails ? tt('إخفاء أسماء الطرق والأماكن', 'Hide road and place labels') : tt('إظهار أسماء الطرق والأماكن', 'Show road and place labels')}
+              aria-pressed={satelliteDetails}
+              className={`w-10 h-10 backdrop-blur-md rounded-2xl shadow-md flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                satelliteDetails ? 'bg-blue-600 text-white' : 'bg-white/95 text-neutral-800 hover:bg-white'
+              }`}
+            >
+              <Info size={18} />
+            </button>
+          )}
 
           <button
             onClick={toggle3D}
@@ -1150,23 +1205,25 @@ export default function InteractiveMap({
             3D
           </button>
 
-          <button
-            onClick={toggleHeadingUp}
-            title={headingUp ? tt('توجيه للشمال', 'North up') : tt('توجيه مع اتجاه الحركة', 'Heading up')}
-            aria-pressed={headingUp}
-            className={`w-9 h-9 backdrop-blur-md rounded-2xl shadow-md flex items-center justify-center transition-all ${
-              headingUp ? 'bg-blue-600 text-white' : 'bg-white/95 text-neutral-800 hover:bg-white'
-            }`}
-          >
-            <Compass size={17} />
-          </button>
+          {navigationMode && (
+            <button
+              onClick={toggleHeadingUp}
+              title={headingUp ? tt('توجيه للشمال', 'North up') : tt('توجيه مع اتجاه الحركة', 'Heading up')}
+              aria-pressed={headingUp}
+              className={`w-10 h-10 backdrop-blur-md rounded-2xl shadow-md flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                headingUp ? 'bg-blue-600 text-white' : 'bg-white/95 text-neutral-800 hover:bg-white'
+              }`}
+            >
+              <Compass size={17} />
+            </button>
+          )}
 
           <button
             onClick={toggleStopsLayer}
             title={tt('محطات قريبة', 'Nearby stops')}
             aria-pressed={stopsLayerOn}
             disabled={nearbyLoading}
-            className={`w-9 h-9 backdrop-blur-md rounded-2xl shadow-md flex items-center justify-center transition-all ${
+            className={`w-10 h-10 backdrop-blur-md rounded-2xl shadow-md flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
               stopsLayerOn ? 'bg-blue-600 text-white' : 'bg-white/95 text-neutral-800 hover:bg-white'
             }`}
           >
@@ -1178,7 +1235,7 @@ export default function InteractiveMap({
           <button
             onClick={handleLocateMe}
             title={tt('موقعي الحالي', 'My location')}
-            className="w-9 h-9 bg-white/95 hover:bg-white text-neutral-800 rounded-2xl shadow-md flex items-center justify-center transition-all"
+            className="w-10 h-10 bg-white/95 hover:bg-white text-neutral-800 rounded-2xl shadow-md flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
           >
             <LocateFixed size={17} />
           </button>
@@ -1203,13 +1260,13 @@ export default function InteractiveMap({
       )}
 
       {showControls && mapLoaded && (
-        <div className="absolute top-3 start-3 z-20 overflow-x-auto max-w-[calc(100%-115px)] flex items-center gap-1 p-1 bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-neutral-200/60">
+        <div className="absolute top-3 start-3 end-16 z-20 overflow-x-auto flex items-center gap-1 p-1 bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-neutral-200/60 scrollbar-none">
           {modeChips.map((m) => (
             <button
               key={m.id}
               onClick={() => setModeFilter(m.id as TransitModeFilter)}
               aria-pressed={modeFilter === m.id}
-              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 min-w-max ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 min-w-max focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                 modeFilter === m.id ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-700 hover:bg-neutral-100'
               }`}
             >

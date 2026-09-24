@@ -15,24 +15,17 @@
  *       - "Plan from here" & "Plan to here" direct CTA buttons.
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
-  Box,
-  Compass,
-  Layers,
-  LocateFixed,
   MapPin,
   Navigation,
   RefreshCw,
-  Route,
   Sparkles,
-  TrainFront,
   X,
   ArrowRight,
   Info,
 } from "lucide-react";
-import { LineBadge, PillButton } from "@/components/kit";
 import type { ScreenProps } from "@/lib/navigation";
 import {
   EGYPT_STATIONS,
@@ -67,18 +60,6 @@ const InteractiveMap = dynamic(
   }
 );
 
-// ──────────────── Mode Filters ────────────────
-type ModeFilter = "all" | "metro" | "lrt" | "monorail" | "train" | "brt";
-
-const MODE_FILTERS: { id: ModeFilter; labelAr: string; color: string; code: string }[] = [
-  { id: "all",      labelAr: "الكل",              color: "#475569", code: "ALL" },
-  { id: "metro",    labelAr: "المترو",            color: "#1D4ED8", code: "M"   },
-  { id: "lrt",      labelAr: "قطار LRT",          color: "#0284C7", code: "LRT" },
-  { id: "monorail", labelAr: "المونوريل",         color: "#7C3AED", code: "MNR" },
-  { id: "brt",      labelAr: "حافلات BRT",        color: "#D97706", code: "BRT" },
-  { id: "train",    labelAr: "سكك حديد مصر",     color: "#9333EA", code: "ENR" },
-];
-
 // ──────────────── Fare helpers ────────────────
 function getFareForLine(lineId: string, stationCount = 10) {
   if (lineId.startsWith("metro"))    return calculateMetroTariff(stationCount)
@@ -90,26 +71,13 @@ function getFareForLine(lineId: string, stationCount = 10) {
 
 // ──────────────── Map Screen v2.0 ────────────────
 export default function MapScreen({ navigate }: ScreenProps) {
-  const [filter, setFilter]                 = useState<ModeFilter>("all");
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
-  const [userLoc, setUserLoc]               = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
-  const [locating, setLocating]             = useState(false);
-  const [pitch3D, setPitch3D]               = useState(false);
   const [shapes, setShapes]                 = useState<NetworkShape[]>([]);
   const [loadingShapes, setLoadingShapes]   = useState(false);
   const [apiShapesFailed, setApiShapesFailed] = useState(false);
 
   // Build local geometry shapes from real LINE_GEOMETRIES (instant, offline-safe)
   const localShapes: NetworkShape[] = Object.entries(LINE_GEOMETRIES)
-    .filter(([lineId]) => {
-      if (filter === "all") return true;
-      if (filter === "metro") return lineId.startsWith("metro");
-      if (filter === "lrt")   return lineId.startsWith("lrt");
-      if (filter === "monorail") return lineId.startsWith("monorail");
-      if (filter === "brt")   return lineId.startsWith("brt");
-      if (filter === "train") return lineId.startsWith("rail");
-      return true;
-    })
     .map(([lineId, coords]) => {
       const line = TRANSIT_LINES.find(l => l.id === lineId);
       return { coords, color: line?.color ?? "#64748b", mode: line?.mode ?? "bus", name: line?.name_ar };
@@ -153,31 +121,9 @@ export default function MapScreen({ navigate }: ScreenProps) {
     return () => { cancelled = true; };
   }, []);
 
-  // GPS locate
-  const locateMe = useCallback(() => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }); setLocating(false); },
-      () => setLocating(false),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }, []);
-
   // Effective shapes: prefer live API shapes, fall back to local geometries
   const effectiveShapes = shapes.length > 0 ? shapes : localShapes;
   const shapesAreLocal  = shapes.length === 0;
-
-  // Filtered local stations for markers on map
-  const filteredStations = EGYPT_STATIONS.filter(st => {
-    if (filter === "all") return true;
-    if (filter === "metro")    return st.modes.includes("metro");
-    if (filter === "lrt")      return st.modes.includes("lrt");
-    if (filter === "monorail") return st.modes.includes("monorail");
-    if (filter === "brt")      return st.modes.includes("brt");
-    if (filter === "train")    return st.modes.includes("train");
-    return true;
-  });
 
   const interchangeCount = EGYPT_STATIONS.filter(s => s.isInterchange).length;
 
@@ -202,35 +148,12 @@ export default function MapScreen({ navigate }: ScreenProps) {
                 </span>
               </div>
               <p className="text-[10.5px] text-slate-500">
-                {filteredStations.length} محطة • {effectiveShapes.length} مسار •{" "}
+                {EGYPT_STATIONS.length} محطة • {effectiveShapes.length} مسار •{" "}
                 {interchangeCount} تحويلة تبادلية
               </p>
             </div>
           </div>
 
-          {/* Mode Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-            {MODE_FILTERS.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                id={`map-filter-${m.id}`}
-                onClick={() => { setFilter(m.id); setSelectedStation(null); }}
-                className="settle-fast group inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold outline-none transition-all"
-                style={
-                  filter === m.id
-                    ? { borderColor: m.color + "66", backgroundColor: m.color + "22", color: m.color }
-                    : { borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.04)", color: "#94a3b8" }
-                }
-              >
-                <span
-                  className="size-2 rounded-full shrink-0"
-                  style={{ backgroundColor: filter === m.id ? m.color : "#475569" }}
-                />
-                {m.labelAr}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -240,77 +163,17 @@ export default function MapScreen({ navigate }: ScreenProps) {
           center={[31.2357, 30.0444]}
           zoom={12}
           darkMode={true}
-          userLocation={userLoc}
           networkShapes={effectiveShapes}
           hideSchematic={false}
-          modeFilter={filter}
-          pitch3D={pitch3D}
+          modeFilter="all"
           onStationSelect={(st) => setSelectedStation(st)}
           onPlanFrom={(st) => navigate("planner", { from: st.name_ar, to: "" })}
           onPlanTo={(st) => navigate("planner", { from: "", to: st.name_ar })}
           className="h-full w-full"
         />
 
-        {/* ──── Floating Right-Side Controls (Glass HUD) ──── */}
-        <div className="absolute end-3 top-3 z-20 flex flex-col gap-2">
-          {/* 3D Pitch Toggle */}
-          <button
-            type="button"
-            id="map-3d-toggle"
-            onClick={() => setPitch3D(p => !p)}
-            aria-label={pitch3D ? "العودة للعرض الثنائي" : "العرض ثلاثي الأبعاد"}
-            title={pitch3D ? "العودة للعرض الثنائي" : "العرض ثلاثي الأبعاد 52°"}
-            className={`settle-fast flex size-10 cursor-pointer items-center justify-center rounded-2xl border backdrop-blur-xl shadow-xl transition-all ${
-              pitch3D
-                ? "border-blue-400/40 bg-blue-500/20 text-blue-300"
-                : "border-white/10 bg-[#0d1117]/80 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Box className="size-4" />
-          </button>
-
-          {/* Layer Info */}
-          <button
-            type="button"
-            id="map-layer-btn"
-            aria-label="طبقات الخريطة"
-            title="طبقات الخريطة"
-            className="settle-fast flex size-10 cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-[#0d1117]/80 text-slate-400 backdrop-blur-xl shadow-xl hover:text-slate-200"
-          >
-            <Layers className="size-4" />
-          </button>
-
-          {/* GPS Locate */}
-          <button
-            type="button"
-            id="map-locate-btn"
-            onClick={locateMe}
-            aria-label="تحديد موقعي الآن"
-            title="تحديد موقعي الآن"
-            className={`settle-fast flex size-10 cursor-pointer items-center justify-center rounded-2xl border backdrop-blur-xl shadow-xl transition-all ${
-              locating || userLoc
-                ? "border-blue-400/40 bg-blue-500/20 text-blue-300"
-                : "border-white/10 bg-[#0d1117]/80 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <LocateFixed className={`size-4 ${locating ? "animate-spin" : ""}`} />
-          </button>
-
-          {/* Plan Route */}
-          <button
-            type="button"
-            id="map-plan-btn"
-            onClick={() => navigate("planner")}
-            aria-label="فتح مخطط الرحلات"
-            title="فتح مخطط الرحلات"
-            className="settle-fast flex size-10 cursor-pointer items-center justify-center rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-900/40 hover:bg-blue-500 transition-all"
-          >
-            <Route className="size-4" />
-          </button>
-        </div>
-
         {/* ──── Bottom Status Bar ──── */}
-        <div className="absolute bottom-4 start-3 z-20 flex flex-col gap-2 pointer-events-none">
+        <div className="absolute bottom-4 end-3 z-20 flex flex-col gap-2 pointer-events-none">
           {loadingShapes && (
             <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0d1117]/90 px-3.5 py-2 text-[11px] font-bold text-slate-400 shadow-xl backdrop-blur-xl pointer-events-auto">
               <RefreshCw className="size-3.5 animate-spin text-blue-400" />
