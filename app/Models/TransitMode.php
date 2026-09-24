@@ -10,43 +10,40 @@ class TransitMode extends Model
 {
     use SoftDeletes, HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'transit_modes';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
+        'code',
         'name',
-        'description',
+        'name_ar',
+        'color',
         'icon',
+        'active',
+        'description',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
+            'active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
 
-    /**
-     * Get the routes for the transit mode.
-     */
     public function routes()
     {
         return $this->hasMany(Route::class);
+    }
+
+    public function fares()
+    {
+        return $this->hasMany(Fare::class);
+    }
+
+    public function journeyLegs()
+    {
+        return $this->hasMany(JourneyLeg::class);
     }
 }

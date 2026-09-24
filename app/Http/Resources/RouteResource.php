@@ -27,33 +27,43 @@ class RouteResource extends JsonResource
         return [
             'id' => $this->id,
             'gtfs_route_id' => $this->gtfs_route_id,
-            'name' => $this->name,
+            'name' => $this->name ?? $this->long_name,
+            'transit_mode_id' => $this->transit_mode_id,
+            'operator_id' => $this->operator_id ?? $this->transit_operator_id,
+            'transit_operator_id' => $this->operator_id ?? $this->transit_operator_id,
             'transit_mode' => $transitMode,
             'transit_operator' => $transitOperator,
             'short_name' => $this->short_name,
             'long_name' => $this->long_name,
+            'long_name_ar' => $this->long_name_ar ?? $this->long_name,
             'description' => $this->description,
             'type' => $this->type,
             'url' => $this->url,
             'color' => $this->color,
             'text_color' => $this->text_color,
             'sort_order' => $this->sort_order,
-            'active' => $this->active,
+            'active' => (bool) $this->active,
             'continuous_pickup' => $this->continuous_pickup,
             'continuous_drop_off' => $this->continuous_drop_off,
-            // Route/line experience (design §route): included ONLY when the
-            // controller eager-loads variants — list endpoints stay untouched.
+            // Route/line experience: included when eager-loaded
             'variants' => $this->whenLoaded('routeVariants', function () {
                 return $this->routeVariants->values()->map(function ($variant) {
+                    $shape = null;
+                    if ($variant->relationLoaded('routeGeometry') && $variant->routeGeometry) {
+                        $shape = $variant->routeGeometry->toGeoJson();
+                    }
+
                     return [
                         'id' => $variant->id,
                         'name' => $variant->name,
+                        'name_ar' => $variant->name_ar ?? $variant->name,
                         'headsign' => $variant->headsign,
                         'direction' => $variant->direction,
-                        'active' => $variant->active,
+                        'active' => (bool) $variant->active,
                         'reliability_score' => $variant->reliability_score !== null
                             ? (float) $variant->reliability_score
                             : null,
+                        'shape' => $shape,
                     ];
                 });
             }),

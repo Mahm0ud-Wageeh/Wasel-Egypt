@@ -30,15 +30,17 @@ class JourneyPlanResource extends JsonResource
             'alerts' => $this->resource['alerts'] ?? [],
             'legs' => collect($this->resource['legs'])->map(fn (array $leg) => [
                 'type' => $leg['type'],
+                'leg_type' => $leg['leg_type'] ?? $leg['type'],
                 'mode' => $leg['mode'],
+                'transit_mode_id' => $leg['transit_mode_id'] ?? null,
                 'route_variant_id' => $leg['route_variant_id'],
                 'route' => $leg['route'],
                 'agency_id' => $leg['agency_id'],
                 'from_stop' => isset($leg['from_stop']) && $leg['from_stop'] !== null
-                    ? collect($leg['from_stop'])->only(['id', 'name', 'lat', 'lng'])->all()
+                    ? collect($leg['from_stop'])->only(['id', 'name', 'name_ar', 'lat', 'lng', 'is_interchange', 'parent_station_id'])->all()
                     : null,
                 'to_stop' => isset($leg['to_stop']) && $leg['to_stop'] !== null
-                    ? collect($leg['to_stop'])->only(['id', 'name', 'lat', 'lng'])->all()
+                    ? collect($leg['to_stop'])->only(['id', 'name', 'name_ar', 'lat', 'lng', 'is_interchange', 'parent_station_id'])->all()
                     : null,
                 'from_lat' => $leg['from_lat'],
                 'from_lng' => $leg['from_lng'],
@@ -46,8 +48,12 @@ class JourneyPlanResource extends JsonResource
                 'to_lng' => $leg['to_lng'],
                 'departure_time' => optional($leg['departure_time'])->toIso8601String(),
                 'arrival_time' => optional($leg['arrival_time'])->toIso8601String(),
+                'boarding_at' => optional($leg['departure_time'])->toIso8601String(),
+                'alighting_at' => optional($leg['arrival_time'])->toIso8601String(),
                 'duration_sec' => $leg['duration_sec'],
-                'distance_meters' => $leg['distance_meters'],
+                'distance_m' => $leg['distance_m'] ?? $leg['distance_meters'],
+                'distance_meters' => $leg['distance_meters'] ?? $leg['distance_m'] ?? null,
+                'fare' => $leg['fare'] ?? 0.0,
                 // Road-following walking geometry ([lat,lng] polyline) when
                 // OSRM is reachable; null when the straight-line fallback
                 // produced this leg (walk_source='estimate').

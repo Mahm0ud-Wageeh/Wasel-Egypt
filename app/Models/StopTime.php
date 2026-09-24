@@ -8,23 +8,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class StopTime extends Model
 {
-    use SoftDeletes;
-    use HasFactory;
+    use SoftDeletes, HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'stop_times';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
         'schedule_id',
+        'trip_no',
+        'route_stop_id',
         'transit_stop_id',
         'sequence',
         'arrival_time',
@@ -34,21 +25,16 @@ class StopTime extends Model
         'timepoint',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'schedule_id' => 'integer',
+            'trip_no' => 'integer',
+            'route_stop_id' => 'integer',
             'transit_stop_id' => 'integer',
             'sequence' => 'integer',
             'arrival_time' => 'string',
             'departure_time' => 'string',
-            'pickup_type' => 'integer',
-            'drop_off_type' => 'integer',
             'timepoint' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -56,17 +42,16 @@ class StopTime extends Model
         ];
     }
 
-    /**
-     * Get the schedule for the stop time.
-     */
     public function schedule()
     {
         return $this->belongsTo(Schedule::class);
     }
 
-    /**
-     * Get the transit stop for the stop time.
-     */
+    public function routeStop()
+    {
+        return $this->belongsTo(RouteStop::class);
+    }
+
     public function transitStop()
     {
         return $this->belongsTo(TransitStop::class);

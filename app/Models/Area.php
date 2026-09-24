@@ -25,6 +25,10 @@ class Area extends Model
     protected $fillable = [
         'governorate_id',
         'name',
+        'name_ar',
+        'latitude',
+        'longitude',
+        'location_accuracy',
     ];
 
     /**
@@ -36,6 +40,9 @@ class Area extends Model
     {
         return [
             'governorate_id' => 'integer',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
+            'location_accuracy' => 'string',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

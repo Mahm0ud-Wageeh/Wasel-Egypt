@@ -19,17 +19,20 @@ class TransitStopController extends Controller
      */
     public function index(Request $request)
     {
-        $query = TransitStop::query()->with('area.governorate');
+        $query = TransitStop::query()->with(['area.governorate', 'parentStation']);
 
         // Filter by area_id
         if ($request->has('area_id')) {
             $query->where('area_id', $request->input('area_id'));
         }
 
-        // Search functionality
+        // Search functionality in both English and Arabic
         if ($request->has('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('name_ar', 'like', "%{$search}%");
+            });
         }
 
         // Sorting
@@ -100,12 +103,15 @@ class TransitStopController extends Controller
      */
     public function publicIndex(Request $request)
     {
-        $query = TransitStop::query()->with('area.governorate');
+        $query = TransitStop::query()->with(['area.governorate', 'parentStation']);
 
-        // Search functionality
+        // Search functionality in English and Arabic
         if ($request->has('search') && trim((string) $request->input('search')) !== '') {
-            $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%");
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('name_ar', 'like', "%{$search}%");
+            });
         }
 
         // Bounding-box filter for map viewport queries: bbox=minLng,minLat,maxLng,maxLat
@@ -185,7 +191,7 @@ class TransitStopController extends Controller
      */
     public function publicShow(Request $request, $id)
     {
-        $transitStop = TransitStop::with('area.governorate')->find($id);
+        $transitStop = TransitStop::with(['area.governorate', 'parentStation', 'platforms'])->find($id);
 
         if (!$transitStop) {
             return response()->json([

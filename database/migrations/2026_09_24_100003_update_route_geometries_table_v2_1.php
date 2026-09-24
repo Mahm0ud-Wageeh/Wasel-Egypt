@@ -15,9 +15,16 @@ return new class extends Migration
                 $table->unsignedBigInteger('route_variant_id')->unique();
                 $table->longText('shape')->comment('Encoded polyline / GeoJSON LineString coordinates');
                 $table->integer('point_count')->default(0);
+                $table->unsignedInteger('length_meters')->nullable();
                 $table->timestamps();
 
                 $table->foreign('route_variant_id')->references('id')->on('route_variants')->onDelete('cascade');
+            });
+        } else {
+            Schema::table('route_geometries', function (Blueprint $table) {
+                if (!Schema::hasColumn('route_geometries', 'length_meters')) {
+                    $table->unsignedInteger('length_meters')->nullable()->after('point_count');
+                }
             });
         }
 

@@ -965,7 +965,8 @@ class JourneyPlannerService
     private function variantGeometry(int $variantId): ?array
     {
         if (!array_key_exists($variantId, $this->geometryMemo)) {
-            $row = RouteGeometry::where('route_variant_id', $variantId)->value('geometry');
+            $geom = RouteGeometry::where('route_variant_id', $variantId)->first();
+            $row = $geom ? $geom->coordinates : null;
 
             $this->geometryMemo[$variantId] = is_array($row) && count($row) >= 2 ? $row : null;
         }

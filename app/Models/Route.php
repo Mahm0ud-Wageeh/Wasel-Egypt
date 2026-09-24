@@ -10,29 +10,23 @@ class Route extends Model
 {
     use SoftDeletes, HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'routes';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
+        'name',
         'gtfs_route_id',
+        'operator_id',
         'transit_operator_id',
         'transit_mode_id',
         'short_name',
         'long_name',
-        'description',
+        'long_name_ar',
         'color',
+        'active',
+        'source',
+        'description',
         'text_color',
         'sort_order',
-        'active',
         'type',
         'url',
         'continuous_pickup',
@@ -40,14 +34,21 @@ class Route extends Model
         'import_log_id',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    public function setNameAttribute($value): void
+    {
+        $this->attributes['long_name'] = $value;
+        $this->attributes['name'] = $value;
+    }
+
+    public function getNameAttribute($value): ?string
+    {
+        return $value ?? $this->attributes['long_name'] ?? null;
+    }
+
     protected function casts(): array
     {
         return [
+            'operator_id' => 'integer',
             'transit_operator_id' => 'integer',
             'transit_mode_id' => 'integer',
             'sort_order' => 'integer',
@@ -61,65 +62,77 @@ class Route extends Model
         ];
     }
 
-    /**
-     * Get the transit operator for the route.
-     */
-    public function transitOperator()
+    public function setOperatorIdAttribute($value): void
     {
-        return $this->belongsTo(TransitOperator::class);
+        $this->attributes['operator_id'] = $value;
+        $this->attributes['transit_operator_id'] = $value;
     }
 
-    /**
-     * Get the transit mode for the route.
-     */
+    public function setTransitOperatorIdAttribute($value): void
+    {
+        $this->attributes['operator_id'] = $value;
+        $this->attributes['transit_operator_id'] = $value;
+    }
+
+    public function getOperatorIdAttribute($value): ?int
+    {
+        return $value ?? $this->attributes['transit_operator_id'] ?? null;
+    }
+
+    public function getTransitOperatorIdAttribute($value): ?int
+    {
+        return $value ?? $this->attributes['operator_id'] ?? null;
+    }
+
+    public function operator()
+    {
+        return $this->belongsTo(TransitOperator::class, 'operator_id');
+    }
+
+    public function transitOperator()
+    {
+        return $this->belongsTo(TransitOperator::class, 'operator_id');
+    }
+
     public function transitMode()
     {
         return $this->belongsTo(TransitMode::class);
     }
 
-    /**
-     * Get the route variants for the route.
-     */
+    public function variants()
+    {
+        return $this->hasMany(RouteVariant::class);
+    }
+
     public function routeVariants()
     {
         return $this->hasMany(RouteVariant::class);
     }
 
-    /**
-     * Get the schedules for the route.
-     */
-    public function schedules()
+    public function alerts()
     {
-        return $this->hasManyThrough(Schedule::class, RouteVariant::class);
+        return $this->hasMany(RouteAlert::class);
     }
 
-    /**
-     * Get the journey legs for the route.
-     */
-    public function journeyLegs()
+    public function incidentReports()
     {
-        return $this->hasManyThrough(JourneyLeg::class, RouteVariant::class);
+        return $this->hasMany(IncidentReport::class);
     }
 
-    /**
-     * Get the service alert links for the route's variants.
-     *
-     * The ERD links service alerts to route VARIANTS through the
-     * service_alert_routes pivot, so the through-chain is
-     * Route -> RouteVariant -> ServiceAlertRoute.
-     */
+    public function fares()
+    {
+        return $this->hasMany(Fare::class);
+    }
+
     public function serviceAlertRoutes()
     {
-        return $this->hasManyThrough(ServiceAlertRoute::class, RouteVariant::class);
-    }
-
-    /**
-     * Get the name of the route (alias for long_name).
-     *
-     * @return string
-     */
-    public function getNameAttribute()
-    {
-        return $this->long_name;
+        return $this->hasManyThrough(
+            ServiceAlertRoute::class,
+            RouteVariant::class,
+            'route_id',
+            'route_variant_id',
+            'id',
+            'id'
+        );
     }
 }

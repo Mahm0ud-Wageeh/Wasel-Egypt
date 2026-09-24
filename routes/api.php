@@ -67,7 +67,18 @@ Route::prefix('v1')->group(function () {
         Route::post('reports/{id}/moderate', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'moderate'])->middleware(['role:moderator,admin', 'throttle:30,1']);
         Route::get('users/{id}/trust', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'trust']);
 
-        // Favorite locations (Saved Places)
+        // Incident reports & Voting (ERD v2.1)
+        Route::get('incidents', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'index']);
+        Route::post('incidents', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'store'])->middleware('throttle:10,1');
+        Route::get('incidents/{id}', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'show']);
+        Route::post('incidents/{id}/vote', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'vote'])->middleware('throttle:30,1');
+        Route::post('reports/{id}/vote', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'vote'])->middleware('throttle:30,1');
+        Route::post('community-reports/{id}/vote', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'vote'])->middleware('throttle:30,1');
+
+        // Favorite locations & Saved Places (ERD v2.1)
+        Route::get('saved-places', [App\Http\Controllers\Api\V1\SavedPlaceController::class, 'index']);
+        Route::post('saved-places', [App\Http\Controllers\Api\V1\SavedPlaceController::class, 'store'])->middleware('throttle:30,1');
+        Route::delete('saved-places/{id}', [App\Http\Controllers\Api\V1\SavedPlaceController::class, 'destroy'])->middleware('throttle:30,1');
         Route::get('favorite-locations', [App\Http\Controllers\Api\V1\FavoriteLocationController::class, 'index']);
         Route::post('favorite-locations', [App\Http\Controllers\Api\V1\FavoriteLocationController::class, 'store'])->middleware('throttle:30,1');
         Route::delete('favorite-locations/{id}', [App\Http\Controllers\Api\V1\FavoriteLocationController::class, 'destroy'])->middleware('throttle:30,1');
@@ -202,6 +213,8 @@ Route::prefix('v1')->group(function () {
     // Public community reports (verified/resolved only)
     Route::get('community-reports', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'publicIndex']);
     Route::get('community-reports/{id}', [App\Http\Controllers\Api\V1\CommunityReportController::class, 'publicShow']);
+    Route::get('public-incidents', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'index']);
+    Route::get('public-incidents/{id}', [App\Http\Controllers\Api\V1\IncidentReportController::class, 'show']);
 
     // Public journey planning (accessible to passengers, guests, and authenticated users)
     Route::post('journeys/search', [App\Http\Controllers\Api\V1\JourneyController::class, 'search'])

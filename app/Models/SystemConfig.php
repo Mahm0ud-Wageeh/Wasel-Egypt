@@ -3,50 +3,73 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SystemConfig extends Model
 {
-    use SoftDeletes;
+    use HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'system_config';
+    protected $table = 'system_configs';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
+        'key',
+        'value',
+        'category',
+        'is_public',
         'config_key',
         'config_value',
-        'config_type',
-        'description',
-        'updated_by',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
+            'is_public' => 'boolean',
+            'created_at' => 'datetime',
             'updated_at' => 'datetime',
-            'updated_by' => 'integer',
         ];
     }
 
-    /**
-     * Get the user who updated the system config.
-     */
-    public function updatedBy()
+    public function setKeyAttribute($value): void
     {
-        return $this->belongsTo(User::class);
+        $this->attributes['key'] = $value;
+        $this->attributes['config_key'] = $value;
+    }
+
+    public function setConfigKeyAttribute($value): void
+    {
+        $this->attributes['key'] = $value;
+        $this->attributes['config_key'] = $value;
+    }
+
+    public function getKeyAttribute(): ?string
+    {
+        return $this->attributes['key'] ?? $this->attributes['config_key'] ?? null;
+    }
+
+    public function getConfigKeyAttribute(): ?string
+    {
+        return $this->attributes['config_key'] ?? $this->attributes['key'] ?? null;
+    }
+
+    public function setValueAttribute($value): void
+    {
+        $this->attributes['value'] = $value;
+        $this->attributes['config_value'] = $value;
+    }
+
+    public function setConfigValueAttribute($value): void
+    {
+        $this->attributes['value'] = $value;
+        $this->attributes['config_value'] = $value;
+    }
+
+    public function getValueAttribute(): ?string
+    {
+        return $this->attributes['value'] ?? $this->attributes['config_value'] ?? null;
+    }
+
+    public function getConfigValueAttribute(): ?string
+    {
+        return $this->attributes['config_value'] ?? $this->attributes['value'] ?? null;
     }
 }

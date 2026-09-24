@@ -4,7 +4,9 @@ namespace App\Services\Journey;
 
 use App\Models\ActiveJourney;
 use App\Models\Journey;
+use App\Models\JourneyEvent;
 use App\Models\JourneyProgress;
+use App\Models\JourneyTrack;
 use App\Models\TransitStop;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -113,6 +115,15 @@ class JourneyTrackingService
                 'nearest_stop_distance_meters' => $nearest['stop'] !== null ? round($nearest['distance'], 3) : null,
                 'is_stop_event' => $nearest['stop'] !== null && $nearest['distance'] <= self::STOP_EVENT_RADIUS_METERS,
             ]);
+
+            // Persist to journey_tracks per ERD v2.1
+            JourneyTrack::create([
+                'journey_id' => $activeJourney->journey_id,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'accuracy_m' => $accuracy !== null ? (int) round($accuracy) : null,
+                'recorded_at' => $recordedAt,
+            ]);
         } else {
             // Duplicate delivery: report the stored row, never re-record.
             // A backfilled stop event is real history (the rider WAS there),
@@ -131,6 +142,19 @@ class JourneyTrackingService
         $deviationEvent = null;
         if (!$wasDeviated && !$skipDeviationAndAdvancement && !$isBackfill && $duplicateProgress === null) {
             $deviationEvent = $this->deviations->detect($activeJourney, $recordedAt, $latitude, $longitude, $nearest, $data);
+
+            if ($deviationEvent !== null) {
+                JourneyEvent::create([
+                    'journey_id' => $activeJourney->journey_id,
+                    'event_type' => 'deviation',
+                    'payload_json' => [
+                        'deviation_event_id' => $deviationEvent->id,
+                        'latitude' => $latitude,
+                        'longitude' => $longitude,
+                    ],
+                    'created_at' => $recordedAt,
+                ]);
+            }
         }
 
         $currentLegIndex = $skipDeviationAndAdvancement

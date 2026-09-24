@@ -10,41 +10,38 @@ class TransitStop extends Model
 {
     use SoftDeletes, HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'transit_stops';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
         'gtfs_stop_id',
         'name',
+        'name_ar',
+        'name_en',
         'latitude',
         'longitude',
         'location_accuracy',
-        'wheelchair_accessible',
-        'platform_code',
+        'parent_station_id',
         'area_id',
+        'is_interchange',
+        'wheelchair_boarding',
+        'wheelchair_accessible',
+        'active',
+        'source',
+        'platform_code',
         'import_log_id',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
-            'latitude' => 'decimal:8',
-            'longitude' => 'decimal:8',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
+            'parent_station_id' => 'integer',
+            'area_id' => 'integer',
+            'is_interchange' => 'boolean',
+            'wheelchair_boarding' => 'integer',
             'wheelchair_accessible' => 'boolean',
+            'active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -52,82 +49,106 @@ class TransitStop extends Model
     }
 
     /**
-     * Get the area for the transit stop.
+     * Parent station grouping platform stops of one physical station.
      */
+    public function parentStation()
+    {
+        return $this->belongsTo(TransitStop::class, 'parent_station_id');
+    }
+
+    /**
+     * Child platform stops for a physical station hub.
+     */
+    public function childPlatforms()
+    {
+        return $this->hasMany(TransitStop::class, 'parent_station_id');
+    }
+
+    public function platforms()
+    {
+        return $this->hasMany(TransitStop::class, 'parent_station_id');
+    }
+
+    public function getNameEnAttribute(): ?string
+    {
+        return $this->attributes['name'] ?? null;
+    }
+
+    public function setNameEnAttribute(?string $val): void
+    {
+        if ($val !== null && empty($this->attributes['name'])) {
+            $this->attributes['name'] = $val;
+        }
+    }
+
     public function area()
     {
         return $this->belongsTo(Area::class);
     }
 
-    /**
-     * Get the route stops for the transit stop.
-     */
     public function routeStops()
     {
         return $this->hasMany(RouteStop::class);
     }
 
-    /**
-     * Get the service alert stops for the transit stop.
-     */
-    public function serviceAlertStops()
-    {
-        return $this->hasMany(ServiceAlertStop::class);
-    }
-
-    /**
-     * Get the journey legs (from) for the transit stop.
-     */
-    public function journeyLegsFrom()
-    {
-        return $this->hasMany(JourneyLeg::class, 'transit_stop_from_id');
-    }
-
-    /**
-     * Get the journey legs (to) for the transit stop.
-     */
-    public function journeyLegsTo()
-    {
-        return $this->hasMany(JourneyLeg::class, 'transit_stop_to_id');
-    }
-
-    /**
-     * Get the stop times for the transit stop.
-     */
     public function stopTimes()
     {
         return $this->hasMany(StopTime::class);
     }
 
-    /**
-     * Get the journey progress for the transit stop.
-     */
+    public function transfersFrom()
+    {
+        return $this->hasMany(Transfer::class, 'from_stop_id');
+    }
+
+    public function transfersTo()
+    {
+        return $this->hasMany(Transfer::class, 'to_stop_id');
+    }
+
+    public function incidentReports()
+    {
+        return $this->hasMany(IncidentReport::class);
+    }
+
+    public function routeAlerts()
+    {
+        return $this->hasMany(RouteAlert::class);
+    }
+
+    public function serviceAlertStops()
+    {
+        return $this->hasMany(ServiceAlertStop::class);
+    }
+
+    public function journeyLegsFrom()
+    {
+        return $this->hasMany(JourneyLeg::class, 'from_stop_id');
+    }
+
+    public function journeyLegsTo()
+    {
+        return $this->hasMany(JourneyLeg::class, 'to_stop_id');
+    }
+
     public function journeyProgress()
     {
         return $this->hasMany(JourneyProgress::class, 'nearest_stop_id');
     }
 
-    /**
-     * Get the deviation events for the transit stop.
-     */
-    public function deviationEvents()
-    {
-        return $this->hasMany(DeviationEvent::class, 'expected_stop_id');
-    }
-
-    /**
-     * Get the community reports for the transit stop.
-     */
-    public function communityReports()
-    {
-        return $this->hasMany(CommunityReport::class, 'related_stop_id');
-    }
-
-    /**
-     * Get the active journeys for the transit stop.
-     */
     public function activeJourneys()
     {
         return $this->hasMany(ActiveJourney::class, 'nearest_stop_id');
+    }
+
+    /**
+     * Localized name accessor based on active locale.
+     */
+    public function getLocalizedNameAttribute(): string
+    {
+        if (app()->getLocale() === 'ar') {
+            return $this->name_ar ?: $this->name;
+        }
+        return $this->name ?: ($this->name_ar ?? '');
     }
 }

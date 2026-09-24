@@ -90,6 +90,52 @@ class AiChatController extends Controller
             'active_journey' => $activeJourneyTelemetry,
         ]);
 
+        // Persist to ai_conversations and ai_messages per ERD v2.1
+        try {
+            $user = $request->user('sanctum') ?? $request->user();
+            $sessionId = (string) ($request->header('X-Session-ID') ?? $request->input('session_id') ?? ($user ? 'user_'.$user->id : 'session_'.md5($request->ip().$request->userAgent())));
+
+            $conversation = \App\Models\AiConversation::firstOrCreate(
+                ['session_id' => $sessionId],
+                ['user_id' => $user?->id]
+            );
+
+            if ($user && !$conversation->user_id) {
+                $conversation->update(['user_id' => $user->id]);
+            }
+
+            $lastUserMsg = end($messages);
+            if ($lastUserMsg && ($lastUserMsg['role'] ?? '') === 'user') {
+                $tokensIn = (int) max(1, ceil(mb_strlen($lastUserMsg['content'] ?? '') / 4));
+                \App\Models\AiMessage::create([
+                    'ai_conversation_id' => $conversation->id,
+                    'role' => 'user',
+                    'content' => $lastUserMsg['content'],
+                    'model_used' => $payload['provider']['id'] ?? 'gemini-flash',
+                    'tokens_in' => $tokensIn,
+                    'tokens_out' => 0,
+                    'created_at' => now(),
+                ]);
+            }
+
+            if (!empty($payload['reply'])) {
+                $tokensOut = (int) max(1, ceil(mb_strlen($payload['reply']) / 4));
+                \App\Models\AiMessage::create([
+                    'ai_conversation_id' => $conversation->id,
+                    'role' => 'assistant',
+                    'content' => $payload['reply'],
+                    'model_used' => $payload['provider']['id'] ?? 'gemini-flash',
+                    'tokens_in' => 0,
+                    'tokens_out' => $tokensOut,
+                    'created_at' => now(),
+                ]);
+            }
+
+            $payload['session_id'] = $sessionId;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Could not record AI conversation history: ' . $e->getMessage());
+        }
+
         return response()->json($payload);
     }
 

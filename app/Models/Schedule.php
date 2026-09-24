@@ -10,20 +10,17 @@ class Schedule extends Model
 {
     use SoftDeletes, HasFactory;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'schedules';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
         'route_variant_id',
+        'day_type',
+        'first_departure',
+        'last_departure',
+        'headway_peak_min',
+        'headway_offpeak_min',
+        'is_timetable_based',
+        'active',
         'gtfs_trip_id',
         'service_id',
         'direction_id',
@@ -37,15 +34,14 @@ class Schedule extends Model
         'import_log_id',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'route_variant_id' => 'integer',
+            'headway_peak_min' => 'integer',
+            'headway_offpeak_min' => 'integer',
+            'is_timetable_based' => 'boolean',
+            'active' => 'boolean',
             'direction_id' => 'integer',
             'wheelchair_accessible' => 'boolean',
             'start_date' => 'date',
@@ -58,19 +54,18 @@ class Schedule extends Model
         ];
     }
 
-    /**
-     * Get the route variant for the schedule.
-     */
     public function routeVariant()
     {
         return $this->belongsTo(RouteVariant::class);
     }
 
-    /**
-     * Get the stop times for the schedule.
-     */
     public function stopTimes()
     {
         return $this->hasMany(StopTime::class);
+    }
+
+    public function exceptions()
+    {
+        return $this->hasMany(ScheduleException::class);
     }
 }

@@ -118,13 +118,29 @@ class FareEstimator
      */
     private function loadMetroFareMatrix(): ?array
     {
-        $row = SystemConfig::where('config_key', self::TFC_FARES_KEY)->first();
+        $payloadRaw = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('system_configs')) {
+            $row = \Illuminate\Support\Facades\DB::table('system_configs')
+                ->where('key', self::TFC_FARES_KEY)
+                ->first();
+            if ($row) {
+                $payloadRaw = $row->value;
+            }
+        }
+        if (!$payloadRaw && \Illuminate\Support\Facades\Schema::hasTable('system_config')) {
+            $row = \Illuminate\Support\Facades\DB::table('system_config')
+                ->where('config_key', self::TFC_FARES_KEY)
+                ->first();
+            if ($row) {
+                $payloadRaw = $row->config_value;
+            }
+        }
 
-        if (!$row) {
+        if (!$payloadRaw) {
             return null;
         }
 
-        $payload = json_decode((string) $row->config_value, true);
+        $payload = json_decode((string) $payloadRaw, true);
         $matrix = $payload['matrix'] ?? null;
 
         if (!is_array($matrix)) {

@@ -78,5 +78,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             FayoumVerifiedPackSeeder::class,
         ]);
+
+        // National Greater Cairo + Egypt multimodal network seeder (Metro L1/2/3,
+        // Capital LRT, Monorail, Ring BRT, ENR, HSR) — 8 routes, 150+ real stations.
+        $this->call([
+            NationalTransitPackSeeder::class,
+        ]);
     }
 }

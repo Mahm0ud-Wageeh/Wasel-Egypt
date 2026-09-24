@@ -19,6 +19,12 @@ return new class extends Migration
                 $table->unsignedBigInteger('dest_stop_id')->nullable()->after('origin_stop_id');
                 $table->foreign('dest_stop_id')->references('id')->on('transit_stops')->onDelete('set null');
             }
+            if (!Schema::hasColumn('journeys', 'dest_lat')) {
+                $table->decimal('dest_lat', 10, 7)->nullable()->after('origin_lng');
+            }
+            if (!Schema::hasColumn('journeys', 'dest_lng')) {
+                $table->decimal('dest_lng', 10, 7)->nullable()->after('dest_lat');
+            }
             if (!Schema::hasColumn('journeys', 'started_at')) {
                 $table->timestamp('started_at')->nullable()->after('destination_lng');
             }

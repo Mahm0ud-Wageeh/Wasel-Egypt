@@ -31,7 +31,9 @@ class User extends Authenticatable implements CanResetPassword
         'phone',
         'password_hash',
         'status',
+        'locale',
         'email_verified_at',
+        'phone_verified_at',
         'google_id',
         'github_id',
         'avatar',
@@ -56,6 +58,7 @@ class User extends Authenticatable implements CanResetPassword
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -67,9 +70,7 @@ class User extends Authenticatable implements CanResetPassword
      */
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_roles')
-                    ->withPivot('assigned_at', 'assigned_by')
-                    ->withTimestamps();
+        return $this->belongsToMany(Role::class, 'role_user');
     }
 
     /**
@@ -102,9 +103,9 @@ class User extends Authenticatable implements CanResetPassword
     public function permissions()
     {
         return Permission::query()
-            ->join('role_permissions', 'permissions.id', '=', 'role_permissions.permission_id')
-            ->join('user_roles', 'role_permissions.role_id', '=', 'user_roles.role_id')
-            ->where('user_roles.user_id', $this->id)
+            ->join('role_permission', 'permissions.id', '=', 'role_permission.permission_id')
+            ->join('role_user', 'role_permission.role_id', '=', 'role_user.role_id')
+            ->where('role_user.user_id', $this->id)
             ->select('permissions.*')
             ->distinct();
     }
@@ -221,6 +222,32 @@ class User extends Authenticatable implements CanResetPassword
      * @param  string  $token
      * @return string
      */
+
+    public function incidentReports()
+    {
+        return $this->hasMany(IncidentReport::class);
+    }
+
+    public function incidentVotes()
+    {
+        return $this->hasMany(IncidentVote::class);
+    }
+
+    public function savedPlaces()
+    {
+        return $this->hasMany(SavedPlace::class);
+    }
+
+    public function tripFeedback()
+    {
+        return $this->hasMany(TripFeedback::class);
+    }
+
+    public function aiConversations()
+    {
+        return $this->hasMany(AiConversation::class);
+    }
+
     public function resetUrl($token)
     {
         return url('/api/v1/auth/reset-password?token=' . $token . '&email=' . $this->getEmailForPasswordReset());

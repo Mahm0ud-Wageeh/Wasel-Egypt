@@ -15,8 +15,13 @@ return new class extends Migration
                 $table->id();
                 $table->string('key', 100)->unique();
                 $table->text('value')->nullable();
+                $table->string('config_key', 100)->nullable();
+                $table->text('config_value')->nullable();
                 $table->string('category', 50)->default('general');
                 $table->boolean('is_public')->default(false);
+                $table->string('config_type', 50)->nullable();
+                $table->string('description', 255)->nullable();
+                $table->unsignedBigInteger('updated_by')->nullable();
                 $table->timestamps();
             });
 
@@ -26,7 +31,9 @@ return new class extends Migration
                 foreach ($configs as $c) {
                     DB::table('system_configs')->insert([
                         'key' => $c->config_key,
+                        'config_key' => $c->config_key,
                         'value' => $c->config_value,
+                        'config_value' => $c->config_value,
                         'category' => $c->config_type ?? 'general',
                         'is_public' => false,
                         'created_at' => $c->created_at ?? now(),
@@ -34,6 +41,15 @@ return new class extends Migration
                     ]);
                 }
             }
+        } else {
+            Schema::table('system_configs', function (Blueprint $table) {
+                if (!Schema::hasColumn('system_configs', 'config_key')) {
+                    $table->string('config_key', 100)->nullable()->after('value');
+                }
+                if (!Schema::hasColumn('system_configs', 'config_value')) {
+                    $table->text('config_value')->nullable()->after('config_key');
+                }
+            });
         }
 
         // 2. data_import_logs

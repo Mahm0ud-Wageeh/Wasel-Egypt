@@ -157,23 +157,39 @@ class RouteController extends Controller
         ]);
 
         $variants = $route->routeVariants->map(function ($variant) {
-            $geometry = $variant->routeGeometry()->value('geometry');
-            $windows = $variant->schedules()
-                ->where('is_active', true)
+            $geom = $variant->routeGeometry()->first();
+            $coords = $geom ? $geom->coordinates : [];
+            $sched = $variant->schedules()
+                ->where(function ($q) {
+                    $q->where('active', true)->orWhere('is_active', true);
+                })
                 ->orderBy('id')
-                ->value('frequency_windows');
+                ->first();
+            $windows = $sched?->frequency_windows;
+            if (!$windows && $sched && $sched->headway_peak_min) {
+                $windows = [
+                    [
+                        'start_time' => $sched->first_departure ?? '05:00:00',
+                        'end_time' => $sched->last_departure ?? '23:00:00',
+                        'headway_secs' => $sched->headway_peak_min * 60,
+                    ],
+                ];
+            }
 
             return [
                 'id' => $variant->id,
                 'name' => $variant->name,
+                'name_ar' => $variant->name_ar ?? $variant->name,
                 'headsign' => $variant->headsign,
                 'direction' => $variant->direction,
-                'active' => $variant->active,
+                'active' => (bool) $variant->active,
                 'reliability_score' => $variant->reliability_score !== null
                     ? (float) $variant->reliability_score
                     : null,
-                'has_geometry' => is_array($geometry) && count($geometry) >= 2,
-                'frequency_windows' => is_array($windows) ? $windows : null,
+                'has_geometry' => is_array($coords) && count($coords) >= 2,
+                'frequency_windows' => is_array($windows) ? $windows : [],
+                'shape' => $geom ? $geom->toGeoJson() : null,
+                'point_count' => $geom?->point_count ?? count($coords),
             ];
         });
 
@@ -205,7 +221,7 @@ class RouteController extends Controller
 
         $geometry = $variant->routeGeometry()->first();
 
-        if (!$geometry || !is_array($geometry->geometry) || count($geometry->geometry) < 2) {
+        if (!$geometry || !is_array($geometry->coordinates) || count($geometry->coordinates) < 2) {
             return response()->json([
                 'success' => false,
                 'message' => 'No geometry stored for this variant',
@@ -219,8 +235,10 @@ class RouteController extends Controller
                 'length_meters' => $geometry->length_meters !== null
                     ? (float) $geometry->length_meters
                     : null,
-                'points' => count($geometry->geometry),
-                'geometry' => $geometry->geometry,
+                'points' => count($geometry->coordinates),
+                'geometry' => $geometry->coordinates,
+                'shape' => $geometry->coordinates,
+                'geojson' => $geometry->toGeoJson(),
             ],
         ]);
     }
@@ -234,26 +252,35 @@ class RouteController extends Controller
 
         // Get route variants for this route, then get their stops with ordering
         $routeStops = $route->routeVariants()
-            ->with(['routeStops.transitStop'])
+            ->with(['routeStops.transitStop.parentStation'])
             ->get()
             ->map(function($variant) {
                 return [
                     'variant_id' => $variant->id,
                     'variant_name' => $variant->name,
+                    'variant_name_ar' => $variant->name_ar ?? $variant->name,
                     'headsign' => $variant->headsign,
                     'direction' => $variant->direction,
-                    'active' => $variant->active,
+                    'active' => (bool) $variant->active,
                     'stops' => $variant->routeStops
                         ->sortBy('sequence')
                         ->map(function($routeStop) {
+                            $stop = $routeStop->transitStop;
                             return [
                                 'id' => $routeStop->id,
                                 'stop_id' => $routeStop->transit_stop_id,
-                                'stop_name' => $routeStop->transitStop?->name,
-                                'latitude' => $routeStop->transitStop?->latitude,
-                                'longitude' => $routeStop->transitStop?->longitude,
+                                'stop_name' => $stop?->name,
+                                'stop_name_ar' => $stop?->name_ar ?? $stop?->name,
+                                'latitude' => $stop?->latitude,
+                                'longitude' => $stop?->longitude,
                                 'stop_sequence' => $routeStop->sequence,
-                                'platform_code' => $routeStop->transitStop?->platform_code,
+                                'travel_time_s' => $routeStop->travel_time_s,
+                                'distance_m' => $routeStop->distance_m,
+                                'platform_code' => $stop?->platform_code,
+                                'parent_station_id' => $stop?->parent_station_id,
+                                'parent_station_name' => $stop?->parentStation?->name,
+                                'parent_station_name_ar' => $stop?->parentStation?->name_ar ?? $stop?->parentStation?->name,
+                                'is_interchange' => (bool) $stop?->is_interchange,
                             ];
                         })
                 ];

@@ -9,21 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Permission extends Model
 {
     use HasFactory;
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
+
     protected $fillable = [
         'name',
+        'category',
         'description',
+        'resource',
+        'action',
     ];
 
-    /**
-     * Get the roles for the permission.
-     */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'role_permissions');
+        return $this->belongsToMany(Role::class, 'role_permission');
     }
 }

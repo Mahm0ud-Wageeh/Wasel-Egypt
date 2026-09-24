@@ -14,15 +14,15 @@ return new class extends Migration
     {
         Schema::create('transfers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('journey_id')->constrained()->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('from_leg_id')->constrained('journey_legs')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('to_leg_id')->constrained('journey_legs')->onDelete('cascade')->onUpdate('cascade');
-            $table->enum('transfer_type', ['walking', 'waiting', 'transfer_walk']);
-            $table->unsignedInteger('transfer_duration_sec');
-            $table->decimal('from_lat', 10, 8);
-            $table->decimal('from_longitude', 11, 8);
-            $table->decimal('to_lat', 10, 8);
-            $table->decimal('to_longitude', 11, 8);
+            $table->foreignId('journey_id')->nullable()->constrained()->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('from_leg_id')->nullable()->constrained('journey_legs')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('to_leg_id')->nullable()->constrained('journey_legs')->onDelete('cascade')->onUpdate('cascade');
+            $table->string('transfer_type')->nullable();
+            $table->unsignedInteger('transfer_duration_sec')->nullable();
+            $table->decimal('from_lat', 10, 8)->nullable();
+            $table->decimal('from_longitude', 11, 8)->nullable();
+            $table->decimal('to_lat', 10, 8)->nullable();
+            $table->decimal('to_longitude', 11, 8)->nullable();
             $table->timestamps();
             $table->softDeletes();
 
