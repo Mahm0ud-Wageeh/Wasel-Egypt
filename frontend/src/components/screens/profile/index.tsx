@@ -31,6 +31,7 @@ import { toast } from "@/hooks/use-toast";
 import type { ScreenProps } from "@/lib/navigation";
 import { LINES } from "@/lib/transit-data";
 import { WalletCard } from "./wallet";
+import { CarbonRewardsCard } from "./rewards-card";
 import { SavedPlaces } from "./places";
 import { Preferences } from "./prefs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -177,22 +178,9 @@ export default function ProfileScreen({ navigate }: ScreenProps) {
           </div>
         </section>
 
-        {/* ======================= journey stats ======================== */}
+        {/* ======================= carbon & journey rewards ======================== */}
         <section>
-          <SectionLabel tag="JOURNEY IMPACT" title="رحلاتك على الشبكة" />
-          <div className="card-mist grid grid-cols-2 gap-y-6 p-5 md:grid-cols-4 md:p-6">
-            {[
-              { v: "128", l: "رحلة مكتملة" },
-              { v: "1,240", l: "كم مشوارة" },
-              { v: "96", l: "كجم CO₂ موفّرة" },
-              { v: "1,850", l: "ج.م توفير أجرة" },
-            ].map((s, i) => (
-              <div key={s.l} className={cn(i > 0 && "md:border-s md:border-bone md:ps-6")}>
-                <div className="num text-[30px] font-extrabold leading-none text-onyx md:text-[36px]">{s.v}</div>
-                <div className="mt-2 text-[12.5px] font-medium text-slateink">{s.l}</div>
-              </div>
-            ))}
-          </div>
+          <CarbonRewardsCard />
         </section>
 
         {/* ========================= saved places ======================== */}

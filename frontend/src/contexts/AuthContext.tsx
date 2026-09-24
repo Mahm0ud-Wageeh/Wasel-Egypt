@@ -27,7 +27,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setTokenState] = useState<string | null>(() => getToken())
+  const [token, setTokenState] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -53,6 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   useEffect(() => {
+    const currentToken = getToken()
+    if (currentToken) {
+      setTokenState(currentToken)
+    }
     setUnauthorizedHandler(() => {
       setToken(null)
       setTokenState(null)

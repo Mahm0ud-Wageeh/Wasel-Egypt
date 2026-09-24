@@ -170,6 +170,10 @@ export default function FaresScreen() {
 
   const stations = useMemo(() => stationsBetween(fromId, toId), [fromId, toId]);
   const activeTierId = stations !== null ? tierForStations(stations).id : null;
+  const fromStation = useMemo(() => FARE_STATIONS.find((s) => s.id === fromId), [fromId]);
+  const toStation = useMemo(() => FARE_STATIONS.find((s) => s.id === toId), [toId]);
+  const tier = stations !== null ? tierForStations(stations) : null;
+  const fare = tier ? tier.fare : 8;
 
   const swap = () => {
     setFromId(toId);
@@ -345,11 +349,15 @@ export default function FaresScreen() {
       <section className="mt-14 md:mt-20">
         <SectionHead
           tag="WASEL SMART PASS"
-          title="كارت واصل الذكي"
-          desc="عبور لاتلامسي برمز ديناميكي يُحدَّث دورياً — رصيد واحد لكل وسائل الشبكة."
+          title="كارت واصل الذكي وإصدار التذاكر"
+          desc="عبور لاتلامسي برمز ديناميكي يُحدَّث دورياً — رصيد واحد وتذاكر QR فورية لكل وسائل الشبكة."
         />
         <div className="mt-7">
-          <SmartPassCard />
+          <SmartPassCard
+            calculatedOrigin={fromStation?.nameAr}
+            calculatedDest={toStation?.nameAr}
+            calculatedFare={fare}
+          />
         </div>
       </section>
 

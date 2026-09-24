@@ -141,4 +141,22 @@ export const endpoints = {
     topup: '/wallet/topup',
     pay: '/wallet/pay',
   },
+
+  // Smart QR Transit Tickets
+  tickets: {
+    active: '/tickets/active',
+    purchase: '/tickets/purchase',
+    validate: (code: string) => `/tickets/validate/${code}`,
+  },
+
+  // Carbon Rewards & Gamification
+  rewards: {
+    show: '/rewards',
+    redeem: '/rewards/redeem',
+  },
+
+  // Live Telemetry
+  telemetry: {
+    live: '/telemetry/live',
+  },
 }

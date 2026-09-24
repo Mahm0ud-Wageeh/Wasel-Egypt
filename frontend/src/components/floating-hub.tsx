@@ -7,9 +7,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Sparkles, X, Route, MapPin, Bell, Ticket, Headset, Loader2, Send } from "lucide-react";
+import { Sparkles, X, Route, MapPin, Bell, Ticket, Headset, Loader2, Send, Mic, MicOff } from "lucide-react";
 import type { NavigateFn, ScreenKey } from "@/lib/navigation";
 import { useAi } from "@/contexts/AiContext";
+import { toast } from "@/hooks/use-toast";
 
 export default function FloatingHub({
   navigate,
@@ -18,10 +19,11 @@ export default function FloatingHub({
   navigate: NavigateFn;
   current: ScreenKey;
 }) {
-  // Hooks must be called unconditionally — the early-return guard is BELOW them.
   const [open, setOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const { messages, isTyping, sendMessage, executeAction } = useAi();
@@ -42,12 +44,68 @@ export default function FloatingHub({
     await sendMessage(text, "ar");
   };
 
+  const toggleVoice = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      toast({
+        title: "التعرف الصوتي غير مدعوم",
+        description: "المتصفح لا يدعم ميزة الإدخال الصوتي، يمكنك الكتابة في المربع.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ar-EG";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast({
+          title: "جاري الاستماع…",
+          description: "تحدث الآن (مثال: كيف أصل إلى محطة الأوبرا بالمترو؟)",
+        });
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setMessage(transcript);
+          sendMessage(transcript, "ar");
+        }
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
+
   useEffect(() => {
     if (chatOpen && chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [messages, isTyping, chatOpen]);
-
 
   return (
     <>
@@ -61,7 +119,7 @@ export default function FloatingHub({
               </span>
               <div className="leading-tight">
                 <div className="font-head text-[13px] font-black">مساعد واصل الذكي</div>
-                <div className="text-[10px] text-white/60">ذكاء اصطناعي لشبكة النقل بالقاهرة</div>
+                <div className="text-[10px] text-white/60">ذكاء اصطناعي صوتي ونصي لشبكة النقل</div>
               </div>
             </div>
             <button
@@ -77,7 +135,7 @@ export default function FloatingHub({
           <div ref={chatScrollRef} className="flex-1 space-y-3 overflow-y-auto bg-mist px-3.5 py-4">
             {messages.length === 0 ? (
               <div className="card-flat me-auto max-w-[90%] rounded-2xl border border-bone bg-white p-3.5 text-[12.5px] leading-relaxed text-carbon">
-                أهلاً بك في واصل مصر! أنا مساعدك الذكي المتصل بالشبكة. اسألني عن أسرع مسار، الأجرة الرسمية، خطوط المترو، أو كيفية الوصول لأي وجهة في القاهرة الكبرى.
+                أهلاً بك! أنا مساعدك الذكي لشبكة النقل بالقاهرة الكبرى. يمكنك الكتابة أو الضغط على الميكروفون للتحدث وسأرشدك لأسرع مسار وأقرب محطة وأدق تسعيرة.
               </div>
             ) : null}
 
@@ -118,13 +176,27 @@ export default function FloatingHub({
             ) : null}
           </div>
 
-          {/* input */}
+          {/* input bar with voice button */}
           <div className="flex items-center gap-2 border-t border-bone bg-white p-3">
+            <button
+              type="button"
+              onClick={toggleVoice}
+              className={cn(
+                "flex size-10 cursor-pointer items-center justify-center rounded-full transition-all",
+                isListening
+                  ? "bg-l2 text-white animate-pulse shadow-md"
+                  : "bg-mist text-slateink hover:bg-bone hover:text-ink"
+              )}
+              title={isListening ? "إيقاف التسجيل الصوتي" : "تحدث للمساعد الصوتي"}
+              aria-label="تسجيل صوتي"
+            >
+              {isListening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+            </button>
             <input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="اسأل عن أي رحلة أو محطة…"
+              placeholder={isListening ? "جاري الاستماع إليك…" : "اسأل عن أي رحلة أو محطة…"}
               className="h-10 flex-1 rounded-full border border-bone bg-mist px-4 text-[13px] outline-none placeholder:text-ash focus:border-interactive/50"
             />
             <button

@@ -34,7 +34,7 @@ class SecurityHeaders
 
         // Content Security Policy: tight scoped for self + Google fonts + trusted tile CDNs + web workers
         $csp = "default-src 'self'; " .
-               "script-src 'self'; " .
+               "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " .
                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
                "font-src 'self' https://fonts.gstatic.com data:; " .
                "img-src 'self' data: blob: https://server.arcgisonline.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; " .

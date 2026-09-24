@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
-import dynamic from "next/dynamic";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { ComponentType } from "react";
 import { TopHeader } from "@/components/layout/top-header";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SlimFooter } from "@/components/layout/slim-footer";
-import { WaselLogoMark } from "@/components/kit";
+import FloatingHub from "@/components/floating-hub";
 import {
   isScreenKey,
   type NavigateFn,
@@ -15,80 +14,53 @@ import {
   type ScreenProps,
 } from "@/lib/navigation";
 
-/* --------------------------------- Loader --------------------------------- */
+// Direct screen imports for instantaneous zero-delay SPA navigation
+import WelcomeScreen from "@/components/screens/welcome";
+import HomeScreen from "@/components/screens/home";
+import PlannerScreen from "@/components/screens/planner";
+import JourneyActiveScreen from "@/components/screens/journey-active";
+import JourneyCompletedScreen from "@/components/screens/journey-completed";
+import HistoryScreen from "@/components/screens/history";
+import MapScreen from "@/components/screens/map";
+import MetroScreen from "@/components/screens/metro";
+import LrtScreen from "@/components/screens/lrt";
+import MonorailScreen from "@/components/screens/monorail";
+import BrtScreen from "@/components/screens/brt";
+import TrainScreen from "@/components/screens/train";
+import FaresScreen from "@/components/screens/fares";
+import CommunityScreen from "@/components/screens/community";
+import NotificationsScreen from "@/components/screens/notifications";
+import AuthScreen from "@/components/screens/auth";
+import ProfileScreen from "@/components/screens/profile";
+import AdminScreen from "@/components/screens/admin";
 
-function ScreenLoader() {
-  return (
-    <div className="flex min-h-[70vh] w-full flex-col items-center justify-center gap-4">
-      <div className="gps-pulse rounded-2xl">
-        <WaselLogoMark className="size-14" />
-      </div>
-      <span className="mono-tag">LOADING NETWORK…</span>
-    </div>
-  );
-}
-
-/* --------------------------- Dynamic screen map --------------------------- */
-
-function makeScreen(loader: () => Promise<{ default: ComponentType<ScreenProps> }>) {
-  return dynamic(loader, { loading: () => <ScreenLoader /> });
-}
+/* --------------------------- Screen registry --------------------------- */
 
 const SCREEN_COMPONENTS: Record<ScreenKey, ComponentType<ScreenProps>> = {
-  welcome: makeScreen(() => import("@/components/screens/welcome")),
-  home: makeScreen(() => import("@/components/screens/home")),
-  planner: makeScreen(() => import("@/components/screens/planner")),
-  "journey-active": makeScreen(() => import("@/components/screens/journey-active")),
-  "journey-completed": makeScreen(() => import("@/components/screens/journey-completed")),
-  history: makeScreen(() => import("@/components/screens/history")),
-  map: makeScreen(() => import("@/components/screens/map")),
-  metro: makeScreen(() => import("@/components/screens/metro")),
-  lrt: makeScreen(() => import("@/components/screens/lrt")),
-  monorail: makeScreen(() => import("@/components/screens/monorail")),
-  brt: makeScreen(() => import("@/components/screens/brt")),
-  train: makeScreen(() => import("@/components/screens/train")),
-  fares: makeScreen(() => import("@/components/screens/fares")),
-  community: makeScreen(() => import("@/components/screens/community")),
-  notifications: makeScreen(() => import("@/components/screens/notifications")),
-  auth: makeScreen(() => import("@/components/screens/auth")),
-  profile: makeScreen(() => import("@/components/screens/profile")),
-  admin: makeScreen(() => import("@/components/screens/admin")),
+  welcome: WelcomeScreen,
+  home: HomeScreen,
+  planner: PlannerScreen,
+  "journey-active": JourneyActiveScreen,
+  "journey-completed": JourneyCompletedScreen,
+  history: HistoryScreen,
+  map: MapScreen,
+  metro: MetroScreen,
+  lrt: LrtScreen,
+  monorail: MonorailScreen,
+  brt: BrtScreen,
+  train: TrainScreen,
+  fares: FaresScreen,
+  community: CommunityScreen,
+  notifications: NotificationsScreen,
+  auth: AuthScreen,
+  profile: ProfileScreen,
+  admin: AdminScreen,
 };
 
-const FloatingHub = dynamic(() => import("@/components/floating-hub"), { ssr: false });
-
-/* ------------------------------ Clean SPA Routing ------------------------------ */
-
-function getRouteSnapshot(): string {
-  if (typeof window === "undefined") return "/";
-  // If hash is present (e.g. #/planner), prioritize it for backwards compatibility
-  if (window.location.hash && window.location.hash !== "#" && window.location.hash !== "#/") {
-    return window.location.hash + (window.location.search || "");
-  }
-  return window.location.pathname + (window.location.search || "");
-}
-
-function getRouteServerSnapshot(): string {
-  return "/";
-}
-
-function subscribe(onStoreChange: () => void) {
-  const handler = () => {
-    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    onStoreChange();
-  };
-  window.addEventListener("popstate", handler);
-  window.addEventListener("hashchange", handler);
-  return () => {
-    window.removeEventListener("popstate", handler);
-    window.removeEventListener("hashchange", handler);
-  };
-}
-
 function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
-  // Normalize hash or clean pathname (e.g. "#/planner" or "/planner" or "/")
   const clean = loc.replace(/^#\/?/, "").replace(/^\//, "");
-  const [path, qs] = clean.split("?");
+  const [rawPath, qs] = clean.split("?");
+  const path = (rawPath || "").replace(/\/$/, "");
 
   let key: ScreenKey = "home";
   if (path && isScreenKey(path)) {
@@ -97,16 +69,17 @@ function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
     key = "home";
   } else if (path === "welcome" || path === "landing") {
     key = "welcome";
+  } else if (path === "journey/active" || path === "active-journey") {
+    key = "journey-active";
+  } else if (path === "journey/completed" || path === "completed-journey") {
+    key = "journey-completed";
+  } else if (path === "search") {
+    key = "planner";
   }
 
   const params: ScreenParams = {};
   if (qs) {
     for (const [k, v] of new URLSearchParams(qs).entries()) {
-      params[k] = v;
-    }
-  }
-  if (typeof window !== "undefined" && window.location.search) {
-    for (const [k, v] of new URLSearchParams(window.location.search).entries()) {
       params[k] = v;
     }
   }
@@ -120,18 +93,53 @@ const HIDE_HEADER: ScreenKey[] = ["auth", "welcome", "admin"];
 const HIDE_FOOTER: ScreenKey[] = ["welcome", "auth", "admin", "map"];
 
 export default function WaselApp() {
-  const route = useSyncExternalStore(subscribe, getRouteSnapshot, getRouteServerSnapshot);
-  const { key, params } = useMemo(() => parseLocation(route), [route]);
+  const [currentRoute, setCurrentRoute] = useState<string>(() => {
+    if (typeof window === "undefined") return "/";
+    const hash = window.location.hash;
+    if (hash && hash !== "#" && hash !== "#/") {
+      return hash.replace(/^#\/?/, "/") + (window.location.search || "");
+    }
+    return (window.location.pathname || "/") + (window.location.search || "");
+  });
+
+  useEffect(() => {
+    // Automatically sanitize any legacy hash '#' from the URL bar to a clean HTML5 path:
+    if (typeof window !== "undefined" && window.location.hash && window.location.hash !== "#" && window.location.hash !== "#/") {
+      const cleanPath = window.location.hash.replace(/^#\/?/, "/") || "/";
+      const fullUrl = cleanPath + (window.location.search || "");
+      window.history.replaceState(null, "", fullUrl);
+      setCurrentRoute(fullUrl);
+    }
+
+    const handlePopState = () => {
+      const rawPath =
+        window.location.hash && window.location.hash !== "#" && window.location.hash !== "#/"
+          ? window.location.hash.replace(/^#\/?/, "/")
+          : window.location.pathname || "/";
+      const nextLoc = rawPath + (window.location.search || "");
+      setCurrentRoute(nextLoc);
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("hashchange", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("hashchange", handlePopState);
+    };
+  }, []);
+
+  const { key, params } = useMemo(() => parseLocation(currentRoute), [currentRoute]);
 
   const navigate = useCallback<NavigateFn>((next, nextParams) => {
     const qs = nextParams ? new URLSearchParams(nextParams).toString() : "";
     const targetPath = next === "home" ? `/${qs ? `?${qs}` : ""}` : `/${next}${qs ? `?${qs}` : ""}`;
     window.history.pushState(null, "", targetPath);
+    setCurrentRoute(targetPath);
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    window.dispatchEvent(new Event("popstate"));
   }, []);
 
-  const Current = SCREEN_COMPONENTS[key];
+  const Current = SCREEN_COMPONENTS[key] || HomeScreen;
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -148,7 +156,6 @@ export default function WaselApp() {
       {HIDE_TAB_BAR.includes(key) ? null : (
         <MobileTabBar current={key} navigate={navigate} />
       )}
-      {/* bottom spacing guard for mobile tab bar */}
       {!HIDE_TAB_BAR.includes(key) ? <div className="h-16 md:hidden" aria-hidden="true" /> : null}
     </div>
   );

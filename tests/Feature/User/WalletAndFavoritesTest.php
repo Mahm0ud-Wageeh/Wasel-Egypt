@@ -16,13 +16,13 @@ class WalletAndFavoritesTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // 1. Get initial wallet
+        // 1. Get initial wallet with welcome bonus
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/wallet');
         $response->assertStatus(200);
         $response->assertJson([
             'success' => true,
             'data' => [
-                'balance' => 0.00,
+                'balance' => 100.00,
                 'currency' => 'EGP',
             ],
         ]);
@@ -36,7 +36,7 @@ class WalletAndFavoritesTest extends TestCase
         $topUpRes->assertJson([
             'success' => true,
             'data' => [
-                'balance' => 150.00,
+                'balance' => 250.00,
             ],
         ]);
 
@@ -49,7 +49,7 @@ class WalletAndFavoritesTest extends TestCase
         $payRes->assertJson([
             'success' => true,
             'data' => [
-                'balance' => 130.00,
+                'balance' => 230.00,
             ],
         ]);
     }

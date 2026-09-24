@@ -61,30 +61,39 @@ function createEmptySession(title: string = ''): ChatSession {
   }
 }
 
-function loadInitialSessions(): ChatSession[] {
-  try {
-    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return [createEmptySession('محادثة جديدة')]
-}
+const DEFAULT_INITIAL_SESSION: ChatSession = {
+  id: "session_init",
+  title: "محادثة جديدة",
+  createdAt: 1700000000000,
+  updatedAt: 1700000000000,
+  messages: [],
+};
 
 export const AiProvider: React.FC<{
-  children: React.ReactNode
-  onNavigate?: (s: Screen) => void
-  onPrefillPlanner?: (from: string, to: string) => void
+  children: React.ReactNode;
+  onNavigate?: (s: Screen) => void;
+  onPrefillPlanner?: (from: string, to: string) => void;
 }> = ({ children, onNavigate, onPrefillPlanner }) => {
-  const [sessions, setSessions] = useState<ChatSession[]>(loadInitialSessions)
-  const [activeSessionId, setActiveSessionId] = useState<string>(() => sessions[0]?.id || '')
-  const [isTyping, setIsTyping] = useState(false)
-  const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking')
+  const [sessions, setSessions] = useState<ChatSession[]>([DEFAULT_INITIAL_SESSION]);
+  const [activeSessionId, setActiveSessionId] = useState<string>("session_init");
+  const [isTyping, setIsTyping] = useState(false);
+  const [status, setStatus] = useState<"online" | "offline" | "checking">("checking");
+
+  // Load sessions from localStorage on client mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSessions(parsed);
+          setActiveSessionId(parsed[0].id);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // Save sessions to localStorage
   useEffect(() => {

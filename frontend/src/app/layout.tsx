@@ -58,6 +58,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${cairo.variable} ${tajawal.variable} ${jakarta.variable} ${inter.variable} ${jetbrains.variable} antialiased bg-white text-ink`}
       >
         {children}

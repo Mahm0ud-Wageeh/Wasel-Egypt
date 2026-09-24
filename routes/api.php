@@ -31,7 +31,9 @@ Route::prefix('v1')->group(function () {
     Route::get('users/{id}/preferences', [App\Http\Controllers\Api\V1\UserController::class, 'preferences'])->middleware('auth:sanctum');
     Route::put('users/{id}/preferences', [App\Http\Controllers\Api\V1\UserController::class, 'updatePreferences'])->middleware('auth:sanctum');
 
-    // Journey planning (user-owned resources: self-or-admin authorization in the controller)
+    // Journey planning (search is public for all commuters; saved journeys require auth)
+    Route::get('journeys/search', [App\Http\Controllers\Api\V1\JourneyController::class, 'search'])->middleware('throttle:60,1');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'index']);
         Route::post('journeys', [App\Http\Controllers\Api\V1\JourneyController::class, 'store'])->middleware('throttle:20,1');
@@ -75,6 +77,15 @@ Route::prefix('v1')->group(function () {
         Route::post('wallet/topup', [App\Http\Controllers\Api\V1\WalletController::class, 'topUp'])->middleware('throttle:20,1');
         Route::post('wallet/pay', [App\Http\Controllers\Api\V1\WalletController::class, 'pay'])->middleware('throttle:30,1');
 
+        // Wasel Smart QR Tickets
+        Route::get('tickets/active', [App\Http\Controllers\Api\V1\TicketController::class, 'index']);
+        Route::post('tickets/purchase', [App\Http\Controllers\Api\V1\TicketController::class, 'purchase'])->middleware('throttle:20,1');
+        Route::post('tickets/validate/{code}', [App\Http\Controllers\Api\V1\TicketController::class, 'validateTicket'])->middleware('throttle:60,1');
+
+        // Carbon Rewards & Gamification
+        Route::get('rewards', [App\Http\Controllers\Api\V1\RewardController::class, 'show']);
+        Route::post('rewards/redeem', [App\Http\Controllers\Api\V1\RewardController::class, 'redeem'])->middleware('throttle:10,1');
+
         // Notifications (strictly personal, in-app)
         Route::get('notifications', [App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
         Route::get('notifications/unread-count', [App\Http\Controllers\Api\V1\NotificationController::class, 'unreadCount']);
@@ -82,6 +93,9 @@ Route::prefix('v1')->group(function () {
         Route::post('notifications/{id}/read', [App\Http\Controllers\Api\V1\NotificationController::class, 'markRead'])->middleware('throttle:60,1');
         Route::delete('notifications/{id}', [App\Http\Controllers\Api\V1\NotificationController::class, 'destroy'])->middleware('throttle:30,1');
     });
+
+    // Public Live Telemetry
+    Route::get('telemetry/live', [App\Http\Controllers\Api\V1\TelemetryStreamController::class, 'snapshot']);
 
     // Admin routes
     Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {

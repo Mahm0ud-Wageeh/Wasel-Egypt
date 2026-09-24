@@ -20,10 +20,28 @@ class WalletController extends Controller
     public function show(): JsonResponse
     {
         $user = Auth::user();
-        $wallet = Wallet::firstOrCreate(
-            ['user_id' => $user->id],
-            ['balance' => 0.00, 'currency' => 'EGP', 'is_active' => true]
-        );
+        $wallet = Wallet::where('user_id', $user->id)->first();
+        
+        if (!$wallet) {
+            $wallet = Wallet::create([
+                'user_id' => $user->id,
+                'balance' => 100.00,
+                'currency' => 'EGP',
+                'is_active' => true,
+            ]);
+
+            WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $user->id,
+                'type' => 'topup',
+                'amount' => 100.00,
+                'balance_after' => 100.00,
+                'reference_id' => 'BONUS-' . strtoupper(Str::random(8)),
+                'description_ar' => 'رصيد ترحيبي تجريبي مجاني من واصل مصر',
+                'description_en' => 'Welcome trial bonus for Wasel Egypt',
+                'status' => 'completed',
+            ]);
+        }
 
         $recentTransactions = $wallet->transactions()->take(20)->get();
 

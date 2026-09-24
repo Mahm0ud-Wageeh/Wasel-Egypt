@@ -7,7 +7,7 @@
  * ticking board and quick access grid.
  */
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowUpDown,
   ArrowUpLeft,
@@ -45,30 +45,26 @@ const QUICK_ICONS: Record<string, LucideIcon> = {
   community: Users,
 };
 
-/* --------------------- client-only clock (SSR-safe) ------------------------ */
-
-const noopSubscribe = () => () => {};
-
-function useClientValue(compute: () => string, serverValue: string): string {
-  return useSyncExternalStore(noopSubscribe, compute, () => serverValue);
-}
-
 /* ================================= SCREEN ================================= */
 
 export default function HomeScreen({ navigate }: ScreenProps) {
-  const greeting = useClientValue(
-    () => (new Date().getHours() < 12 ? "صباح الخير" : "مساء الخير"),
-    "أهلاً بك"
-  );
-  const dateLabel = useClientValue(
-    () =>
-      new Intl.DateTimeFormat("ar-EG", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      }).format(new Date()),
-    ""
-  );
+  const [greeting, setGreeting] = useState("أهلاً بك");
+  const [dateLabel, setDateLabel] = useState("");
+
+  useEffect(() => {
+    setGreeting(new Date().getHours() < 12 ? "صباح الخير" : "مساء الخير");
+    try {
+      setDateLabel(
+        new Intl.DateTimeFormat("ar-EG", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        }).format(new Date())
+      );
+    } catch {
+      /* ignore */
+    }
+  }, []);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [swapped, setSwapped] = useState(false);
