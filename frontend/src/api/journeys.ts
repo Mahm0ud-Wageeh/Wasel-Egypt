@@ -26,6 +26,8 @@ export interface JourneyLeg {
   from_lng?: number | null
   to_lat?: number | null
   to_lng?: number | null
+  from_stop?: { id?: number | string; name?: string; lat?: number; lng?: number } | null
+  to_stop?: { id?: number | string; name?: string; lat?: number; lng?: number } | null
   distance_m?: number | null
   fare?: number
   boarding_at?: string | null
@@ -42,6 +44,7 @@ export interface JourneyLeg {
   desc_en?: string
   color?: string
   waypoints?: { lat: number, lng: number }[]
+  /** Raw backend geometry [[lat, lng], ...] — preserved for MapItinerary */
   geometry?: number[][] | null
 }
 
@@ -133,7 +136,11 @@ function modeColor(mode: string): string {
   return MODE_COLORS[mode] || MODE_COLORS.walking || 'currentColor'
 }
 
-/** Map backend leg structure to frontend JourneyLeg */
+/** Map backend leg structure to frontend JourneyLeg.
+ * Preserves all coordinate data so the planner can build a proper
+ * MapItinerary with origin/destination pins, real geometry, and
+ * correct transit/walking styling.
+ */
 function mapBackendLeg(leg: any): JourneyLeg {
   const type = leg.type === 'transit' ? (leg.mode ?? 'bus') : (leg.type ?? 'walking')
   const durationMin = Math.round((leg.duration_sec ?? 0) / 60)
@@ -142,8 +149,24 @@ function mapBackendLeg(leg: any): JourneyLeg {
   const toName = leg.to_stop?.name ?? leg.to_name ?? ''
   const routeName = leg.route?.short_name ?? leg.route?.long_name ?? leg.mode ?? ''
 
+  // Preserve from_stop/to_stop with lat/lng for InteractiveMap stop markers
+  const fromStop = leg.from_stop ? {
+    id: leg.from_stop.id,
+    name: leg.from_stop.name ?? leg.from_stop.name_ar ?? fromName,
+    lat: Number(leg.from_stop.lat ?? leg.from_lat),
+    lng: Number(leg.from_stop.lng ?? leg.from_lng),
+  } : null
+  const toStop = leg.to_stop ? {
+    id: leg.to_stop.id,
+    name: leg.to_stop.name ?? leg.to_stop.name_ar ?? toName,
+    lat: Number(leg.to_stop.lat ?? leg.to_lat),
+    lng: Number(leg.to_stop.lng ?? leg.to_lng),
+  } : null
+
   return {
     type: type as JourneyLeg['type'],
+    leg_type: leg.type === 'walking' ? 'walk' : 'transit',
+    mode: leg.mode ?? type,
     duration: durationMin,
     line: routeName,
     line_ar: routeName,
@@ -155,13 +178,23 @@ function mapBackendLeg(leg: any): JourneyLeg {
     desc_ar: type === 'walking' ? `مشي ${durationMin} دقيقة` : `${routeName} من ${fromName} إلى ${toName}`,
     desc_en: type === 'walking' ? `Walk ${durationMin} min` : `${routeName} from ${fromName} to ${toName}`,
     color: modeColor(leg.mode ?? type),
+    from_lat: Number(leg.from_lat) || null,
+    from_lng: Number(leg.from_lng) || null,
+    to_lat: Number(leg.to_lat) || null,
+    to_lng: Number(leg.to_lng) || null,
+    from_stop: fromStop,
+    to_stop: toStop,
+    // Preserve raw backend geometry [[lat,lng],...] for MapItinerary
+    geometry: Array.isArray(leg.geometry) ? leg.geometry : null,
     waypoints: Array.isArray(leg.geometry)
       ? leg.geometry.map((pt: [number, number]) => ({ lat: pt[0], lng: pt[1] }))
       : undefined,
   }
 }
 
-/** Map backend journey option to frontend JourneyPlan */
+/** Map backend journey option to frontend JourneyPlan.
+ * Extracts origin/destination coordinates from legs for map pins.
+ */
 function mapBackendOption(
   opt: any,
   index: number,
@@ -180,6 +213,14 @@ function mapBackendOption(
 
   const fare = opt.fare ?? null
 
+  // Extract origin/destination coordinates from the first/last leg
+  const firstLeg = legs[0]
+  const lastLeg = legs[legs.length - 1]
+  const originLat = Number(firstLeg?.from_lat) || undefined
+  const originLng = Number(firstLeg?.from_lng) || undefined
+  const destLat = Number(lastLeg?.to_lat) || undefined
+  const destLng = Number(lastLeg?.to_lng) || undefined
+
   return {
     id: `backend_${Date.now()}_${index}`,
     recommended: Boolean(opt.recommended),
@@ -192,6 +233,10 @@ function mapBackendOption(
     walking: totalWalkMin,
     origin_name: originName,
     destination_name: destinationName,
+    origin_lat: originLat,
+    origin_lng: originLng,
+    dest_lat: destLat,
+    dest_lng: destLng,
     legs,
   }
 }

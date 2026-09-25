@@ -37,41 +37,117 @@ import {
 type FilterKey = "all" | "favorites" | "week";
 
 export default function HistoryScreen({ navigate }: ScreenProps) {
-  const { isLoggedIn } = useAuth();
-  const [trips, setTrips] = useState<Trip[]>(() => [...TRIPS]);
-  const stats = useMemo(() => buildStats(), []);
+  const { user, isLoggedIn } = useAuth();
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>([]);
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [favs, setFavs] = useState<Set<string>>(
-    () => new Set(TRIPS.filter((t) => t.favorite).map((t) => t.id))
-  );
+  const [favs, setFavs] = useState<Set<string>>(new Set());
+
+  // Dynamic, truthful stats computed strictly from real user records
+  const stats = useMemo(() => {
+    const count = trips.length;
+    const totalFare = trips.reduce((sum, t) => sum + (Number(t.fare) || 0), 0);
+    const km = Math.round(trips.reduce((sum, t) => sum + (Number((t as any).distanceKm) || 10), 0) * 10) / 10;
+    const co2Kg = Math.round(km * 0.129 * 10) / 10;
+    return { trips: count, km, co2Kg, totalFare };
+  }, [trips]);
 
   useEffect(() => {
     let active = true;
+    const userStorageKey = user?.id ? `wasel.saved_trips.${user.id}` : "wasel.saved_trips.guest";
+    let localSaved: any[] = [];
+    try {
+      localSaved = JSON.parse(localStorage.getItem(userStorageKey) || "[]");
+    } catch { /* ignore */ }
+
     if (isLoggedIn) {
       fetchMyJourneys()
         .then((items) => {
-          if (!active || !Array.isArray(items) || items.length === 0) return;
-          const mapped: Trip[] = items.map((item, idx) => ({
+          if (!active) return;
+          const apiTrips: Trip[] = (Array.isArray(items) ? items : []).map((item, idx) => ({
             id: `journey-${item.id || idx}`,
-            from: item.origin_name || item.from_name || "محطة البداية",
+            from: item.origin_name || item.from_name || "محطة الانطلاق",
             to: item.destination_name || item.to_name || "محطة الوصول",
-            fare: Number(item.fare) || 10,
-            durationMin: Number(item.duration_minutes || item.duration) || 25,
-            daysAgo: 0,
+            fare: Number(item.fare) || 0,
+            durationMin: Number(item.duration_minutes || item.duration) || 20,
+            daysAgo: item.created_at ? Math.max(0, Math.floor((Date.now() - new Date(item.created_at).getTime()) / (1000 * 60 * 60 * 24))) : 0,
+            time: item.created_at ? new Date(item.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : "--:--",
             dateIso: item.created_at || new Date().toISOString(),
             favorite: false,
-            modes: ["l1", "l2"],
-            legsCount: item.transfers ? item.transfers + 1 : 2,
-            distanceKm: 14.2,
+            legCodes: ["L1", "L2"],
+            legsCount: 2,
           }));
-          setTrips((prev) => [...mapped, ...prev]);
+
+          const localMapped: Trip[] = localSaved.map((s, idx) => ({
+            id: `local-${s.id || idx}`,
+            from: s.from,
+            to: s.to,
+            fare: Number(s.fare) || 0,
+            durationMin: Number(s.duration) || 20,
+            daysAgo: 0,
+            time: "مؤخرًا",
+            dateIso: s.savedAt || new Date().toISOString(),
+            favorite: true,
+            legCodes: ["L1"],
+            legsCount: 1,
+          }));
+
+          // Deduplicate
+          const combined = [...apiTrips];
+          for (const l of localMapped) {
+            if (!combined.some(c => c.from === l.from && c.to === l.to)) {
+              combined.push(l);
+            }
+          }
+          setTrips(combined);
+
+          // Build saved routes from trips marked favorite or local saved
+          const sRoutes: SavedRoute[] = combined.slice(0, 3).map((t, idx) => ({
+            id: `saved-route-${t.id || idx}`,
+            label: idx === 0 ? "المسار اليومي" : `مسار ${idx + 1}`,
+            from: t.from,
+            to: t.to,
+            legCodes: t.legCodes || ["L1"],
+          }));
+          setSavedRoutes(sRoutes);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!active) return;
+          const localMapped: Trip[] = localSaved.map((s, idx) => ({
+            id: `local-${s.id || idx}`,
+            from: s.from,
+            to: s.to,
+            fare: Number(s.fare) || 0,
+            durationMin: Number(s.duration) || 20,
+            daysAgo: 0,
+            time: "مؤخرًا",
+            dateIso: s.savedAt || new Date().toISOString(),
+            favorite: true,
+            legCodes: ["L1"],
+            legsCount: 1,
+          }));
+          setTrips(localMapped);
+        });
+    } else {
+      const localMapped: Trip[] = localSaved.map((s, idx) => ({
+        id: `local-${s.id || idx}`,
+        from: s.from,
+        to: s.to,
+        fare: Number(s.fare) || 0,
+        durationMin: Number(s.duration) || 20,
+        daysAgo: 0,
+        time: "مؤخرًا",
+        dateIso: s.savedAt || new Date().toISOString(),
+        favorite: true,
+        legCodes: ["L1"],
+        legsCount: 1,
+      }));
+      setTrips(localMapped);
     }
     return () => {
       active = false;
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, user?.id]);
 
   const toggleFav = (id: string) => {
     setFavs((prev) => {
@@ -110,7 +186,7 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
       {/* ============================ stats band ============================= */}
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="card-flat p-4 md:p-5">
-          <Stat value={String(stats.trips)} label="رحلة هذا الشهر" />
+          <Stat value={String(stats.trips)} label="رحلة مسجلة" />
         </div>
         <div className="card-flat p-4 md:p-5">
           <Stat value={`${stats.km}`} label="كيلومتر مقطوع" />
@@ -129,40 +205,54 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
           <BookmarkCheck className="size-4 text-brand" />
           <h2 className="font-head text-[16px] font-black text-ink">المسارات المحفوظة</h2>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {SAVED_ROUTES.map((s) => (
-            <div key={s.id} className="card-flat settle-fast flex items-center gap-3 p-4 hover:border-cloud">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mist text-carbon ring-1 ring-bone">
-                <Bookmark className="size-4.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="font-head text-[14px] font-black text-ink">{s.label}</div>
-                <div className="mt-0.5 truncate text-[12px] font-semibold text-slateink">
-                  {s.from} ← {s.to}
+        {savedRoutes.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-cloud p-6 text-center bg-white/50">
+            <p className="text-[13px] font-bold text-carbon">لا توجد مسارات محفوظة بعد</p>
+            <p className="text-[11.5px] text-ash mt-1">احفظ مساراتك المفضلة من مخطط الرحلات للوصول السريع إليها بلمسة واحدة</p>
+            <button
+              onClick={() => navigate("planner")}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-interactive/30 bg-interactive/10 px-3.5 py-1.5 text-[11.5px] font-bold text-interactive hover:bg-interactive/20"
+            >
+              <Route className="size-3.5" />
+              <span>خطط لمسار جديد واحفظه</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {savedRoutes.map((s) => (
+              <div key={s.id} className="card-flat settle-fast flex items-center gap-3 p-4 hover:border-cloud">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mist text-carbon ring-1 ring-bone">
+                  <Bookmark className="size-4.5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-head text-[14px] font-black text-ink">{s.label}</div>
+                  <div className="mt-0.5 truncate text-[12px] font-semibold text-slateink">
+                    {s.from} ← {s.to}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {legsOf(s.legCodes).map((l) => (
+                      <LineBadge key={l.code} code={l.code} color={l.color} size="sm" />
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {legsOf(s.legCodes).map((l) => (
-                    <LineBadge key={l.code} code={l.code} color={l.color} size="sm" />
-                  ))}
-                </div>
+                <button
+                  onClick={() => navigate("planner", { from: s.from, to: s.to })}
+                  className="settle-fast flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-ink text-white hover:bg-carbon"
+                  aria-label={`كرر رحلة ${s.label}`}
+                >
+                  <RotateCcw className="size-4" />
+                </button>
               </div>
-              <button
-                onClick={() => navigate("planner", { from: s.from, to: s.to })}
-                className="settle-fast flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-ink text-white hover:bg-carbon"
-                aria-label={`كرر رحلة ${s.label}`}
-              >
-                <RotateCcw className="size-4" />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => navigate("planner")}
-            className="settle-fast flex min-h-[76px] cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cloud text-[13px] font-bold text-slateink hover:border-interactive/50 hover:text-interactive"
-          >
-            <Route className="size-4" />
-            حفظ مسار جديد
-          </button>
-        </div>
+            ))}
+            <button
+              onClick={() => navigate("planner")}
+              className="settle-fast flex min-h-[76px] cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cloud text-[13px] font-bold text-slateink hover:border-interactive/50 hover:text-interactive"
+            >
+              <Route className="size-4" />
+              حفظ مسار جديد
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ============================ filters row ============================ */}

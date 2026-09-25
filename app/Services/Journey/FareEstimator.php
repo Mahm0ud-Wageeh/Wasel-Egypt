@@ -79,6 +79,127 @@ class FareEstimator
     }
 
     /**
+     * Multimodal journey fare estimation with breakdown (Phase 18 Requirement).
+     * Calculates official tariffs for rail/metro and realistic approximate fares for bus/microbus.
+     *
+     * @param array $plan
+     * @return array|null
+     */
+    public function estimateMultimodal(array $plan): ?array
+    {
+        $transitLegs = array_values(array_filter(
+            $plan['legs'] ?? [],
+            fn ($leg) => ($leg['type'] ?? '') === 'transit' || in_array($leg['mode'] ?? '', ['metro', 'lrt', 'monorail', 'brt', 'bus', 'microbus', 'minibus', 'rail'], true)
+        ));
+
+        if ($transitLegs === []) {
+            return null;
+        }
+
+        $fareData = $this->loadMetroFareMatrix();
+        $matrix = $fareData['matrix'] ?? [];
+
+        $totalAmount = 0.0;
+        $hasApproximate = false;
+        $breakdown = [];
+
+        foreach ($transitLegs as $index => $leg) {
+            $mode = $leg['mode'] ?? 'bus';
+            $legFare = 0.0;
+            $isApprox = false;
+            $labelAr = '';
+
+            switch ($mode) {
+                case 'metro':
+                    $fromId = $leg['from_stop']['id'] ?? null;
+                    $toId = $leg['to_stop']['id'] ?? null;
+                    $matrixFare = ($fromId && $toId) ? ($matrix[$fromId][$toId] ?? null) : null;
+                    if ($matrixFare !== null) {
+                        $legFare = (float) $matrixFare;
+                        $labelAr = 'مترو الأنفاق (تعريفة رسمية مؤكدة)';
+                    } else {
+                        $legFare = 10.0;
+                        $isApprox = true;
+                        $labelAr = 'مترو الأنفاق (تعريفة قياسية تقريبية)';
+                    }
+                    break;
+
+                case 'lrt':
+                    $legFare = 15.0;
+                    $labelAr = 'القطار الكهربائي الخفيف (LRT)';
+                    break;
+
+                case 'monorail':
+                    $legFare = 40.0;
+                    $labelAr = 'مونوريل شرق/غرب النيل';
+                    break;
+
+                case 'brt':
+                    $legFare = 10.0;
+                    $labelAr = 'حافلات BRT السريعة (الدائري)';
+                    break;
+
+                case 'bus':
+                    $legFare = 10.0;
+                    $isApprox = true;
+                    $labelAr = 'أتوبيس هيئة النقل العام / مواصلات مصر';
+                    break;
+
+                case 'microbus':
+                case 'minibus':
+                    $distanceMeters = (float) ($leg['distance_meters'] ?? 10000);
+                    if ($distanceMeters <= 6000) {
+                        $legFare = 7.0;
+                    } elseif ($distanceMeters <= 18000) {
+                        $legFare = 10.0;
+                    } elseif ($distanceMeters <= 40000) {
+                        $legFare = 18.0;
+                    } else {
+                        $legFare = 28.0;
+                    }
+                    $isApprox = true;
+                    $labelAr = 'ميكروباص (تعريفة تقريبية حسب المسافة)';
+                    break;
+
+                case 'rail':
+                case 'train':
+                    $legFare = 35.0;
+                    $isApprox = true;
+                    $labelAr = 'سكك حديد مصر (قطار تحيا مصر / روسي)';
+                    break;
+
+                default:
+                    $legFare = 10.0;
+                    $isApprox = true;
+                    $labelAr = 'وسيلة مواصلات برية';
+                    break;
+            }
+
+            if ($isApprox) {
+                $hasApproximate = true;
+            }
+
+            $totalAmount += $legFare;
+            $breakdown[] = [
+                'leg_index' => $index,
+                'mode' => $mode,
+                'amount' => round($legFare, 2),
+                'currency' => 'EGP',
+                'is_approximate' => $isApprox,
+                'label_ar' => $labelAr,
+            ];
+        }
+
+        return [
+            'amount' => round($totalAmount, 2),
+            'currency' => 'EGP',
+            'is_approximate' => $hasApproximate,
+            'breakdown' => $breakdown,
+            'data_status' => $hasApproximate ? 'approximate' : 'real',
+        ];
+    }
+
+    /**
      * Price a single stop-to-stop pair from the TfC matrix when both stops
      * belong to it. Used by the public fares surface so published pair
      * pricing and journey pricing come from the exact same verified data.

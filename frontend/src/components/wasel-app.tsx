@@ -13,6 +13,7 @@ import {
   type ScreenParams,
   type ScreenProps,
 } from "@/lib/navigation";
+import { ScreenErrorBoundary } from "@/components/screen-error-boundary";
 
 // Direct screen imports for instantaneous zero-delay SPA navigation
 import WelcomeScreen from "@/components/screens/welcome";
@@ -75,6 +76,8 @@ function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
     key = "journey-completed";
   } else if (path === "search") {
     key = "planner";
+  } else if (path === "login" || path === "register") {
+    key = "auth";
   }
 
   const params: ScreenParams = {};
@@ -147,7 +150,9 @@ export default function WaselApp() {
         <TopHeader current={key} navigate={navigate} />
       )}
       <main key={key} className="rise-in flex-1">
-        <Current navigate={navigate} params={params} />
+        <ScreenErrorBoundary fallbackKey={key} onNavigateHome={() => navigate("home")}>
+          <Current navigate={navigate} params={params} />
+        </ScreenErrorBoundary>
       </main>
       {HIDE_FOOTER.includes(key) ? null : <SlimFooter navigate={navigate} />}
       {key === "auth" || key === "welcome" ? null : (

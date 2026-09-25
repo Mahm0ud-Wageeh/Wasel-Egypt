@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
-import ActiveJourney from '../pages/ActiveJourney'
+import ActiveJourney from '../legacy-pages/ActiveJourney'
 import * as activeApi from '../api/activeJourneys'
 import { renderWithProviders } from '../test/test-utils'
 

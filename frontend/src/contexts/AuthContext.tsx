@@ -40,8 +40,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const userData = await apiRequest<User>(endpoints.auth.user, { method: 'GET' })
-      setUser(userData)
+      const res = await apiRequest<any>(endpoints.auth.user, { method: 'GET' })
+      const u = res?.data || res
+      setUser(u)
     } catch {
       // If failed, token might be invalid or backend unreachable
       setUser(null)
@@ -68,18 +69,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      const res = await apiRequest<{ token: string, user: User }>(endpoints.auth.login, {
+      const res = await apiRequest<any>(endpoints.auth.login, {
         method: 'POST',
         body: { email, password },
         auth: false,
       })
-      const newToken = res.token || (res as any).access_token
+      const data = res?.data || res
+      const newToken = data?.token || data?.access_token || res?.token || res?.access_token
       if (newToken) {
         setToken(newToken)
         setTokenState(newToken)
       }
-      if (res.user) {
-        setUser(res.user)
+      const u = data?.user || res?.user
+      if (u) {
+        setUser(u)
       } else {
         await fetchCurrentUser()
       }
@@ -91,18 +94,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, phone?: string) => {
     setLoading(true)
     try {
-      const res = await apiRequest<{ token: string, user: User }>(endpoints.auth.register, {
+      const res = await apiRequest<any>(endpoints.auth.register, {
         method: 'POST',
         body: { name, email, password, password_confirmation: password, phone },
         auth: false,
       })
-      const newToken = res.token || (res as any).access_token
+      const data = res?.data || res
+      const newToken = data?.token || data?.access_token || res?.token || res?.access_token
       if (newToken) {
         setToken(newToken)
         setTokenState(newToken)
       }
-      if (res.user) {
-        setUser(res.user)
+      const u = data?.user || res?.user
+      if (u) {
+        setUser(u)
       } else {
         await fetchCurrentUser()
       }
@@ -120,6 +125,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(null)
       setTokenState(null)
       setUser(null)
+      try {
+        localStorage.removeItem('wasel.activeJourney.v1')
+        localStorage.removeItem('wasel.saved_trips')
+        localStorage.removeItem('wasel.wallet.balance')
+        localStorage.removeItem('wasel.lastSearch.v1')
+      } catch { /* ignore */ }
     }
   }
 

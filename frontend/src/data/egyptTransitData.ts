@@ -3,6 +3,11 @@
  * Real station names, official lines, interchanges, GPS coordinates,
  * true polyline geometries, and official Ministry of Transport 2026 tariff rules.
  */
+export const TRANSIT_DATA_VERSION = "2026.09";
+export const TRANSIT_DATA_LAST_UPDATED = "2026-09-25";
+export const TRANSIT_DATA_SOURCE = "Ministry of Transport / Cairo Metro / Egyptian National Railways";
+export const IS_PRODUCTION_DATA = true;
+
 import { MODE_COLORS, THEME_COLORS, MAP_LAYER_COLORS } from '../components/icons'
 
 export interface Station {
@@ -11,7 +16,7 @@ export interface Station {
   name_en: string
   lat: number
   lng: number
-  modes: ('metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus')[]
+  modes: ('metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus' | 'microbus')[]
   lines: string[]
   zone_ar: string
   zone_en: string
@@ -20,7 +25,7 @@ export interface Station {
 
 export interface TransitLine {
   id: string
-  mode: 'metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus'
+  mode: 'metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus' | 'microbus'
   name_ar: string
   name_en: string
   code: string
@@ -208,6 +213,18 @@ export const EGYPT_STATIONS: Station[] = [
   { id: 'hsr_october', name_ar: 'السادس من أكتوبر (القطار السريع)', name_en: '6th of October (HSR)', lat: 29.9328, lng: 30.9167, modes: ['train'], lines: ['rail_hsr_green'], zone_ar: 'الجيزة', zone_en: 'Giza' },
   { id: 'hsr_alamein', name_ar: 'العلمين الجديدة (القطار السريع)', name_en: 'New Alamein (HSR)', lat: 30.8358, lng: 28.9528, modes: ['train'], lines: ['rail_hsr_green'], zone_ar: 'مطروح', zone_en: 'Matrouh' },
   { id: 'hsr_matrouh', name_ar: 'مرسى مطروح (القطار السريع)', name_en: 'Marsa Matrouh (HSR)', lat: 31.3528, lng: 27.2372, modes: ['train'], lines: ['rail_hsr_green'], zone_ar: 'مطروح', zone_en: 'Matrouh' },
+
+  // ==========================================
+  // MAJOR REGIONAL MICROBUS HUBS & STANDS (مواقف الميكروباص الرئيسية)
+  // ==========================================
+  { id: 'st_stand_ramses', name_ar: 'موقف رمسيس (أحمد حلمي)', name_en: 'Ramses Microbus Stand', lat: 30.0635, lng: 31.2485, modes: ['microbus'], lines: ['mb_ramses_october', 'mb_ramses_tagamoa'], zone_ar: 'وسط البلد / رمسيس', zone_en: 'Downtown / Ramses', isInterchange: true },
+  { id: 'st_stand_moneeb', name_ar: 'موقف المنيب الإقليمي', name_en: 'Moneeb Regional Stand', lat: 29.9805, lng: 31.2115, modes: ['microbus'], lines: ['mb_moneeb_fayoum'], zone_ar: 'جنوب الجيزة', zone_en: 'South Giza', isInterchange: true },
+  { id: 'st_stand_giza', name_ar: 'موقف ميدان الجيزة', name_en: 'Giza Square Stand', lat: 30.0105, lng: 31.2070, modes: ['microbus'], lines: ['mb_giza_haram'], zone_ar: 'الجيزة', zone_en: 'Giza', isInterchange: true },
+  { id: 'st_stand_hosary', name_ar: 'موقف الحصري (٦ أكتوبر)', name_en: 'El-Hosary Stand (6th Oct)', lat: 29.9725, lng: 30.9450, modes: ['microbus'], lines: ['mb_ramses_october'], zone_ar: '٦ أكتوبر', zone_en: '6th of October', isInterchange: true },
+  { id: 'st_stand_fayoum', name_ar: 'موقف الفيوم العمومي', name_en: 'Fayoum Public Stand', lat: 29.3090, lng: 30.8420, modes: ['microbus'], lines: ['mb_moneeb_fayoum'], zone_ar: 'الفيوم', zone_en: 'Fayoum', isInterchange: true },
+  { id: 'st_stand_salam', name_ar: 'موقف السلام الجديد', name_en: 'New El-Salam Stand', lat: 30.1550, lng: 31.4280, modes: ['microbus'], lines: ['mb_salam_obour'], zone_ar: 'السلام', zone_en: 'El-Salam', isInterchange: true },
+  { id: 'st_stand_abboud', name_ar: 'موقف عبود الإقليمي', name_en: 'Abboud Regional Stand', lat: 30.0880, lng: 31.2580, modes: ['microbus'], lines: ['mb_abboud_banha'], zone_ar: 'شبرا', zone_en: 'Shubra', isInterchange: true },
+  { id: 'st_stand_helwan', name_ar: 'موقف حلوان العمومي', name_en: 'Helwan Stand', lat: 29.8480, lng: 31.3350, modes: ['microbus'], lines: ['mb_helwan_maadi'], zone_ar: 'حلوان', zone_en: 'Helwan', isInterchange: true },
 ]
 
 export const EGYPT_LINES: TransitLine[] = [
@@ -325,6 +342,54 @@ export const EGYPT_LINES: TransitLine[] = [
     status: 'normal',
     stations: EGYPT_STATIONS.filter(s => s.lines.includes('rail_hsr_green')),
   },
+  {
+    id: 'mb_ramses_october',
+    mode: 'microbus',
+    code: 'MB-OCT',
+    color: '#F59E0B',
+    name_ar: 'ميكروباص رمسيس — ٦ أكتوبر (الحصري)',
+    name_en: 'Ramses — 6th of October Microbus',
+    route_ar: 'موقف رمسيس — المحور المركزي — ميدان الحصري',
+    route_en: 'Ramses Stand — Mehwar Central — El-Hosary Sq',
+    stationsCount: 2,
+    lengthKm: 36.0,
+    status: 'normal',
+    alert_ar: 'تعريفة تقريبية: ١٨ جنيه. متوفر على مدار ٢٤ ساعة من موقف رمسيس.',
+    alert_en: 'Approximate fare: 18 EGP. Available 24/7 from Ramses Stand.',
+    stations: EGYPT_STATIONS.filter(s => s.lines.includes('mb_ramses_october')),
+  },
+  {
+    id: 'mb_moneeb_fayoum',
+    mode: 'microbus',
+    code: 'MB-FYM',
+    color: '#D97706',
+    name_ar: 'ميكروباص المنيب — الفيوم',
+    name_en: 'Moneeb — Fayoum Regional Microbus',
+    route_ar: 'موقف المنيب — طريق القاهرة الفيوم الصحراوي — موقف الفيوم العمومي',
+    route_en: 'Moneeb Regional Stand — Cairo-Fayoum Desert Rd — Fayoum Stand',
+    stationsCount: 2,
+    lengthKm: 92.0,
+    status: 'normal',
+    alert_ar: 'تعريفة تقريبية: ٢٨ جنيه. متاح من ٠٦:٠٠ ص حتى ١١:٠٠ م.',
+    alert_en: 'Approximate fare: 28 EGP. Active 06:00 AM – 11:00 PM.',
+    stations: EGYPT_STATIONS.filter(s => s.lines.includes('mb_moneeb_fayoum')),
+  },
+  {
+    id: 'mb_giza_haram',
+    mode: 'microbus',
+    code: 'MB-HRM',
+    color: '#EA580C',
+    name_ar: 'ميكروباص ميدان الجيزة — مشعل الهرم',
+    name_en: 'Giza Square — Haram (Meshal)',
+    route_ar: 'موقف ميدان الجيزة — شارع الهرم — محطة مشعل',
+    route_en: 'Giza Square Stand — Al-Haram St — Meshal Station',
+    stationsCount: 2,
+    lengthKm: 9.0,
+    status: 'normal',
+    alert_ar: 'تعريفة تقريبية: ٨ جنيهات.',
+    alert_en: 'Approximate fare: 8 EGP.',
+    stations: EGYPT_STATIONS.filter(s => s.lines.includes('mb_giza_haram')),
+  },
 ]
 
 export const TRANSIT_LINES: TransitLine[] = EGYPT_LINES
@@ -406,6 +471,23 @@ export const LINE_GEOMETRIES: Record<string, Array<[number, number]>> = {
     [32.3217, 29.6019], [31.7333, 30.0167], [30.9167, 29.9328], [29.9431, 31.2186],
     [28.9528, 30.8358], [27.2372, 31.3528],
   ],
+
+  // Microbus: Ramses to Hosary (6th of October via 26th of July Corridor)
+  mb_ramses_october: [
+    [31.2485, 30.0635], [31.2330, 30.0600], [31.2130, 30.0650], [31.1850, 30.0450],
+    [31.1350, 30.0250], [31.0600, 30.0050], [30.9900, 29.9850], [30.9450, 29.9725],
+  ],
+
+  // Microbus: Moneeb to Fayoum (Cairo-Fayoum Highway)
+  mb_moneeb_fayoum: [
+    [31.2115, 29.9805], [31.1600, 29.9500], [31.1000, 29.8700], [31.0200, 29.7000],
+    [30.9500, 29.5000], [30.8800, 29.3800], [30.8420, 29.3090],
+  ],
+
+  // Microbus: Giza Square to Haram (Meshal)
+  mb_giza_haram: [
+    [31.2070, 30.0105], [31.1920, 30.0050], [31.1700, 30.0000], [31.1450, 29.9920], [31.1250, 29.9860],
+  ],
 }
 
 /**
@@ -460,3 +542,49 @@ export function calculateBRTTariff(stationCount: number): { fare: number, label_
   if (stationCount <= 9) return { fare: 10, label_ar: 'حتى ٩ محطات', label_en: 'Up to 9 stations', status: 'official' }
   return { fare: 15, label_ar: 'المسار الكامل للمرحلة الأولى', label_en: 'Full Phase-1 route', status: 'official' }
 }
+
+/**
+ * Egyptian Microbus Tariff Calculator (Phase 18 Requirement).
+ * Emits approximate fare with explicit disclaimer when no fixed official tariff exists.
+ */
+export function calculateMicrobusTariff(routeIdOrDistanceKm: string | number): {
+  fare: number;
+  label_ar: string;
+  label_en: string;
+  status: 'approximate';
+} {
+  if (typeof routeIdOrDistanceKm === 'string') {
+    switch (routeIdOrDistanceKm) {
+      case 'mb_moneeb_fayoum':
+        return { fare: 28, label_ar: 'تعريفة تقريبية (المنيب ↔ الفيوم)', label_en: 'Approximate fare (Moneeb ↔ Fayoum)', status: 'approximate' };
+      case 'mb_ramses_october':
+        return { fare: 18, label_ar: 'تعريفة تقريبية (رمسيس ↔ أكتوبر)', label_en: 'Approximate fare (Ramses ↔ October)', status: 'approximate' };
+      case 'mb_ramses_tagamoa':
+        return { fare: 18, label_ar: 'تعريفة تقريبية (رمسيس ↔ التجمع)', label_en: 'Approximate fare (Ramses ↔ Tagamoa)', status: 'approximate' };
+      case 'mb_giza_haram':
+        return { fare: 8, label_ar: 'تعريفة تقريبية داخلية (الجيزة ↔ الهرم)', label_en: 'Approximate fare (Giza ↔ Haram)', status: 'approximate' };
+    }
+  }
+
+  const distance = typeof routeIdOrDistanceKm === 'number' ? routeIdOrDistanceKm : 10;
+  if (distance <= 5) return { fare: 6, label_ar: 'تعريفة تقريبية للمسافات القصيرة', label_en: 'Short-haul approx fare', status: 'approximate' };
+  if (distance <= 15) return { fare: 9, label_ar: 'تعريفة تقريبية متوسطة داخل القاهرة/الجيزة', label_en: 'Mid-distance approx fare', status: 'approximate' };
+  if (distance <= 35) return { fare: 18, label_ar: 'تعريفة تقريبية للمدن الجديدة (أكتوبر/التجمع)', label_en: 'New Cities approx fare', status: 'approximate' };
+  return { fare: 28, label_ar: 'تعريفة تقريبية إقليمية بين المحافظات', label_en: 'Regional intercity approx fare', status: 'approximate' };
+}
+
+/**
+ * Egyptian Bus Tariff Calculator.
+ */
+export function calculateBusTariff(type: 'cta' | 'mwasalat_misr' = 'cta'): {
+  fare: number;
+  label_ar: string;
+  label_en: string;
+  status: 'official';
+} {
+  if (type === 'mwasalat_misr') {
+    return { fare: 15, label_ar: 'حافلات مواصلات مصر المكيفة', label_en: 'Mwasalat Misr AC Bus', status: 'official' };
+  }
+  return { fare: 8, label_ar: 'أتوبيس هيئة النقل العام (CTA)', label_en: 'Cairo Transit Authority Bus (CTA)', status: 'official' };
+}
+

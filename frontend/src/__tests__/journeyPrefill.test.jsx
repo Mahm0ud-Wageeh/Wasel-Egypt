@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
 import { Routes, Route } from 'react-router-dom'
 import { cairoWallTime } from '../api/journeys'
-import { JourneySearchPage } from '../pages/JourneySearch'
+import { JourneySearchPage } from '../legacy-pages/JourneySearch'
 import { renderWithProviders } from '../test/test-utils'
 
 /**

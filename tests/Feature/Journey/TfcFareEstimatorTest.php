@@ -184,4 +184,31 @@ class TfcFareEstimatorTest extends TestCase
         $this->assertNotNull($fare);
         $this->assertSame(8.0, $fare['amount']);
     }
+
+    /** @test */
+    public function test_multimodal_journey_produces_approximate_total_and_breakdown()
+    {
+        $this->seedMatrix([
+            '11' => ['22' => 10.0],
+        ]);
+
+        $metroLeg = $this->metroLeg(11, 22);
+        $microbusLeg = [
+            'type' => 'transit',
+            'mode' => 'microbus',
+            'distance_meters' => 35000,
+            'from_stop' => ['id' => 22, 'name' => 'Ramses Stand'],
+            'to_stop' => ['id' => 99, 'name' => 'Hosary Stand'],
+        ];
+
+        $plan = $this->makePlan([$metroLeg, $microbusLeg]);
+        $fare = (new FareEstimator())->estimateMultimodal($plan);
+
+        $this->assertNotNull($fare);
+        $this->assertTrue($fare['is_approximate']);
+        $this->assertSame(28.0, $fare['amount']); // 10 metro + 18 microbus
+        $this->assertCount(2, $fare['breakdown']);
+        $this->assertSame('metro', $fare['breakdown'][0]['mode']);
+        $this->assertSame('microbus', $fare['breakdown'][1]['mode']);
+    }
 }

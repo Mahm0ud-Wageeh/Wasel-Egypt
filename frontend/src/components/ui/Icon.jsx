@@ -38,7 +38,6 @@ import {
   Globe,
   TrainFront,
   BusFront,
-  Van,
   Footprints,
   TrainTrack,
   Navigation,
@@ -104,8 +103,8 @@ const ICONS = {
   // modes
   modeMetro: TrainFront,
   modeBus: BusFront,
-  modeMinibus: Van,
-  modeMicrobus: Van,
+  modeMinibus: BusFront,
+  modeMicrobus: BusFront,
   modeRail: TrainTrack,
   modeWalking: Footprints,
 

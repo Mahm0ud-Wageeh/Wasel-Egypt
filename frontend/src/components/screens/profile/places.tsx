@@ -57,23 +57,6 @@ interface Place {
   longitude?: number;
 }
 
-const INITIAL_PLACES: Place[] = [
-  {
-    id: "home",
-    label: "المنزل",
-    icon: "home",
-    address: "المعادي — شارع 9 بجوار محطة المترو",
-    station: "المعادي",
-  },
-  {
-    id: "work",
-    label: "العمل",
-    icon: "work",
-    address: "مدينة نصر — البرج الذكي أمام مدينة الاستاد",
-    station: "الاستاد",
-  },
-];
-
 const PLACE_ICONS = {
   home: Home,
   work: Briefcase,
@@ -83,19 +66,22 @@ const PLACE_ICONS = {
 /* ------------------------------ component ------------------------------ */
 
 export function SavedPlaces() {
-  const { isLoggedIn } = useAuth();
-  const [places, setPlaces] = useState<Place[]>(INITIAL_PLACES);
+  const { isLoggedIn, user } = useAuth();
+  const [places, setPlaces] = useState<Place[]>([]);
   const [editing, setEditing] = useState<Place | null>(null);
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const fetchPlaces = useCallback(async () => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      setPlaces([]);
+      return;
+    }
     try {
       setLoading(true);
       const res = await apiRequest<{ data?: Place[] } | Place[]>(endpoints.favoriteLocations.list);
       const list = Array.isArray(res) ? res : (res as any)?.data;
-      if (Array.isArray(list) && list.length > 0) {
+      if (Array.isArray(list)) {
         setPlaces(
           list.map((item: any) => ({
             id: item.id,
@@ -105,9 +91,11 @@ export function SavedPlaces() {
             station: item.name || "محطة المترو",
           }))
         );
+      } else {
+        setPlaces([]);
       }
     } catch {
-      // Keep local state
+      setPlaces([]);
     } finally {
       setLoading(false);
     }
@@ -116,6 +104,20 @@ export function SavedPlaces() {
   useEffect(() => {
     fetchPlaces();
   }, [fetchPlaces]);
+
+  const handleDelete = async (id: string | number) => {
+    if (isLoggedIn) {
+      try {
+        await apiRequest(endpoints.favoriteLocations.delete(id), { method: "DELETE" });
+        await fetchPlaces();
+        toast({ title: "تم حذف المكان بنجاح" });
+      } catch {
+        toast({ title: "تعذر حذف المكان", variant: "destructive" });
+      }
+    } else {
+      setPlaces((ps) => ps.filter((p) => p.id !== id));
+    }
+  };
 
   return (
     <>
@@ -128,14 +130,24 @@ export function SavedPlaces() {
                 <span className="flex size-11 items-center justify-center rounded-2xl border border-bone bg-mist text-ink">
                   <Icon className="size-5" />
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setEditing(p)}
-                  className="settle-fast flex size-9 cursor-pointer items-center justify-center rounded-full text-slateink opacity-70 hover:bg-mist hover:text-ink hover:opacity-100"
-                  aria-label={`تعديل ${p.label}`}
-                >
-                  <Pencil className="size-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(p)}
+                    className="settle-fast flex size-8 cursor-pointer items-center justify-center rounded-full text-slateink opacity-70 hover:bg-mist hover:text-ink hover:opacity-100"
+                    aria-label={`تعديل ${p.label}`}
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(p.id)}
+                    className="settle-fast flex size-8 cursor-pointer items-center justify-center rounded-full text-slateink opacity-70 hover:bg-mist hover:text-l2 hover:opacity-100"
+                    aria-label={`حذف ${p.label}`}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
               </div>
               <div className="mt-3.5 font-head text-[15px] font-black text-ink">{p.label}</div>
               <p className="mt-1 text-[12.5px] leading-6 text-slateink">{p.address}</p>

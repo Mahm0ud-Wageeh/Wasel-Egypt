@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import RouteDetail from '../pages/RouteDetail'
+import RouteDetail from '../legacy-pages/RouteDetail'
 import { LanguageProvider } from '../i18n/LanguageContext'
 
 // Route/line page (final-product completion) — renders ONLY real API data:

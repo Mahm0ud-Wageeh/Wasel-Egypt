@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { LanguageProvider } from '../i18n/LanguageContext'
-import Fares from '../pages/Fares'
+import Fares from '../legacy-pages/Fares'
 import * as client from '../api/client'
 
 vi.mock('../api/client', () => ({

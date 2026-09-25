@@ -64,19 +64,21 @@ function SectionLabel({ tag, title }: { tag: string; title: string }) {
 export default function ProfileScreen({ navigate }: ScreenProps) {
   const { user, isLoggedIn, isAdmin, logout } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
-  const [name, setName] = useState(user?.name || "محمد أحمد");
-  const [email, setEmail] = useState(user?.email || "mohamed.ahmed@example.com");
+  const [name, setName] = useState(user?.name || (isLoggedIn ? "مستخدم واصل" : "زائر"));
+  const [email, setEmail] = useState(user?.email || "");
 
   useEffect(() => {
     if (user?.name) setName(user.name);
+    else if (!isLoggedIn) setName("زائر");
     if (user?.email) setEmail(user.email);
-  }, [user?.name, user?.email]);
+    else if (!isLoggedIn) setEmail("");
+  }, [user?.name, user?.email, isLoggedIn]);
 
-  const initials = (user?.name || name)
+  const initials = (user?.name || (isLoggedIn ? name : "زائر"))
     .split(" ")
     .slice(0, 2)
     .map((w) => w.charAt(0))
-    .join(" ");
+    .join(" ") || "ز";
 
   const saveProfile = () => {
     setEditOpen(false);
@@ -93,30 +95,50 @@ export default function ProfileScreen({ navigate }: ScreenProps) {
             الملف الشخصي والإعدادات
           </h1>
         </div>
-        <PillButton variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-          <Pencil />
-          تعديل الملف
-        </PillButton>
+        {isLoggedIn ? (
+          <PillButton variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil />
+            تعديل الملف
+          </PillButton>
+        ) : (
+          <PillButton variant="dark" size="sm" onClick={() => navigate("login")}>
+            تسجيل الدخول
+          </PillButton>
+        )}
       </div>
+
+      {!isLoggedIn ? (
+        <div className="card-flat mb-6 flex flex-wrap items-center justify-between gap-4 border-interactive/30 bg-interactive/5 p-4 rounded-2xl">
+          <div>
+            <div className="text-[14px] font-bold text-ink">أنت تتصفح حالياً كزائر</div>
+            <div className="text-[12px] text-slateink">سجّل دخولك لحفظ مساراتك، شحن محفظتك، ومزامنة بياناتك عبر أجهزتك.</div>
+          </div>
+          <PillButton variant="dark" size="sm" onClick={() => navigate("login")}>
+            تسجيل الدخول / إنشاء حساب
+          </PillButton>
+        </div>
+      ) : null}
 
       <div className="space-y-7">
         {/* ========================= identity ========================= */}
         <section className="card-flat flex flex-wrap items-center gap-5 p-5 md:p-6">
           <span className="relative shrink-0 rounded-full ring-4 ring-emerald/15">
             <span className="num flex size-16 items-center justify-center rounded-full bg-ink font-head text-[22px] font-black text-white md:size-20 md:text-[26px]">
-              {initials || "م"}
+              {initials}
             </span>
-            <span className="absolute -bottom-0.5 -end-0.5 flex size-6 items-center justify-center rounded-full border-2 border-white bg-emerald">
-              <BadgeCheck className="size-3.5 text-white" />
-            </span>
+            {isLoggedIn ? (
+              <span className="absolute -bottom-0.5 -end-0.5 flex size-6 items-center justify-center rounded-full border-2 border-white bg-emerald">
+                <BadgeCheck className="size-3.5 text-white" />
+              </span>
+            ) : null}
           </span>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="font-head text-[19px] font-black text-ink">{name}</h2>
+              <h2 className="font-head text-[19px] font-black text-ink">{isLoggedIn ? name : "زائر"}</h2>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald/25 bg-emerald/10 px-2.5 py-1 text-[11px] font-bold text-emerald">
                 <BadgeCheck className="size-3" />
-                {isAdmin ? "مسؤول النظام (Admin)" : "راكب موثّق"}
+                {isAdmin ? "مسؤول النظام (Admin)" : isLoggedIn ? "راكب موثّق" : "وضع الزائر"}
               </span>
               {isAdmin ? (
                 <button
@@ -129,21 +151,25 @@ export default function ProfileScreen({ navigate }: ScreenProps) {
                 </button>
               ) : null}
             </div>
-            <div className="num mt-1.5 text-[13.5px] font-bold text-slateink" dir="ltr">
-              {user?.phone || "+20 100 123 4567"}
-            </div>
-            <div className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-slateink">
-              <Mail className="size-3.5 text-ash" />
-              <span className="num" dir="ltr">{email}</span>
-            </div>
+            {user?.phone ? (
+              <div className="num mt-1.5 text-[13.5px] font-bold text-slateink" dir="ltr">
+                {user.phone}
+              </div>
+            ) : null}
+            {email ? (
+              <div className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-slateink">
+                <Mail className="size-3.5 text-ash" />
+                <span className="num" dir="ltr">{email}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col items-start gap-1.5 md:items-end">
-            <span className="mono-tag">MEMBER SINCE</span>
+            <span className="mono-tag">{isLoggedIn ? "MEMBER SINCE" : "STATUS"}</span>
             <span className="num text-[13px] font-bold text-carbon" dir="ltr">
-              {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase() : "2024"}
+              {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase() : isLoggedIn ? "2025" : "GUEST"}
             </span>
-            <span className="mono-tag !text-fog">{isAdmin ? "SUPERADMIN ROLE" : "TRUST 98 / 100"}</span>
+            <span className="mono-tag !text-fog">{isAdmin ? "SUPERADMIN ROLE" : isLoggedIn ? "VERIFIED ACCOUNT" : "ANONYMOUS"}</span>
           </div>
         </section>
 
@@ -157,15 +183,14 @@ export default function ProfileScreen({ navigate }: ScreenProps) {
               <span className="flex size-9 items-center justify-center rounded-xl border border-bone bg-white text-ink">
                 <Ticket className="size-4.5" />
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald/25 bg-emerald/10 px-2.5 py-1 text-[11px] font-bold text-emerald">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-bone bg-mist px-2.5 py-1 text-[11px] font-bold text-slateink">
                 <CalendarClock className="size-3" />
-                فعّالة
+                الباقات المتاحة
               </span>
             </div>
-            <h3 className="mt-4 font-head text-[16px] font-black text-ink">بطاقة شهريّة مترو</h3>
+            <h3 className="mt-4 font-head text-[16px] font-black text-ink">الاشتراكات الشهرية</h3>
             <p className="mt-1.5 text-[12.5px] leading-6 text-slateink">
-              اشتراك غير محدود على خطوط المترو — فعّالة حتى{" "}
-              <span className="font-bold text-ink">15 أكتوبر</span>
+              احصل على اشتراك شهري رسمي مخفض على خطوط مترو القاهرة الكبرى والقطار الكهربائي الخفيف (LRT).
             </p>
             <div className="mt-3.5 flex items-center gap-1.5">
               {LINES.filter((l) => l.mode === "metro").map((l) => (
@@ -173,7 +198,7 @@ export default function ProfileScreen({ navigate }: ScreenProps) {
               ))}
             </div>
             <PillButton variant="dark" size="sm" className="mt-auto w-full" onClick={() => navigate("fares")}>
-              تجديد الاشتراك
+              استعراض باقات الاشتراك
             </PillButton>
           </div>
         </section>

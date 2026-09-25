@@ -4,6 +4,7 @@ import { searchPlaces, PlaceSearchStop, PlaceSearchPlace } from '../../api/place
 import { EGYPT_STATIONS, TRANSIT_LINES, Station } from '../../data/egyptTransitData'
 import { ModeIcon } from '../icons'
 import { Search, X, MapPin, TrainFront, Star, ArrowLeftRight } from 'lucide-react'
+import { matchesTransitQuery } from '../../utils/arabicSearch'
 
 interface Props {
   isOpen: boolean
@@ -79,13 +80,11 @@ export default function StationSelectorModal({
 
   // Matching stations from local verified Egypt Transit dataset
   const localStationMatches = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = query.trim()
     if (!q) return []
     return EGYPT_STATIONS.filter(s =>
-      s.name_ar.toLowerCase().includes(q) ||
-      s.name_en.toLowerCase().includes(q) ||
-      s.zone_ar.toLowerCase().includes(q) ||
-      s.zone_en.toLowerCase().includes(q)
+      matchesTransitQuery(s.name_ar, s.name_en, q) ||
+      matchesTransitQuery(s.zone_ar, s.zone_en, q)
     ).slice(0, 10)
   }, [query])
 

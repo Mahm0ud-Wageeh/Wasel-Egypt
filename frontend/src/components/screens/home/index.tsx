@@ -29,7 +29,9 @@ import type { ScreenProps } from "@/lib/navigation";
 import { StationInput } from "./station-input";
 import { LineRadar } from "./line-radar";
 import { DeparturesBoard } from "./departures-board";
-import { QUICK_ACCESS, SAVED_TRIPS, type SavedTrip } from "./data";
+import { QUICK_ACCESS, type SavedTrip } from "./data";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchMyJourneys } from "@/api/journeys";
 
 const TRIP_ICONS: Record<SavedTrip["icon"], LucideIcon> = {
   home: House,
@@ -48,6 +50,8 @@ const QUICK_ICONS: Record<string, LucideIcon> = {
 /* ================================= SCREEN ================================= */
 
 export default function HomeScreen({ navigate }: ScreenProps) {
+  const { user, isLoggedIn } = useAuth();
+  const [userSavedTrips, setUserSavedTrips] = useState<SavedTrip[]>([]);
   const [greeting, setGreeting] = useState("أهلاً بك");
   const [dateLabel, setDateLabel] = useState("");
 
@@ -65,6 +69,52 @@ export default function HomeScreen({ navigate }: ScreenProps) {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || !user) {
+      setUserSavedTrips([]);
+      return;
+    }
+
+    const loadSaved = async () => {
+      try {
+        const remote = await fetchMyJourneys({ per_page: 4 });
+        if (remote?.data && Array.isArray(remote.data) && remote.data.length > 0) {
+          const mapped: SavedTrip[] = remote.data.map((j: any) => ({
+            id: String(j.id),
+            title: j.title || j.destination_name || "رحلة محفوظة",
+            from: j.origin_name || "نقطة الانطلاق",
+            to: j.destination_name || "نقطة الوصول",
+            via: j.summary_text || (Array.isArray(j.modes_used) ? j.modes_used.join(" • ") : "رحلة مباشرة"),
+            icon: "station",
+          }));
+          setUserSavedTrips(mapped);
+          return;
+        }
+      } catch {
+        /* fallback to user-scoped storage */
+      }
+
+      try {
+        const localKey = `wasel.saved_trips.${user.id}`;
+        const stored = localStorage.getItem(localKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setUserSavedTrips(parsed.slice(0, 4));
+            return;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+
+      setUserSavedTrips([]);
+    };
+
+    loadSaved();
+  }, [isLoggedIn, user]);
+
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [swapped, setSwapped] = useState(false);
@@ -187,31 +237,49 @@ export default function HomeScreen({ navigate }: ScreenProps) {
           </PillButton>
         </div>
 
-        <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
-          {SAVED_TRIPS.map((trip) => {
-            const Icon = TRIP_ICONS[trip.icon];
-            return (
-              <button
-                key={trip.id}
-                type="button"
-                onClick={() => navigate("planner", { from: trip.from, to: trip.to })}
-                className="card-flat settle group w-[230px] shrink-0 rounded-2xl p-4 text-start outline-none hover:-translate-y-0.5 hover:border-cloud focus-visible:ring-2 focus-visible:ring-interactive/40 md:w-auto"
-              >
-                <span className="flex items-center justify-between">
-                  <span className="flex size-9 items-center justify-center rounded-full bg-ink/[0.04] text-carbon">
-                    <Icon className="size-4" />
+        {userSavedTrips.length > 0 ? (
+          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
+            {userSavedTrips.map((trip) => {
+              const Icon = TRIP_ICONS[trip.icon] || TrainFront;
+              return (
+                <button
+                  key={trip.id}
+                  type="button"
+                  onClick={() => navigate("planner", { from: trip.from, to: trip.to })}
+                  className="card-flat settle group w-[230px] shrink-0 rounded-2xl p-4 text-start outline-none hover:-translate-y-0.5 hover:border-cloud focus-visible:ring-2 focus-visible:ring-interactive/40 md:w-auto"
+                >
+                  <span className="flex items-center justify-between">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-ink/[0.04] text-carbon">
+                      <Icon className="size-4" />
+                    </span>
+                    <ArrowUpLeft className="size-4 text-fog settle-fast group-hover:text-interactive" />
                   </span>
-                  <ArrowUpLeft className="size-4 text-fog settle-fast group-hover:text-interactive" />
-                </span>
-                <span className="mt-3 block text-[14px] font-black text-ink">{trip.title}</span>
-                <span className="mt-1 block truncate text-[12px] font-bold text-carbon">
-                  {trip.from} <span className="text-ash">←</span> {trip.to}
-                </span>
-                <span className="mt-0.5 block text-[11px] text-ash">{trip.via}</span>
-              </button>
-            );
-          })}
-        </div>
+                  <span className="mt-3 block text-[14px] font-black text-ink">{trip.title}</span>
+                  <span className="mt-1 block truncate text-[12px] font-bold text-carbon">
+                    {trip.from} <span className="text-ash">←</span> {trip.to}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-ash">{trip.via}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="card-flat flex flex-col items-center justify-center rounded-2xl border border-bone/60 bg-white/60 p-6 text-center">
+            <p className="text-[13px] font-semibold text-slateink">لا توجد مسارات محفوظة بعد</p>
+            <p className="mt-1 text-[11.5px] text-ash">
+              ابحث عن رحلتك القادمة واضغط على &quot;حفظ الرحلة&quot; للوصول السريع إليها من هنا
+            </p>
+            <PillButton
+              variant="outline"
+              size="sm"
+              className="mt-3.5"
+              onClick={() => navigate("planner")}
+            >
+              <Search className="size-3.5" />
+              تخطيط رحلة الآن
+            </PillButton>
+          </div>
+        )}
       </section>
 
       {/* ---------------------------- quick access ---------------------------- */}

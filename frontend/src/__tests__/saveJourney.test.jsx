@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor, within } from '@testing-library/react'
-import { JourneyResultsPage } from '../pages/JourneyResults'
+import { JourneyResultsPage } from '../legacy-pages/JourneyResults'
 import * as journeyApi from '../api/journeys'
 import { renderWithProviders, mockJourneyPlan } from '../test/test-utils'
 

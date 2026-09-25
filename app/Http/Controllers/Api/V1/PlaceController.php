@@ -59,88 +59,101 @@ class PlaceController extends Controller
         // the lookup into an unintended full-table wildcard scan.
         $like = addcslashes($query, '%_\\');
 
-        // Bilingual alias support for Egyptian transit stations
+        // Bilingual alias support for Egyptian transit stations (Arabic & English)
         $aliasMap = [
-            'رمسيس' => 'Ramses',
-            'الشهداء' => 'Shohadaa',
-            'التحرير' => 'Tahrir',
-            'السادات' => 'Sadat',
-            'الجيزة' => 'Giza',
-            'العاصمة' => 'Capital',
-            'عدلي منصور' => 'Adly Mansour',
-            'حلوان' => 'Helwan',
-            'المرج' => 'Marg',
-            'شبرا' => 'Shubra',
-            'المعادي' => 'Maadi',
-            'المطرية' => 'Matariya',
-            'عين شمس' => 'Ain Shams',
-            'سراي القبة' => 'Saray',
-            'الأوبرا' => 'Opera',
-            'الدقي' => 'Dokki',
-            'البحوث' => 'Bohooth',
-            'جامعة القاهرة' => 'Cairo University',
-            'فيصل' => 'Faisal',
-            'أم المصريين' => 'Omm El-Misryeen',
-            'ساقية مكي' => 'Mekki',
-            'المنيب' => 'Mounib',
-            'العتبة' => 'Attaba',
-            'باب الشعرية' => 'Shaariya',
-            'الجيش' => 'Geish',
-            'عبده باشا' => 'Abdou',
-            'العباسية' => 'Abbassiya',
-            'أرض المعارض' => 'Fair Zone',
-            'استاد' => 'Stadium',
-            'كلية البنات' => 'Banat',
-            'الأهرام' => 'Ahram',
-            'هارون' => 'Haroun',
-            'هليوبوليس' => 'Heliopolis',
-            'ألف مسكن' => 'Maskan',
-            'نادي الشمس' => 'Shams',
-            'النزهة' => 'Nozha',
-            'هشام بركات' => 'Hesham Barakat',
-            'قباء' => 'Qobaa',
-            'عمر بن الخطاب' => 'Omar',
-            'الهايكستب' => 'Hikestep',
-            'الكيت كات' => 'Kit Kat',
-            'السودان' => 'Sudan',
-            'إمبابة' => 'Imbaba',
-            'البوهي' => 'Bohy',
-            'القومية' => 'Qawmeya',
-            'الدائري' => 'Ring Rd',
-            'روض الفرج' => 'Farag',
-            'التوفيقية' => 'Tawfikiya',
-            'وادي النيل' => 'Wadi',
-            'جامعة الدول' => 'Dowal',
-            'بولاق' => 'Bulaq',
-            'الشروق' => 'Shorouq',
-            'بدر' => 'Badr',
-            'العاشر' => '10th',
-            'المستقبل' => 'Mostaqbal',
-            'الروبيكي' => 'Roubiky',
-            'حدائق العاصمة' => 'Capital',
-            'مطار' => 'Airport',
-            'مدينة نصر' => 'Nasr City',
-            'مصر الجديدة' => 'Heliopolis',
-            'التجمع' => 'Tagamoa',
-            'القاهرة الجديدة' => 'New Cairo',
-            'أكتوبر' => 'October',
-            'زايد' => 'Zayed',
+            'رمسيس' => ['الشهداء', 'رمسيس', 'Ramses'],
+            'الشهداء' => ['الشهداء', 'رمسيس', 'Shohadaa'],
+            'التحرير' => ['السادات', 'التحرير', 'Sadat', 'Tahrir'],
+            'السادات' => ['السادات', 'التحرير', 'Sadat', 'Tahrir'],
+            'الجيزة' => ['الجيزة', 'Giza'],
+            'العاصمة' => ['العاصمة', 'Capital'],
+            'عدلي منصور' => ['عدلي منصور', 'Adly Mansour'],
+            'حلوان' => ['حلوان', 'Helwan'],
+            'المرج' => ['المرج', 'Marg'],
+            'شبرا' => ['شبرا', 'Shubra'],
+            'المعادي' => ['المعادي', 'Maadi'],
+            'المطرية' => ['المطرية', 'Matariya'],
+            'عين شمس' => ['عين شمس', 'Ain Shams'],
+            'الدقي' => ['الدقي', 'Dokki'],
+            'البحوث' => ['البحوث', 'Bohooth'],
+            'جامعة القاهرة' => ['جامعة القاهرة', 'Cairo University'],
+            'فيصل' => ['فيصل', 'Faisal'],
+            'المنيب' => ['المنيب', 'Mounib', 'Moneeb'],
+            'العتبة' => ['العتبة', 'Attaba'],
+            'العباسية' => ['العباسية', 'Abbassiya'],
+            'الأهرام' => ['الأهرام', 'الاهرام', 'Ahram'],
+            'الفيوم' => ['الفيوم', 'Fayoum'],
+            'الحصري' => ['الحصري', 'Hosary', 'October'],
+            'عبود' => ['عبود', 'Abboud'],
+            'السلام' => ['السلام', 'Salam'],
+            'ramses' => ['الشهداء', 'رمسيس', 'Ramses'],
+            'ramsis' => ['الشهداء', 'رمسيس', 'Ramses'],
+            'shohadaa' => ['الشهداء', 'رمسيس', 'Shohadaa'],
+            'tahrir' => ['السادات', 'التحرير', 'Sadat'],
+            'sadat' => ['السادات', 'التحرير', 'Sadat'],
+            'giza' => ['الجيزة', 'Giza'],
+            'dokki' => ['الدقي', 'Dokki'],
+            'doky' => ['الدقي', 'Dokki'],
+            'ataba' => ['العتبة', 'Attaba'],
+            'attaba' => ['العتبة', 'Attaba'],
+            'cairo university' => ['جامعة القاهرة', 'Cairo University'],
+            'fayoum' => ['الفيوم', 'Fayoum'],
+            'faiyum' => ['الفيوم', 'Fayoum'],
+            'hosary' => ['الحصري', 'Hosary'],
+            'moneeb' => ['المنيب', 'Moneeb', 'Mounib'],
+            'abboud' => ['عبود', 'Abboud'],
+            'salam' => ['السلام', 'Salam'],
+            'october' => ['أكتوبر', 'اكتوبر', 'الحصري', 'October'],
         ];
 
-        $englishTerm = null;
-        foreach ($aliasMap as $ar => $en) {
-            if (mb_stripos($query, $ar) !== false) {
-                $englishTerm = $en;
-                break;
+        // Strip common prefixes like "محطة", "موقف", "ميدان", "جامعة"
+        $stripped = preg_replace('/^(محطة|محطه|موقف|ميدان|شارع|جامعة|جامعه|مستشفى|مستشفي|مول|نادي|نادى)\s+/iu', '', $query);
+
+        // Generate Arabic spelling variants (أ/إ/آ <-> ا, ة <-> ه, ى <-> ي)
+        $searchTerms = [$query];
+        if ($stripped !== $query && mb_strlen($stripped) >= 2) {
+            $searchTerms[] = $stripped;
+        }
+
+        foreach ([$query, $stripped] as $base) {
+            if (!$base) continue;
+            // Variant 1: swap alefs
+            $searchTerms[] = preg_replace('/[أإآ]/u', 'ا', $base);
+            $searchTerms[] = preg_replace('/ال([ا])/u', 'الأ', $base);
+            $searchTerms[] = preg_replace('/^ا/u', 'أ', $base);
+            // Variant 2: swap ة and ه only at the end of words (Ta Marbouta never appears in the middle of words)
+            $searchTerms[] = preg_replace('/ه(\s|$)/u', 'ة$1', $base);
+            $searchTerms[] = preg_replace('/ة(\s|$)/u', 'ه$1', $base);
+            // Combined alef + ta marbouta swap
+            $combined = preg_replace('/ال([ا])/u', 'الأ', $base);
+            $combined = preg_replace('/ه(\s|$)/u', 'ة$1', $combined);
+            $searchTerms[] = $combined;
+        }
+
+        // Match against alias map
+        $aliasTerms = [];
+        $lowQuery = mb_strtolower($query);
+        $lowStripped = mb_strtolower($stripped);
+        foreach ($aliasMap as $key => $targets) {
+            if (mb_stripos($lowQuery, (string)$key) !== false || mb_stripos($lowStripped, (string)$key) !== false) {
+                foreach ($targets as $t) {
+                    $aliasTerms[] = $t;
+                }
             }
         }
 
+        $allTerms = array_unique(array_filter(array_merge($searchTerms, $aliasTerms), fn($t) => mb_strlen(trim($t)) >= 2));
+
         $stopsQuery = DB::table('transit_stops')
             ->leftJoin('areas', 'transit_stops.area_id', '=', 'areas.id')
-            ->where(function ($q) use ($like, $englishTerm) {
-                $q->where('transit_stops.name', 'like', '%' . $like . '%');
-                if ($englishTerm) {
-                    $q->orWhere('transit_stops.name', 'like', '%' . $englishTerm . '%');
+            ->where(function ($q) use ($allTerms) {
+                foreach ($allTerms as $idx => $term) {
+                    $escaped = addcslashes($term, '%_\\');
+                    if ($idx === 0) {
+                        $q->where('transit_stops.name', 'like', '%' . $escaped . '%');
+                    } else {
+                        $q->orWhere('transit_stops.name', 'like', '%' . $escaped . '%');
+                    }
                 }
             });
 

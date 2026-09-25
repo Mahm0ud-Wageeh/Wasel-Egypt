@@ -50,6 +50,7 @@ class MockTransitProvider implements AiProvider
         // actual boarding point — not to any street containing the word.
         'الفيوم' => 'Fayoum Bus Terminal',
         'محطة الفيوم' => 'Fayoum Bus Terminal',
+        'موقف الفيوم' => 'Fayoum Bus Terminal',
         'تامية' => 'Tamiya',
         'سنورس' => 'Sinnuris',
         'إبشواي' => 'Ibsheway',
@@ -58,6 +59,22 @@ class MockTransitProvider implements AiProvider
         'يوسف الصديق' => 'Youssef El-Seddik',
         'جامعة الفيوم' => 'Fayoum University',
         'الفيوم الجديدة' => 'New Fayoum City',
+        'جامعة القاهرة' => 'Cairo University',
+        'جامعه القاهره' => 'Cairo University',
+        'أكتوبر' => 'October',
+        'اكتوبر' => 'October',
+        '6 أكتوبر' => 'October',
+        '6 اكتوبر' => 'October',
+        'الحصري' => 'Hosary',
+        'موقف الحصري' => 'Hosary',
+        'العباسية' => 'Abbassiya',
+        'العباسيه' => 'Abbassiya',
+        'المنيب' => 'Mounib',
+        'موقف المنيب' => 'Mounib',
+        'عبود' => 'Abboud',
+        'موقف عبود' => 'Abboud',
+        'السلام' => 'Salam',
+        'موقف السلام' => 'Salam',
     ];
 
     public function id(): string
@@ -107,6 +124,7 @@ class MockTransitProvider implements AiProvider
             fn (string $t) => $this->planIntent($t, $arabic),
             fn (string $t) => $this->lineIntent($t, $arabic),
             fn (string $t) => $this->fareIntent($t, $arabic),
+            fn (string $t) => $this->preferenceIntent($t, $arabic),
             fn (string $t) => $this->nearbyIntent($t, $arabic, $context),
             fn (string $t) => $this->alertsIntent($t, $arabic),
             fn (string $t) => $this->savedIntent($t, $arabic),
@@ -122,18 +140,52 @@ class MockTransitProvider implements AiProvider
     {
         $from = $to = null;
 
-        if (preg_match('/\bfrom\s+(.+?)\s+(?:to|till|until)\s+(.+?)\s*$/i', $text, $m)) {
+        // Clean trailing colloquial question phrases like "إزاي بأقل تحويلات؟" or "بأقل تكلفة"
+        $cleaned = preg_replace('/(\s+(?:إزاي|ازاي|بأقل\s+تحويلات|باقل\s+تحويلات|بأقل\s+تكلفة|باقل\s+تكلفه|بأسرع\s+وقت|أسرع\s+طريق|اسرع\s+طريق|عشان\s+اوصل|علشان\s+اوصل)[\s؟\?]*|[\s؟\?]+)+$/u', '', $text);
+
+        // 1. Egyptian "أروح [الوجهة] من [البداية]" (Destination first, then origin)
+        if (preg_match('/(?:أروح|اروح|اوصل|أوصل)\s+(.+?)\s+من\s+(.+?)\s*$/u', $cleaned, $m)) {
+            $to = trim($m[1]);
+            $from = trim($m[2]);
+        }
+        // 2. English "from X to Y"
+        elseif (preg_match('/\bfrom\s+(.+?)\s+(?:to|till|until)\s+(.+?)\s*$/i', $cleaned, $m)) {
             $from = trim($m[1]);
             $to = trim($m[2]);
-        } elseif (preg_match('/من\s+(.+?)\s+(?:إلى|الى)\s+(.+?)\s*$/u', $text, $m)) {
+        }
+        // 3. "أنا في X وعايز أروح/أوصل Y"
+        elseif (preg_match('/(?:أنا في|انا في)\s+(.+?)\s+(?:وعايز|عايز|وحابب|حابب|اريد|أريد)?\s*(?:أروح|اروح|أوصل|اوصل|إلى|الى|على|لل?|لـ?)?\s*(.+)$/u', $cleaned, $m)) {
             $from = trim($m[1]);
             $to = trim($m[2]);
-        } elseif (preg_match('/من\s+(.+?)\s+لل(.+?)\s*$/u', $text, $m)) {
-            // Egyptian Arabic "من X للY" (لـ+ال التعريف مدموجة في "لل").
+        }
+        // 4. "أروح من X للY" or "من X للY" (لل = لـ + ال التعريف)
+        elseif (preg_match('/(?:أروح|اروح|اوصل|أوصل)?\s*من\s+(.+?)\s+لل(.+?)\s*$/u', $cleaned, $m)) {
             $from = trim($m[1]);
             $to = 'ال' . trim($m[2]);
-        } elseif (preg_match('/(?:عايز|أوزع|اريد|أريد|هروح|أروح|اروح)\s+(?:أروح\s+|اروح\s+)?(?:إلى|الى|على|ل)?\s*(.+?)\s*$/u', $text, $m)) {
-            $to = trim($m[1]);
+        }
+        // 5. "أروح من X إلى/على/ل Y"
+        elseif (preg_match('/(?:أروح|اروح|اوصل|أوصل)?\s*من\s+(.+?)\s+(?:إلى|الى|على|لـ?|ل)\s+(.+)$/u', $cleaned, $m)) {
+            $from = trim($m[1]);
+            $to = trim($m[2]);
+        }
+        // 6. "أسرع/أرخص طريق من X للY"
+        elseif (preg_match('/(?:عايز\s+)?(?:أسرع|اسرع|أرخص|ارخص|أفضل|افضل)\s+طريق\s+من\s+(.+?)\s+لل(.+?)\s*$/u', $cleaned, $m)) {
+            $from = trim($m[1]);
+            $to = 'ال' . trim($m[2]);
+        }
+        // 7. "أسرع/أرخص طريق من X إلى/ل Y"
+        elseif (preg_match('/(?:عايز\s+)?(?:أسرع|اسرع|أرخص|ارخص|أفضل|افضل)\s+طريق\s+من\s+(.+?)\s+(?:إلى|الى|على|ل)\s+(.+?)\s*$/u', $cleaned, $m)) {
+            $from = trim($m[1]);
+            $to = trim($m[2]);
+        }
+        // 8. Destination-only "عايز أروح X" or "أنا مش عارف اسم المحطة بس عايز أروح X"
+        elseif (preg_match('/(?:عايز|أوزع|اريد|أريد|هروح|أروح|اروح)\s+(?:أروح\s+|اروح\s+)?(?:إلى|الى|على|لل?|لـ?)?\s*(.+?)\s*$/u', $cleaned, $m)) {
+            $target = trim($m[1]);
+            if (str_starts_with($target, 'لل') && mb_strlen($target) > 2) {
+                $to = 'ال' . mb_substr($target, 2);
+            } else {
+                $to = $target;
+            }
         }
 
         if ($from === null && $to === null) {
@@ -160,6 +212,18 @@ class MockTransitProvider implements AiProvider
             $actions[] = ['type' => 'set_destination', 'params' => $this->stopParams($toStop)];
             $parts[] = $arabic ? "إلى: {$toStop->name}" : "To: {$toStop->name}";
         }
+        if ($fromStop !== null && $toStop !== null) {
+            $actions[] = [
+                'type' => 'plan_journey',
+                'params' => [
+                    'origin' => $fromStop->name,
+                    'destination' => $toStop->name,
+                    'origin_id' => $fromStop->id,
+                    'destination_id' => $toStop->id,
+                    'auto_search' => 'true',
+                ],
+            ];
+        }
         $actions[] = ['type' => 'open_planner', 'params' => []];
 
         $content = $arabic
@@ -167,6 +231,44 @@ class MockTransitProvider implements AiProvider
             : 'I prepared the planner — '.implode(', ', $parts).'. Open the planner and hit search to see the journey options with times and fares.';
 
         return ['content' => $content, 'actions' => $actions];
+    }
+
+    private function preferenceIntent(string $text, bool $arabic): ?array
+    {
+        // 1. Walking preference: "مش عايز أمشي كتير", "أقل مشي", "مش عايز امشي"
+        if (preg_match('/(مش\s*عايز\s*(أمشي|امشي)|(أقل|اقل)\s*مشي|less\s*walk|min.*walk)/iu', $text)) {
+            return [
+                'content' => $arabic
+                    ? 'فهمت إنك بتفضل أقل مسافة مشي. في مخطط الرحلات تقدر تخصص أقصى مسافة للمشي لكل محطة وتختار المسارات الأقرب.'
+                    : 'Understood: you prefer minimal walking. In the journey planner, you can tune the maximum walking distance per leg.',
+                'actions' => [['type' => 'open_planner', 'params' => []]],
+            ];
+        }
+
+        // 2. Transfers preference: "عايز أقل مواصلات", "أقل تحويلات", "بدون تحويلات", "مباشر"
+        if (preg_match('/((أقل|اقل)\s*(مواصلات|تحويلات|تبديل)|بدون\s*(تحويلات|تبديل)|direct|min.*transfers?)/iu', $text)) {
+            return [
+                'content' => $arabic
+                    ? 'مخطط الرحلات بيعرض المسارات المباشرة بأقل عدد تحويلات ومواصلات ممكنة في مقدمة النتائج.'
+                    : 'The journey planner prioritizes direct routes with the minimum number of transfers at the top of results.',
+                'actions' => [['type' => 'open_planner', 'params' => []]],
+            ];
+        }
+
+        // 3. Cheapest route: "إيه أرخص طريق؟", "أرخص طريق", "أقل تكلفة"
+        if (preg_match('/(أرخص\s*طريق|ارخص\s*طريق|(أقل|اقل)\s*تكلف[ةه]|cheapest|least\s*cost)/iu', $text)) {
+            return [
+                'content' => $arabic
+                    ? 'المخطط بيحسب تكلفة كل وسيلة نقل (المترو حسب تعريفة وزارة النقل الرسمية 8/10/15/20 ج، والأتوبيس والميكروباص حسب الكيلومتر) ليعطيك أرخص وأنسب خيار.'
+                    : 'The planner calculates fares for each mode (metro official Ministry of Transport tiers 8/10/15/20 EGP, plus bus/microbus distance tariffs) to give you the most economical route.',
+                'actions' => [
+                    ['type' => 'open_planner', 'params' => []],
+                    ['type' => 'open_fare', 'params' => []],
+                ],
+            ];
+        }
+
+        return null;
     }
 
     private function lineIntent(string $text, bool $arabic): ?array
@@ -447,16 +549,42 @@ class MockTransitProvider implements AiProvider
             return null;
         }
 
-        return Cache::remember('ai.stop.'.md5(mb_strtolower($name)), 60, function () use ($name) {
-            // Arabic query against Latin stop names: an explicit hint wins
-            // BEFORE the generic LIKE — otherwise an Arabic governorate name
-            // ("الفيوم") can fuzzy-match an unrelated Latin street ("Al
-            // Fayoum Rd.") ahead of the real terminal. Longest hint matches
-            // first (e.g. "محطة الفيوم" before "الفيوم").
-            foreach (self::ARABIC_NAME_HINTS as $arabic => $latin) {
-                if (mb_strpos($name, $arabic) !== false) {
+        // If preposition "لل" is attached (e.g. للجيزة -> الجيزة, للعباسية -> العباسية)
+        if (str_starts_with($name, 'لل') && mb_strlen($name) > 2) {
+            $name = 'ال' . mb_substr($name, 2);
+        }
+
+        $candidates = [$name];
+        // Strip common transit prefixes
+        $stripped = preg_replace('/^(محطة|محطه|موقف|ميدان|جامعة|جامعه|شارع)\s+/iu', '', $name);
+        if ($stripped !== $name && mb_strlen($stripped) >= 2) {
+            $candidates[] = $stripped;
+        }
+
+        // Generate variants with/without 'ال' and leading 'ل'
+        $variants = [];
+        foreach ($candidates as $c) {
+            if (str_starts_with($c, 'ال') && mb_strlen($c) > 2) {
+                $variants[] = mb_substr($c, 2);
+            } else {
+                $variants[] = 'ال' . $c;
+            }
+            if (str_starts_with($c, 'ل') && !str_starts_with($c, 'ال') && mb_strlen($c) > 2) {
+                $variants[] = 'ال' . mb_substr($c, 1);
+            }
+        }
+        $candidates = array_unique(array_merge($candidates, $variants));
+
+        return Cache::remember('ai.stop.'.md5(mb_strtolower($name)), 60, function () use ($candidates, $name) {
+            // 1. Exact match in hints first
+            foreach ($candidates as $cand) {
+                if (isset(self::ARABIC_NAME_HINTS[$cand])) {
+                    $latin = self::ARABIC_NAME_HINTS[$cand];
                     $stop = TransitStop::query()
-                        ->where('name', 'like', "%{$latin}%")
+                        ->where(function ($q) use ($latin, $cand) {
+                            $q->where('name', 'like', "%{$latin}%")
+                                ->orWhere('name', 'like', "%{$cand}%");
+                        })
                         ->orderByRaw('LENGTH(name) asc')
                         ->first();
                     if ($stop !== null) {
@@ -465,10 +593,41 @@ class MockTransitProvider implements AiProvider
                 }
             }
 
-            return TransitStop::query()
-                ->where('name', 'like', "%{$name}%")
-                ->orderByRaw('LENGTH(name) asc')
-                ->first();
+            // 2. Sort hints by length descending so longer compound names
+            // (e.g. "جامعة القاهرة" before "القاهرة", "محطة الفيوم" before "الفيوم")
+            // always match before shorter substrings.
+            $sortedHints = self::ARABIC_NAME_HINTS;
+            uksort($sortedHints, fn ($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+
+            foreach ($candidates as $cand) {
+                foreach ($sortedHints as $arabic => $latin) {
+                    if (mb_strpos($cand, $arabic) !== false) {
+                        $stop = TransitStop::query()
+                            ->where(function ($q) use ($latin, $arabic) {
+                                $q->where('name', 'like', "%{$latin}%")
+                                    ->orWhere('name', 'like', "%{$arabic}%");
+                            })
+                            ->orderByRaw('LENGTH(name) asc')
+                            ->first();
+                        if ($stop !== null) {
+                            return $stop;
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback direct match in DB
+            foreach ($candidates as $cand) {
+                $stop = TransitStop::query()
+                    ->where('name', 'like', "%{$cand}%")
+                    ->orderByRaw('LENGTH(name) asc')
+                    ->first();
+                if ($stop !== null) {
+                    return $stop;
+                }
+            }
+
+            return null;
         });
     }
 

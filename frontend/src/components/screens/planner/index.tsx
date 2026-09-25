@@ -47,8 +47,9 @@ import {
 } from "lucide-react";
 import type { ScreenProps } from "@/lib/navigation";
 import StationSelectorModal from "@/components/search/StationSelectorModal";
-import { planJourney, resolveCoordinates, type JourneyPlan, type JourneyLeg } from "@/api/journeys";
+import { planJourney, resolveCoordinates, saveJourney, type JourneyPlan, type JourneyLeg } from "@/api/journeys";
 import { EGYPT_STATIONS } from "@/data/egyptTransitData";
+import { useAuth } from "@/contexts/AuthContext";
 
 const InteractiveMap = dynamic(() => import("@/components/map/InteractiveMap"), {
   ssr: false,
@@ -60,6 +61,7 @@ const InteractiveMap = dynamic(() => import("@/components/map/InteractiveMap"), 
 });
 
 export default function PlannerScreen({ navigate, params }: ScreenProps) {
+  const { user, isLoggedIn } = useAuth();
   // Query inputs (with defaults or URL params)
   const [from, setFrom] = useState(params.from || "الشهداء");
   const [to, setTo] = useState(params.to || "جامعة القاهرة");
@@ -77,6 +79,23 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
   const [searched, setSearched] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "details">("list");
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState<"fastest" | "cheapest" | "least_walking" | "least_transfers">("fastest");
+
+  // Sorted itineraries based on rider criteria (Phase 21 Requirement)
+  const sortedRoutes = useMemo(() => {
+    const list = [...routes];
+    switch (sortCriteria) {
+      case "cheapest":
+        return list.sort((a, b) => (a.fare || 999) - (b.fare || 999));
+      case "least_walking":
+        return list.sort((a, b) => (a.walking || 0) - (b.walking || 0));
+      case "least_transfers":
+        return list.sort((a, b) => (a.changes || 0) - (b.changes || 0));
+      case "fastest":
+      default:
+        return list.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+    }
+  }, [routes, sortCriteria]);
 
   // Run search
   const doSearch = useCallback(async (originStr: string, destStr: string) => {
@@ -129,9 +148,11 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
     doSearch(to, tmp);
   };
 
-  // Start active journey
+  // Start active journey (scoped by user session)
   const handleStartActiveJourney = (routePlan: JourneyPlan) => {
     try {
+      const activeKey = user?.id ? `wasel.activeJourney.${user.id}` : "wasel.activeJourney.v1";
+      localStorage.setItem(activeKey, JSON.stringify(routePlan));
       localStorage.setItem("wasel.activeJourney.v1", JSON.stringify(routePlan));
       localStorage.setItem("wasel.lastSearch.v1", JSON.stringify({ from, to }));
     } catch {
@@ -140,11 +161,26 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
     navigate("journey-active", { from, to, route: String(routes.indexOf(routePlan)) });
   };
 
-  // Save trip locally
-  const handleSaveTrip = (routePlan: JourneyPlan) => {
+  // Save trip to backend API when authenticated + user-isolated storage
+  const handleSaveTrip = async (routePlan: JourneyPlan) => {
     try {
-      const saved = JSON.parse(localStorage.getItem("wasel.saved_trips") || "[]");
-      saved.push({
+      if (isLoggedIn && mapOrigin && mapDestination) {
+        await saveJourney({
+          searchPayload: {
+            origin_lat: mapOrigin.lat,
+            origin_lng: mapOrigin.lng,
+            destination_lat: mapDestination.lat,
+            destination_lng: mapDestination.lng,
+          },
+          optionIndex: routes.indexOf(routePlan) >= 0 ? routes.indexOf(routePlan) : 0,
+        }).catch(() => {
+          /* graceful fallback to local storage */
+        });
+      }
+
+      const storageKey = user?.id ? `wasel.saved_trips.${user.id}` : "wasel.saved_trips.guest";
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      saved.unshift({
         id: Date.now(),
         from,
         to,
@@ -152,7 +188,7 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
         fare: routePlan.fare,
         savedAt: new Date().toISOString(),
       });
-      localStorage.setItem("wasel.saved_trips", JSON.stringify(saved));
+      localStorage.setItem(storageKey, JSON.stringify(saved.slice(0, 30)));
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch {
@@ -160,7 +196,47 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
     }
   };
 
-  // Prepare map route points from waypoints
+  // Build a proper MapItinerary from the selected backend route so
+  // InteractiveMap can render mode-colored polylines, walking dashes,
+  // and real road-following geometry (OSRM) instead of just simple points.
+  const mapItinerary = useMemo(() => {
+    if (!selectedRoute?.legs?.length) return null;
+    return {
+      legs: selectedRoute.legs.map((leg) => ({
+        type: leg.leg_type === 'walk' ? 'walking' : 'transit',
+        mode: leg.mode ?? leg.type,
+        // Backend geometry is [[lat,lng],...]; InteractiveMap's
+        // legGeometryToLngLat() expects [lat,lng] arrays and converts to [lng,lat]
+        geometry: leg.geometry ?? undefined,
+        from_lat: leg.from_lat,
+        from_lng: leg.from_lng,
+        to_lat: leg.to_lat,
+        to_lng: leg.to_lng,
+        from_stop: leg.from_stop ?? undefined,
+        to_stop: leg.to_stop ?? undefined,
+      })),
+    };
+  }, [selectedRoute]);
+
+  // Origin / destination coordinates for map pins
+  const mapOrigin = useMemo(() => {
+    if (!selectedRoute) return null;
+    const lat = selectedRoute.origin_lat ?? selectedRoute.legs?.[0]?.from_lat;
+    const lng = selectedRoute.origin_lng ?? selectedRoute.legs?.[0]?.from_lng;
+    if (lat && lng) return { lat: Number(lat), lng: Number(lng) };
+    return null;
+  }, [selectedRoute]);
+
+  const mapDestination = useMemo(() => {
+    if (!selectedRoute) return null;
+    const lastLeg = selectedRoute.legs?.[selectedRoute.legs.length - 1];
+    const lat = selectedRoute.dest_lat ?? lastLeg?.to_lat;
+    const lng = selectedRoute.dest_lng ?? lastLeg?.to_lng;
+    if (lat && lng) return { lat: Number(lat), lng: Number(lng) };
+    return null;
+  }, [selectedRoute]);
+
+  // Fallback route points for when no geometry exists
   const mapRoutePoints = useMemo(() => {
     if (!selectedRoute?.legs) return [];
     const pts: { lat: number; lng: number }[] = [];
@@ -311,6 +387,9 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
                 <InteractiveMap
                   center={[31.2357, 30.0444]}
                   zoom={12}
+                  origin={mapOrigin}
+                  destination={mapDestination}
+                  itinerary={mapItinerary}
                   activeRoutePoints={mapRoutePoints}
                   className="h-full w-full"
                 />
@@ -357,6 +436,46 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
               </div>
             </div>
 
+            {/* Cost Breakdown Card (Phase 18 Requirement) */}
+            <div className="rounded-3xl border border-bone bg-white p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Ticket className="size-4 text-brand" />
+                  <h3 className="font-head text-[14px] font-bold text-ink">
+                    تفاصيل التكلفة المتوقعة
+                  </h3>
+                </div>
+                <span className={cn(
+                  "rounded-full px-2.5 py-0.5 text-[10px] font-bold border",
+                  selectedRoute.fareStatus === "official"
+                    ? "bg-emerald/10 text-emerald border-emerald/25"
+                    : "bg-amber-50 text-amber-800 border-amber-200"
+                )}>
+                  {selectedRoute.fareStatus === "official" ? "تعريفة رسمية مؤكدة" : "تكلفة تقريبية شاملة"}
+                </span>
+              </div>
+              <div className="space-y-2 text-[12.5px]">
+                {selectedRoute.legs.filter(l => l.type !== "walking").map((l, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-bone/60 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className="size-2 rounded-full" style={{ backgroundColor: l.color || "#0284C7" }} />
+                      <span className="font-bold text-carbon">{l.line_ar || l.line || "وسيلة النقل"}</span>
+                      {l.type === "microbus" && (
+                        <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">تقريبي</span>
+                      )}
+                    </div>
+                    <span className="font-mono font-bold text-ink">
+                      {selectedRoute.fare > 0 ? `${Math.round(selectedRoute.fare / Math.max(1, selectedRoute.legs.filter(x => x.type !== "walking").length))} ج.م` : "—"}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-2 text-[13px] font-bold text-ink border-t border-bone">
+                  <span>إجمالي تكلفة الرحلة</span>
+                  <span className="text-brand font-head text-[16px]">{selectedRoute.fare > 0 ? `${selectedRoute.fare} ج.م` : "—"}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Vertical Step-by-Step Spine */}
             <div className="rounded-3xl border border-bone bg-white p-5 shadow-xs">
               <h3 className="font-head text-[14px] font-bold text-ink mb-4">
@@ -393,14 +512,37 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
         ) : (
           /* ======================= RESULTS LIST VIEW ======================= */
           <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <p className="text-[13px] font-bold text-carbon">
-                عثرنا على <span className="text-ink font-black">{routes.length}</span> مسارات متاحة
+                عثرنا على <span className="text-ink font-black">{sortedRoutes.length}</span> مسارات متاحة
               </p>
-              <span className="text-[11px] text-ash">مرتبة بحسب أفضلية الوقت والأجرة</span>
+              
+              {/* Sorting Filter Chips (Phase 21 Requirement) */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { id: "fastest", label: "الأسرع" },
+                  { id: "cheapest", label: "الأقل تكلفة" },
+                  { id: "least_walking", label: "أقل مشي" },
+                  { id: "least_transfers", label: "أقل تحويلات" },
+                ].map((crit) => (
+                  <button
+                    key={crit.id}
+                    type="button"
+                    onClick={() => setSortCriteria(crit.id as any)}
+                    className={cn(
+                      "settle-fast rounded-full px-3 py-1 text-[11px] font-bold transition-all",
+                      sortCriteria === crit.id
+                        ? "bg-brand text-white shadow-xs"
+                        : "bg-white border border-bone text-carbon hover:bg-mist"
+                    )}
+                  >
+                    {crit.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {routes.map((plan, idx) => (
+            {sortedRoutes.map((plan, idx) => (
               <div
                 key={plan.id}
                 onClick={() => {

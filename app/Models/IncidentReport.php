@@ -71,12 +71,28 @@ class IncidentReport extends Model
     }
 
     /**
-     * Recalculates cached confirms and denies count based on votes.
+     * Recalculates cached confirms and denies count and computes trust score based on votes (Phases 22 & 23).
      */
     public function recalculateVotes(): void
     {
         $this->confirms = $this->votes()->where('vote', 'confirm')->count();
         $this->denies = $this->votes()->where('vote', 'deny')->count();
+
+        $total = $this->confirms + $this->denies;
+        if ($total === 0) {
+            $this->trust_score = 1.0;
+        } else {
+            // Normalized confidence between 0.0 and 1.0 with prior weight
+            $this->trust_score = round(($this->confirms + 1) / ($total + 2), 2);
+        }
+
+        // Automatic status update based on community verification
+        if ($this->denies >= 3 && $this->denies >= $this->confirms * 2) {
+            $this->status = 'dismissed';
+        } elseif ($this->confirms >= 3 && $this->confirms > $this->denies) {
+            $this->status = 'confirmed';
+        }
+
         $this->save();
     }
 }

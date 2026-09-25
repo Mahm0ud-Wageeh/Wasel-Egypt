@@ -2,8 +2,8 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
 import { PassengerLayout } from '../components/layout/PassengerLayout'
-import { JourneyResultsPage } from '../pages/JourneyResults'
-import { JourneySearchPage } from '../pages/JourneySearch'
+import { JourneyResultsPage } from '../legacy-pages/JourneyResults'
+import { JourneySearchPage } from '../legacy-pages/JourneySearch'
 import * as journeyApi from '../api/journeys'
 import { renderWithProviders, mockJourneyPlan, mockStops } from '../test/test-utils'
 
@@ -124,7 +124,7 @@ describe('Responsive Behavior & Layout Integrity', () => {
     vi.spyOn(activeModule, 'getActiveJourneys').mockResolvedValue({ data: [mockActive] })
 
     sessionStorage.setItem('wasel.cockpit.panel', 'collapsed')
-    const { default: ActiveJourney } = await import('../pages/ActiveJourney')
+    const { default: ActiveJourney } = await import('../legacy-pages/ActiveJourney')
     const { container } = renderWithProviders(<ActiveJourney />, {
       route: '/active-journeys/55',
       authState: { isAuthenticated: true, user: { id: 1 } },

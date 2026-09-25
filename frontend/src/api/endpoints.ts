@@ -178,6 +178,7 @@ export const endpoints = {
     list: '/favorite-locations',
     create: '/favorite-locations',
     remove: (id: string | number) => `/favorite-locations/${id}`,
+    delete: (id: string | number) => `/favorite-locations/${id}`,
   },
 
   // Digital Wallet

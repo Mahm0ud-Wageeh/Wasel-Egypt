@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import Deviation from '../pages/Deviation'
+import Deviation from '../legacy-pages/Deviation'
 import * as activeApi from '../api/activeJourneys'
 import { renderWithProviders } from '../test/test-utils'
 

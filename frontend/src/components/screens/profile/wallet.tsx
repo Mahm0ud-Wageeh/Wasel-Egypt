@@ -37,11 +37,9 @@ interface Transaction {
 const PRESETS = [50, 100, 200];
 
 export function WalletCard() {
-  const { isLoggedIn } = useAuth();
-  const [balance, setBalance] = useState<number>(() => {
-    const saved = localStorage.getItem("wasel.wallet.balance");
-    return saved ? Number(saved) : 175.0;
-  });
+  const { isLoggedIn, user } = useAuth();
+  const walletStorageKey = user ? `wasel.wallet.balance.${user.id}` : "wasel.wallet.balance.guest";
+  const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -51,21 +49,27 @@ export function WalletCard() {
   const [error, setError] = useState("");
 
   const fetchWallet = useCallback(async () => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn || !user) {
+      setBalance(0);
+      setTransactions([]);
+      return;
+    }
     try {
       setLoading(true);
       const res = await apiRequest<{ balance: number; transactions: Transaction[] }>(endpoints.wallet.show);
       if (res) {
-        setBalance(Number(res.balance));
+        const bal = Number(res.balance) || 0;
+        setBalance(bal);
         setTransactions(res.transactions || []);
-        localStorage.setItem("wasel.wallet.balance", String(res.balance));
+        localStorage.setItem(`wasel.wallet.balance.${user.id}`, String(bal));
       }
     } catch {
-      // Offline / unauthenticated fallback
+      const saved = localStorage.getItem(`wasel.wallet.balance.${user.id}`);
+      if (saved) setBalance(Number(saved));
     } finally {
       setLoading(false);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, user]);
 
   useEffect(() => {
     fetchWallet();
@@ -88,21 +92,23 @@ export function WalletCard() {
     }
 
     try {
-      if (isLoggedIn) {
+      if (isLoggedIn && user) {
         const res = await apiRequest<{ balance: number; transaction: Transaction }>(endpoints.wallet.topup, {
           method: "POST",
           body: { amount: chosen, payment_method: "instapay" },
         });
         if (res) {
-          setBalance(Number(res.balance));
+          const bal = Number(res.balance) || 0;
+          setBalance(bal);
           if (res.transaction) {
             setTransactions((prev) => [res.transaction, ...prev]);
           }
+          localStorage.setItem(`wasel.wallet.balance.${user.id}`, String(bal));
         }
       } else {
         const nextBal = balance + chosen;
         setBalance(nextBal);
-        localStorage.setItem("wasel.wallet.balance", String(nextBal));
+        localStorage.setItem(walletStorageKey, String(nextBal));
       }
 
       setChargeOpen(false);
@@ -151,7 +157,7 @@ export function WalletCard() {
             <span className="pb-1 text-[14px] font-bold text-white/60">ج.م</span>
           </div>
           <div className="num mt-3 text-[12.5px] font-bold text-white/45" dir="ltr">
-            WASEL-CAIRO •••• •••• 9021
+            WASEL-CAIRO •••• •••• {user ? String(user.id).padStart(4, "0") : "GUEST"}
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2.5">

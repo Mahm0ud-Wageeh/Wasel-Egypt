@@ -1,8 +1,8 @@
 import React from 'react'
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
-import Register from '../pages/Register'
-import Login from '../pages/Login'
+import Register from '../legacy-pages/Register'
+import Login from '../legacy-pages/Login'
 import { PassengerLayout } from '../components/layout/PassengerLayout'
 import { renderWithProviders } from '../test/test-utils'
 

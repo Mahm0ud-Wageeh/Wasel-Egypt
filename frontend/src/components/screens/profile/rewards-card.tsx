@@ -26,11 +26,11 @@ export function CarbonRewardsCard({ onRedeemed }: { onRedeemed?: () => void }) {
   const { isLoggedIn } = useAuth();
   const { toast } = useToast();
   const [data, setData] = useState<RewardData>({
-    points_balance: 50,
-    total_points_earned: 50,
-    co2_saved_kg: 3.8,
-    total_distance_km: 45.0,
-    egp_value: 25.0,
+    points_balance: 0,
+    total_points_earned: 0,
+    co2_saved_kg: 0,
+    total_distance_km: 0,
+    egp_value: 0,
   });
   const [loading, setLoading] = useState(false);
   const [redeeming, setRedeeming] = useState(false);

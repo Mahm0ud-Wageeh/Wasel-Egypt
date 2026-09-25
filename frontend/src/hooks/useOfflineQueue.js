@@ -18,7 +18,7 @@ import {
  * On network errors / 5xx / 429 stops and retries later.
  * Original recorded_at / clientTs timestamp is preserved verbatim.
  */
-export function useOfflineQueue({ journeyId, poster }) {
+export function useOfflineQueue({ journeyId, poster } = {}) {
   const [queuedCount, setQueuedCount] = useState(() =>
     journeyId ? getQueue(journeyId).length : 0
   )

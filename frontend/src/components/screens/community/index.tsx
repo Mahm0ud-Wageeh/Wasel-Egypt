@@ -29,7 +29,6 @@ import {
   STATUS_META,
   TOP_CONTRIBUTORS,
   MY_TRUST,
-  buildIncidents,
   kindMeta,
   lineMeta,
   timeAgoAr,
@@ -175,7 +174,7 @@ function IncidentCard({
 /* --------------------------------- screen ---------------------------------- */
 
 export default function CommunityScreen() {
-  const [incidents, setIncidents] = useState<Incident[]>(() => buildIncidents());
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [votes, setVotes] = useState<Record<string, Vote | null>>({});
   const [sevFilter, setSevFilter] = useState<Severity | "all">("all");
   const [lineFilter, setLineFilter] = useState<string>("all");
@@ -186,39 +185,44 @@ export default function CommunityScreen() {
     let active = true;
     fetchCommunityReports()
       .then((reports) => {
-        if (!active || !Array.isArray(reports) || reports.length === 0) return;
-        const mapped: Incident[] = reports.map((r: any) => ({
-          id: `backend-${r.id}`,
-          kind: r.issue_type === "overcrowding" ? "crowd" : r.issue_type === "delay" ? "delay" : "elevator",
-          severity: r.status === "verified" ? "med" : "low",
-          titleAr: r.title_ar || `بلاغ مجتمعي #${r.id}`,
-          bodyAr: r.description || "بلاغ وارد من أحد الركاب على الشبكة.",
-          stationAr: r.location_name || "محطة بالشبكة",
-          lineId: "l1",
-          minutesAgo: 4,
-          reporterNameAr: "راكب موثق",
-          reporterTrust: 96,
-          confirms: 5,
-          denies: 0,
-          status: r.status === "resolved" ? "dismissed" : r.status === "verified" ? "verified" : "pending",
-          mine: false,
-        }));
-        setIncidents((prev) => [...mapped, ...prev]);
+        if (!active) return;
+        if (Array.isArray(reports)) {
+          const mapped: Incident[] = reports.map((r: any) => ({
+            id: `backend-${r.id}`,
+            kind: r.issue_type === "overcrowding" ? "crowd" : r.issue_type === "delay" ? "delay" : "elevator",
+            severity: r.severity || (r.status === "verified" ? "med" : "low"),
+            titleAr: r.title_ar || `بلاغ مجتمعي #${r.id}`,
+            bodyAr: r.description || "بلاغ وارد من أحد الركاب على الشبكة.",
+            stationAr: r.location_name || r.station_name || "محطة بالشبكة",
+            lineId: r.route_id ? `metro-l${r.route_id}` : "metro-l1",
+            minutesAgo: r.created_at ? Math.max(1, Math.round((Date.now() - new Date(r.created_at).getTime()) / 60000)) : 10,
+            reporterNameAr: r.user?.name || "راكب موثق",
+            reporterTrust: 95,
+            confirms: r.confirmations_count || 1,
+            denies: r.denials_count || 0,
+            status: r.status === "resolved" ? "dismissed" : r.status === "verified" ? "verified" : "pending",
+            mine: false,
+          }));
+          setIncidents(mapped);
+        } else {
+          setIncidents([]);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setIncidents([]);
+      });
     return () => {
       active = false;
     };
   }, []);
 
-  // deterministic live trust-strip numbers
   const stats = useMemo(
     () => ({
-      verifiedToday: 60 + Math.floor(seeded(5) * 200),
-      avgVerifyMin: 6 + Math.floor(seeded(9) * 8),
-      onlineRiders: 1840 + Math.floor(seeded(13) * 900),
+      verifiedToday: incidents.filter((i) => i.status === "verified").length,
+      activeCount: incidents.filter((i) => i.status !== "dismissed").length,
+      totalCount: incidents.length,
     }),
-    []
+    [incidents]
   );
 
   const filtered = incidents.filter(
@@ -274,17 +278,17 @@ export default function CommunityScreen() {
           </div>
           <div className="border-t border-bone pt-5 sm:border-s sm:border-t-0 sm:ps-6 sm:pt-0">
             <p className="num text-[30px] font-extrabold leading-none tracking-tight text-onyx">
-              {stats.avgVerifyMin} <span className="text-[14px] font-bold text-ash">د</span>
+              {stats.activeCount}
             </p>
-            <p className="mt-2 text-[12.5px] font-medium text-slateink">متوسط زمن التحقق</p>
+            <p className="mt-2 text-[12.5px] font-medium text-slateink">بلاغات جارية على الشبكة</p>
           </div>
           <div className="border-t border-bone pt-5 sm:border-s sm:border-t-0 sm:ps-6 sm:pt-0">
             <p className="num text-[30px] font-extrabold leading-none tracking-tight text-interactive">
-              {stats.onlineRiders.toLocaleString("en-US")}
+              {stats.totalCount}
             </p>
             <p className="mt-2 flex items-center gap-2 text-[12.5px] font-medium text-slateink">
               <span className="gps-pulse size-2 rounded-full bg-interactive" aria-hidden="true" />
-              راكب نشط الآن على الرادار
+              إجمالي المساهمات المجتمعية
             </p>
           </div>
         </div>

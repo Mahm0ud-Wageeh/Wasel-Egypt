@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { apiRequest } from '../api/client'
 import { endpoints } from '../api/endpoints'
+import { useAuth } from './AuthContext'
 export type Lang = 'ar' | 'en'
 export type Screen = string
 
@@ -46,7 +47,6 @@ interface AiContextType {
 
 const AiContext = createContext<AiContextType | undefined>(undefined)
 
-const SESSIONS_STORAGE_KEY = 'wasel.ai.sessions.v2'
 const MAX_SESSIONS = 25
 const MAX_MESSAGES_PER_SESSION = 50
 
@@ -74,35 +74,45 @@ export const AiProvider: React.FC<{
   onNavigate?: (s: Screen) => void;
   onPrefillPlanner?: (from: string, to: string) => void;
 }> = ({ children, onNavigate, onPrefillPlanner }) => {
+  const { user } = useAuth();
+  const sessionKey = user ? `wasel.ai.sessions.user_${user.id}` : 'wasel.ai.sessions.guest';
   const [sessions, setSessions] = useState<ChatSession[]>([DEFAULT_INITIAL_SESSION]);
   const [activeSessionId, setActiveSessionId] = useState<string>("session_init");
   const [isTyping, setIsTyping] = useState(false);
   const [status, setStatus] = useState<"online" | "offline" | "checking">("checking");
 
-  // Load sessions from localStorage on client mount
+  // Load sessions from user-scoped localStorage on client mount or user change
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
+      const raw = localStorage.getItem(sessionKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSessions(parsed);
           setActiveSessionId(parsed[0].id);
+          return;
         }
+      }
+      const initial = createEmptySession();
+      setSessions([initial]);
+      setActiveSessionId(initial.id);
+    } catch {
+      const initial = createEmptySession();
+      setSessions([initial]);
+      setActiveSessionId(initial.id);
+    }
+  }, [sessionKey]);
+
+  // Save sessions to user-scoped localStorage
+  useEffect(() => {
+    try {
+      if (sessions.length > 0 && sessions[0].id !== "session_init") {
+        localStorage.setItem(sessionKey, JSON.stringify(sessions.slice(0, MAX_SESSIONS)));
       }
     } catch {
       /* ignore */
     }
-  }, []);
-
-  // Save sessions to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessions.slice(0, MAX_SESSIONS)))
-    } catch {
-      /* ignore */
-    }
-  }, [sessions])
+  }, [sessions, sessionKey])
 
   // Active session helper
   const activeSession = useMemo(() => {

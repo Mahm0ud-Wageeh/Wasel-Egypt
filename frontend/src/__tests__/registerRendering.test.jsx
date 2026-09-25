@@ -1,6 +1,6 @@
 import { it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
-import Register from '../pages/Register'
+import Register from '../legacy-pages/Register'
 import { renderWithProviders } from '../test/test-utils'
 
 it('renders the registration form and shared brand icon without crashing', () => {

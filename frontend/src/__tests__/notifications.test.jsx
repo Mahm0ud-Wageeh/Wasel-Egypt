@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import Notifications from '../pages/Notifications'
+import Notifications from '../legacy-pages/Notifications'
 import * as notifApi from '../api/notifications'
 import { renderWithProviders } from '../test/test-utils'
 

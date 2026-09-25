@@ -26,8 +26,15 @@ export function stationsForMapZoom<T extends MapStationDensity>(
   mode: TransitModeFilter,
   zoom: number | null,
 ): T[] {
+  const currentZoom = Number(zoom ?? 0)
+  if (currentZoom < 11.5) return [] // At national/city-wide zoom, keep map clean and uncluttered
   const matching = stations.filter((station) => mode === 'all' || station.modes.includes(mode))
-  return Number(zoom ?? 0) >= 14 ? matching : matching.filter((station) => station.isInterchange)
+  if (currentZoom < 13.5) {
+    // At medium zoom: show only major transfer and interchange stations
+    return matching.filter((station) => station.isInterchange)
+  }
+  // At high zoom: show all matching transit stops
+  return matching
 }
 
 /** Network feeds use both `train` and `rail`; present them as one rider-facing mode. */
@@ -119,7 +126,7 @@ function defaultLayer(): BasemapType {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'streets' || saved === 'satellite' || saved === 'dark') return saved
   } catch { /* private mode */ }
-  return 'satellite'
+  return 'streets'
 }
 
 function tileUrl(kind: 'satellite' | 'streets' | 'dark'): string {
@@ -224,8 +231,10 @@ function legGeometryToLngLat(leg: MapItineraryLeg): Array<[number, number]> {
     }
   }
   if (out.length < 2) {
-    const fLat = Number(leg.from_lat); const fLng = Number(leg.from_lng)
-    const tLat = Number(leg.to_lat); const tLng = Number(leg.to_lng)
+    const fLat = Number(leg.from_lat ?? leg.from_stop?.lat ?? (leg.from_stop as any)?.latitude)
+    const fLng = Number(leg.from_lng ?? leg.from_stop?.lng ?? (leg.from_stop as any)?.longitude)
+    const tLat = Number(leg.to_lat ?? leg.to_stop?.lat ?? (leg.to_stop as any)?.latitude)
+    const tLng = Number(leg.to_lng ?? leg.to_stop?.lng ?? (leg.to_stop as any)?.longitude)
     if (Number.isFinite(fLat) && Number.isFinite(fLng) && Number.isFinite(tLat) && Number.isFinite(tLng)) {
       return [[fLng, fLat], [tLng, tLat]]
     }
@@ -239,9 +248,16 @@ function itineraryToFeatures(itinerary: MapItinerary | null | undefined, kind: s
     const coords = legGeometryToLngLat(leg)
     if (coords.length < 2) return
     const legType = leg.type ?? (leg.mode === 'walking' ? 'walking' : 'transit')
+    const hasDetailedGeometry = Array.isArray(leg.geometry) && leg.geometry.length > 2
     features.push({
       type: 'Feature',
-      properties: { kind, legType, mode: leg.mode ?? legType, index: idx },
+      properties: {
+        kind,
+        legType,
+        mode: leg.mode ?? legType,
+        index: idx,
+        isEstimated: !hasDetailedGeometry && legType !== 'walking',
+      },
       geometry: { type: 'LineString', coordinates: coords },
     })
   })
@@ -460,14 +476,18 @@ export default function InteractiveMap({
       if (e?.error?.message) console.error('MapLibre error:', e.error.message)
     })
 
-    map.on('load', () => {
+    const onMapReady = () => {
       if (disposed) return
       setMapLoaded(true)
       try {
         setZoomLevel(Math.round(map.getZoom()))
         map.resize()
       } catch { /* ignore */ }
-    })
+    }
+    map.on('load', onMapReady)
+    if (map.loaded() || map.isStyleLoaded()) {
+      onMapReady()
+    }
     map.on('zoom', () => { try { setZoomLevel(Math.round(map.getZoom())) } catch { /* ignore */ } })
     const interrupt = () => {
       setDisplaced(true)
@@ -499,7 +519,7 @@ export default function InteractiveMap({
       onMapClickRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng })
     })
 
-    if (process.env.NODE_ENV !== 'production') (window as any).__waselMap = map
+    if (typeof window !== 'undefined') (window as any).__waselMap = map
     try {
       resizeObserver = new ResizeObserver(() => { try { map.resize() } catch { /* ignore */ } })
       if (mapContainer.current) resizeObserver.observe(mapContainer.current)
@@ -661,11 +681,12 @@ export default function InteractiveMap({
         } as any,
         filter: ['==', ['get', 'legType'], 'walking'],
       })
+      // Real transit geometry (road/rail following)
       map.addLayer({
         id: `${sourceId}-casing`, type: 'line', source: sourceId,
         layout: { 'line-join': 'round', 'line-cap': 'round' } as any,
         paint: { 'line-color': MAP_LAYER_COLORS.white, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 11], 'line-opacity': 0.85 } as any,
-        filter: ['==', ['get', 'legType'], 'transit'],
+        filter: ['all', ['==', ['get', 'legType'], 'transit'], ['!=', ['get', 'isEstimated'], true]],
       })
       map.addLayer({
         id: `${sourceId}-transit`, type: 'line', source: sourceId,
@@ -678,7 +699,33 @@ export default function InteractiveMap({
             modeColors.bus] as any,
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 16, 8], 'line-opacity': legOpacity,
         } as any,
-        filter: ['==', ['get', 'legType'], 'transit'],
+        filter: ['all', ['==', ['get', 'legType'], 'transit'], ['!=', ['get', 'isEstimated'], true]],
+      })
+      // Estimated transit corridors (intercity connections without turn-by-turn road shapes)
+      map.addLayer({
+        id: `${sourceId}-estimated-casing`, type: 'line', source: sourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' } as any,
+        paint: {
+          'line-color': isDarkBase ? MAP_LAYER_COLORS.darkPin : MAP_LAYER_COLORS.white,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 6, 16, 9],
+          'line-opacity': 0.5,
+        } as any,
+        filter: ['all', ['==', ['get', 'legType'], 'transit'], ['==', ['get', 'isEstimated'], true]],
+      })
+      map.addLayer({
+        id: `${sourceId}-estimated`, type: 'line', source: sourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' } as any,
+        paint: {
+          'line-color': ['match', ['get', 'mode'],
+            'metro', modeColors.metro, 'bus', modeColors.bus, 'minibus', modeColors.minibus,
+            'microbus', modeColors.microbus, 'rail', modeColors.rail, 'train', modeColors.train,
+            'lrt', modeColors.lrt, 'monorail', modeColors.monorail, 'brt', modeColors.brt,
+            modeColors.bus] as any,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 3.5, 16, 6],
+          'line-dasharray': [4, 2],
+          'line-opacity': legOpacity,
+        } as any,
+        filter: ['all', ['==', ['get', 'legType'], 'transit'], ['==', ['get', 'isEstimated'], true]],
       })
     }
 
@@ -705,26 +752,12 @@ export default function InteractiveMap({
         })
       }
 
-      // Alternatives (context, grey)
-      alternatives.forEach((alt, i) => {
-        const feats = itineraryToFeatures(alt, 'alternative')
-        if (feats.length) addLineLayers(`alt-route-${i}`, feats, 'alternative')
-      })
-
-      // Selected itinerary OR simple active-route polyline
       const selFeatures = itineraryToFeatures(itinerary, 'selected')
-      if (selFeatures.length > 0) {
-        addLineLayers('selected-route', selFeatures, 'selected')
-      } else if (activeRouteCoords.length >= 2) {
-        addLineLayers('active-route', [{
-          type: 'Feature', properties: {},
-          geometry: { type: 'LineString', coordinates: activeRouteCoords },
-        }], 'simple')
-      }
+      const hasActiveRoute = selFeatures.length > 0 || activeRouteCoords.length >= 2
 
-      // Local transit network lines (schematic context under everything).
-      // Skipped when real backend shapes are displayed instead.
-      if (!activeLineId && !hideSchematic) {
+      // 1. Local transit network lines (schematic context under everything).
+      // Only drawn when no active route is being inspected AND no real networkShapes are provided.
+      if (!hasActiveRoute && !activeLineId && !hideSchematic && networkShapes.length === 0) {
         const lineFeatures = TRANSIT_LINES
           .filter((line) => modeFilter === 'all' || line.mode === modeFilter)
           .map((line) => ({
@@ -739,7 +772,10 @@ export default function InteractiveMap({
             layout: { 'line-cap': 'round', 'line-join': 'round' } as any,
             paint: {
               'line-color': isDarkBase ? MAP_LAYER_COLORS.darkPin : MAP_LAYER_COLORS.white,
-              'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 15, 8], 'line-opacity': 0.85,
+              'line-width': modeFilter === 'all'
+                ? ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 5]
+                : ['interpolate', ['linear'], ['zoom'], 10, 4, 15, 8],
+              'line-opacity': modeFilter === 'all' ? 0.55 : 0.85,
             } as any,
           })
           map.addLayer({
@@ -747,14 +783,17 @@ export default function InteractiveMap({
             layout: { 'line-cap': 'round', 'line-join': 'round' } as any,
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 5.5], 'line-opacity': 0.95,
+              'line-width': modeFilter === 'all'
+                ? ['interpolate', ['linear'], ['zoom'], 10, 1.5, 15, 3.5]
+                : ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 5.5],
+              'line-opacity': modeFilter === 'all' ? 0.75 : 0.95,
             } as any,
           })
         }
       }
 
-      // Real network shapes from the backend (true geography, mode-colored).
-      if (networkShapes.length > 0) {
+      // 2. Real network shapes from the backend (true geography, mode-colored).
+      if (!hasActiveRoute && networkShapes.length > 0) {
         const feats = networkShapes
           .filter((s) => s.coords.length >= 2 && matchesMapMode(s.mode, modeFilter))
           .map((s) => ({
@@ -769,7 +808,10 @@ export default function InteractiveMap({
             layout: { 'line-cap': 'round', 'line-join': 'round' } as any,
             paint: {
               'line-color': isDarkBase ? MAP_LAYER_COLORS.darkPin : MAP_LAYER_COLORS.white,
-              'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 15, 8], 'line-opacity': 0.85,
+              'line-width': modeFilter === 'all'
+                ? ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 5]
+                : ['interpolate', ['linear'], ['zoom'], 10, 4.5, 15, 8],
+              'line-opacity': modeFilter === 'all' ? 0.55 : 0.85,
             } as any,
           })
           map.addLayer({
@@ -777,10 +819,29 @@ export default function InteractiveMap({
             layout: { 'line-cap': 'round', 'line-join': 'round' } as any,
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 5.5], 'line-opacity': 0.95,
+              'line-width': modeFilter === 'all'
+                ? ['interpolate', ['linear'], ['zoom'], 10, 1.5, 15, 3.5]
+                : ['interpolate', ['linear'], ['zoom'], 10, 3.0, 15, 5.5],
+              'line-opacity': modeFilter === 'all' ? 0.75 : 0.95,
             } as any,
           })
         }
+      }
+
+      // 3. Alternatives (context, grey)
+      alternatives.forEach((alt, i) => {
+        const feats = itineraryToFeatures(alt, 'alternative')
+        if (feats.length) addLineLayers(`alt-route-${i}`, feats, 'alternative')
+      })
+
+      // 4. Selected itinerary OR simple active-route polyline (rendered above background)
+      if (selFeatures.length > 0) {
+        addLineLayers('selected-route', selFeatures, 'selected')
+      } else if (activeRouteCoords.length >= 2) {
+        addLineLayers('active-route', [{
+          type: 'Feature', properties: {},
+          geometry: { type: 'LineString', coordinates: activeRouteCoords },
+        }], 'simple')
       }
 
       // Route stops (interactive)
@@ -805,9 +866,9 @@ export default function InteractiveMap({
         map.addLayer({
           id: 'stops-halo', type: 'circle', source: 'stops',
           paint: {
-            'circle-radius': ['case', ['get', 'is_interchange'], 6, ['interpolate', ['linear'], ['zoom'], 11, 3.5, 16, 7]],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 7],
             'circle-color': ['case', ['get', 'is_interchange'], MAP_LAYER_COLORS.activeBlue, MAP_LAYER_COLORS.white],
-            'circle-stroke-width': ['case', ['get', 'is_interchange'], 3, 2.5],
+            'circle-stroke-width': ['case', ['get', 'is_interchange'], 3, 2],
             'circle-stroke-color': ['case', ['get', 'is_interchange'], MAP_LAYER_COLORS.white, MAP_LAYER_COLORS.originStroke],
           } as any,
         })
@@ -921,6 +982,7 @@ export default function InteractiveMap({
     if (navigationMode && hasInitialFitRef.current) return
     hasInitialFitRef.current = true
     try {
+      map.resize()
       const bounds = new LngLatBounds()
       fitPoints.forEach((p) => bounds.extend(p))
       map.fitBounds(bounds, { padding: 56, maxZoom: 16.5, duration: 600 })
@@ -937,6 +999,13 @@ export default function InteractiveMap({
     stationMarkersRef.current.forEach((m) => { try { m.remove() } catch { /* ignore */ } })
     stationMarkersRef.current = []
 
+    // When an active itinerary or route is displayed, suppress background static station dots
+    // so the map cleanly highlights only the user's route, transfer stops, origin, and destination.
+    const hasActiveRoute = Boolean(itinerary?.legs?.length || (activeRouteCoords && activeRouteCoords.length >= 2))
+    if (hasActiveRoute && !stopsLayerOn) {
+      return
+    }
+
     const stationsToDisplay = stationsForMapZoom(EGYPT_STATIONS, modeFilter, zoomLevel)
 
     stationsToDisplay.forEach((station) => {
@@ -946,12 +1015,12 @@ export default function InteractiveMap({
       const isInterchange = station.isInterchange
       const markerSize = isInterchange ? 'w-4 h-4' : 'w-3 h-3'
       const borderSize = isInterchange ? 'border-2' : 'border'
-      const borderColor = isInterchange ? 'border-neutral-900' : 'border-blue-600'
-      const bgColor = isInterchange ? 'bg-amber-400' : 'bg-white'
+      const borderColor = isInterchange ? 'border-[#1a6bb0]' : 'border-[#1a6bb0]/70'
+      const bgColor = 'bg-white'
 
       el.innerHTML = `
-        <div class="${markerSize} rounded-full ${bgColor} ${borderSize} ${borderColor} shadow-md flex items-center justify-center">
-          ${isInterchange ? '<div class="w-1.5 h-1.5 rounded-full bg-neutral-900"></div>' : ''}
+        <div class="${markerSize} rounded-full ${bgColor} ${borderSize} ${borderColor} shadow-xs flex items-center justify-center" title="${lang === 'ar' ? station.name_ar : station.name_en}">
+          ${isInterchange ? '<div class="w-1.5 h-1.5 rounded-full bg-[#1a6bb0]"></div>' : ''}
         </div>
       `
 
@@ -967,7 +1036,7 @@ export default function InteractiveMap({
       } catch { /* ignore */ }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, modeFilter, zoomLevel])
+  }, [mapLoaded, modeFilter, zoomLevel, itinerary, activeRouteCoords, stopsLayerOn, lang])
 
   // ── Google Maps-style live navigation puck ──
   useEffect(() => {

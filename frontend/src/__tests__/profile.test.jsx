@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import Profile from '../pages/Profile'
+import Profile from '../legacy-pages/Profile'
 import * as usersApi from '../api/users'
 import { renderWithProviders } from '../test/test-utils'
 

@@ -44,7 +44,7 @@ import {
   saveJourneyFromSearch,
   startActiveJourney,
 } from "@/api/activeJourneys";
-import type { JourneyPlan, JourneyLeg } from "@/api/journeys";
+import { planJourney, type JourneyPlan, type JourneyLeg } from "@/api/journeys";
 import { DeviationModal } from "./deviation-modal";
 
 const InteractiveMap = dynamic(
@@ -78,16 +78,33 @@ export default function JourneyActiveScreen({ navigate, params }: ScreenProps) {
   const [loadingRecovery, setLoadingRecovery] = useState(false);
   const [applyingRecovery, setApplyingRecovery] = useState<string | number | null>(null);
 
-  // ─── Load stored active journey plan ──────────────────────────────────────
+  // ─── Load stored active journey plan (with API fallback) ──────────────────
   useEffect(() => {
     try {
       const raw = localStorage.getItem("wasel.activeJourney.v1");
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.legs) setActivePlan(parsed);
+        if (parsed?.legs && Array.isArray(parsed.legs) && parsed.legs.length > 0) {
+          setActivePlan(parsed);
+          return;
+        }
       }
     } catch { /* ignore */ }
-  }, []);
+
+    // Fallback: If not found in localStorage, fetch from planJourney API
+    const routeIndex = params.route ? Math.max(0, parseInt(params.route, 10) || 0) : 0;
+    planJourney({ origin: from, destination: to })
+      .then((results) => {
+        if (results && results.length > 0) {
+          const chosen = results[routeIndex] || results[0];
+          setActivePlan(chosen);
+          try {
+            localStorage.setItem("wasel.activeJourney.v1", JSON.stringify(chosen));
+          } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* handled gracefully */ });
+  }, [from, to, params.route]);
 
   // ─── Elapsed clock (real wall-clock, not simulation) ──────────────────────
   useEffect(() => {
@@ -98,7 +115,7 @@ export default function JourneyActiveScreen({ navigate, params }: ScreenProps) {
   }, [startedAt]);
 
   // ─── Offline queue for GPS pings ──────────────────────────────────────────
-  const offlineQueue = useOfflineQueue();
+  const offlineQueue = useOfflineQueue({ journeyId: activeJourneyId ?? undefined });
 
   // ─── Location update callback (called by useNavigationEngine) ──────────────
   const handleLocationUpdate = useCallback(
@@ -110,7 +127,8 @@ export default function JourneyActiveScreen({ navigate, params }: ScreenProps) {
       speed?: number | null;
       recorded_at?: string;
     }) => {
-      const id = activeJourneyId ?? "temp";
+      if (!activeJourneyId || activeJourneyId === "temp") return;
+      const id = activeJourneyId;
       const payload = {
         latitude: pos.latitude,
         longitude: pos.longitude,
@@ -261,6 +279,41 @@ export default function JourneyActiveScreen({ navigate, params }: ScreenProps) {
 
   const userPos = nav.visualPosition ?? nav.rawPosition;
 
+  // Build proper MapItinerary for InteractiveMap from activePlan
+  const mapItinerary = useMemo(() => {
+    if (!activePlan?.legs?.length) return null;
+    return {
+      legs: activePlan.legs.map((leg) => ({
+        type: leg.leg_type === 'walk' ? 'walking' : 'transit',
+        mode: leg.mode ?? leg.type,
+        geometry: leg.geometry ?? undefined,
+        from_lat: leg.from_lat,
+        from_lng: leg.from_lng,
+        to_lat: leg.to_lat,
+        to_lng: leg.to_lng,
+        from_stop: leg.from_stop ?? undefined,
+        to_stop: leg.to_stop ?? undefined,
+      })),
+    };
+  }, [activePlan]);
+
+  const mapOrigin = useMemo(() => {
+    if (!activePlan) return null;
+    const lat = activePlan.origin_lat ?? activePlan.legs?.[0]?.from_lat;
+    const lng = activePlan.origin_lng ?? activePlan.legs?.[0]?.from_lng;
+    if (lat && lng) return { lat: Number(lat), lng: Number(lng) };
+    return null;
+  }, [activePlan]);
+
+  const mapDestination = useMemo(() => {
+    if (!activePlan) return null;
+    const lastLeg = activePlan.legs?.[activePlan.legs.length - 1];
+    const lat = activePlan.dest_lat ?? lastLeg?.to_lat;
+    const lng = activePlan.dest_lng ?? lastLeg?.to_lng;
+    if (lat && lng) return { lat: Number(lat), lng: Number(lng) };
+    return null;
+  }, [activePlan]);
+
   return (
     <div className="relative flex h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-mist">
       {/* ─── Top HUD Banner ──────────────────────────────────────────────── */}
@@ -297,10 +350,10 @@ export default function JourneyActiveScreen({ navigate, params }: ScreenProps) {
               </span>
             )}
             {/* Offline indicator */}
-            {(offlineQueue as any)?.pending > 0 && (
+            {((offlineQueue as any)?.queuedCount ?? (offlineQueue as any)?.pending ?? 0) > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-brt/10 text-brt border border-brt/20 px-2 py-0.5 text-[10px] font-bold">
                 <WifiOff className="size-3" />
-                {(offlineQueue as any).pending} معلق
+                {(offlineQueue as any)?.queuedCount ?? (offlineQueue as any)?.pending} معلق
               </span>
             )}
             {/* Voice toggle */}
@@ -340,7 +393,10 @@ export default function JourneyActiveScreen({ navigate, params }: ScreenProps) {
           userLocation={userPos ? { lat: userPos.lat, lng: userPos.lng, accuracy: userPos.accuracy ?? undefined } : null}
           userHeading={nav.heading}
           userSpeed={nav.speed ?? undefined}
-          activeRoutePoints={routePoints}
+          origin={mapOrigin}
+          destination={mapDestination}
+          itinerary={mapItinerary}
+          currentLegIndex={activeLegIndex}
           className="h-full w-full"
         />
 

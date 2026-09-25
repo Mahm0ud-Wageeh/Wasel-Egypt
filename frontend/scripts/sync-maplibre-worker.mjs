@@ -5,27 +5,30 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const frontendRoot = path.resolve(here, '..')
+const laravelPublicRoot = path.resolve(frontendRoot, '..', 'public')
 const require = createRequire(path.join(frontendRoot, 'package.json'))
 const distDir = path.dirname(require.resolve('maplibre-gl/package.json')) + '/dist'
 
-const outDir = path.join(frontendRoot, 'public', 'map')
-mkdirSync(outDir, { recursive: true })
-
-let copied = 0
-const candidateFiles = [
-  'maplibre-gl-worker.mjs',
-  'maplibre-gl-shared.mjs',
-  'maplibre-gl-csp-worker.js',
-  'maplibre-gl-csp.js',
+const targetDirs = [
+  path.join(frontendRoot, 'public', 'map'),
+  path.join(laravelPublicRoot, 'map'),
 ]
 
-for (const file of candidateFiles) {
-  const src = path.join(distDir, file)
-  const dest = path.join(outDir, file)
-  if (existsSync(src)) {
-    copyFileSync(src, dest)
-    copied += 1
+for (const dir of targetDirs) {
+  mkdirSync(dir, { recursive: true })
+}
+
+const workerSrc = path.join(distDir, 'maplibre-gl-csp-worker.js')
+const cspSrc = path.join(distDir, 'maplibre-gl-csp.js')
+
+for (const dir of targetDirs) {
+  if (existsSync(workerSrc)) {
+    copyFileSync(workerSrc, path.join(dir, 'maplibre-gl-csp-worker.js'))
+    copyFileSync(workerSrc, path.join(dir, 'maplibre-gl-worker.mjs'))
+  }
+  if (existsSync(cspSrc)) {
+    copyFileSync(cspSrc, path.join(dir, 'maplibre-gl-csp.js'))
   }
 }
-console.log(`[map-worker] synced ${copied} worker files → public/map/`)
 
+console.log('[map-worker] synced worker files to frontend/public/map and public/map')

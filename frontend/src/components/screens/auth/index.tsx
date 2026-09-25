@@ -464,6 +464,7 @@ export default function AuthScreen({ navigate, params }: ScreenProps) {
                 ) : null}
 
                 <PillButton
+                  id="auth-submit-btn"
                   variant="dark"
                   size="lg"
                   className="mt-2 w-full"

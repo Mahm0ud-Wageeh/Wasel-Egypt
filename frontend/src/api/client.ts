@@ -85,9 +85,9 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
-  if (auth) {
-    const token = getToken()
-    if (token) headers.Authorization = `Bearer ${token}`
+  const token = getToken()
+  if (auth !== false && token) {
+    headers.Authorization = `Bearer ${token}`
   }
 
   let response: Response

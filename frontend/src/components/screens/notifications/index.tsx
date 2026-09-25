@@ -30,7 +30,6 @@ import {
   deleteNotification,
 } from "@/api/notifications";
 import {
-  NOTIFS,
   GROUP_ORDER,
   groupLabelAr,
   type Notif,
@@ -191,7 +190,7 @@ const EMPTY_CTA: Partial<Record<NotifKind | "all", { labelAr: string; target: Sc
 
 export default function NotificationsScreen({ navigate }: { navigate: NavigateFn }) {
   const { isLoggedIn } = useAuth();
-  const [notifs, setNotifs] = useState<Notif[]>(() => NOTIFS.map((n) => ({ ...n })));
+  const [notifs, setNotifs] = useState<Notif[]>([]);
   const [tab, setTab] = useState<TabKey>("all");
   const { toast } = useToast();
 
@@ -200,18 +199,26 @@ export default function NotificationsScreen({ navigate }: { navigate: NavigateFn
     if (isLoggedIn) {
       fetchNotifications()
         .then((items) => {
-          if (!active || !Array.isArray(items) || items.length === 0) return;
-          const mapped: Notif[] = items.map((item) => ({
-            id: String(item.id),
-            kind: "system",
-            titleAr: item.title_ar || item.title || "تنبيه من واصل",
-            bodyAr: item.body_ar || item.body || item.message || "",
-            minutesAgo: 2,
-            unread: !item.is_read && !item.read_at,
-          }));
-          setNotifs((prev) => [...mapped, ...prev]);
+          if (!active) return;
+          if (Array.isArray(items)) {
+            const mapped: Notif[] = items.map((item) => ({
+              id: String(item.id),
+              kind: (item.type === "alert" || item.category === "line") ? "line" : (item.category === "journey" ? "journey" : "system"),
+              titleAr: item.title_ar || item.title || "تنبيه من واصل",
+              bodyAr: item.body_ar || item.body || item.message || "",
+              minutesAgo: item.created_at ? Math.max(1, Math.round((Date.now() - new Date(item.created_at).getTime()) / 60000)) : 1,
+              unread: !item.is_read && !item.read_at,
+            }));
+            setNotifs(mapped);
+          } else {
+            setNotifs([]);
+          }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (active) setNotifs([]);
+        });
+    } else {
+      setNotifs([]);
     }
     return () => {
       active = false;
