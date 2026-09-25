@@ -40,6 +40,7 @@ import {
   Route as RouteIcon,
   Navigation,
   RefreshCw,
+  RotateCcw,
   X,
   Share2,
   Bookmark,
@@ -62,9 +63,9 @@ const InteractiveMap = dynamic(() => import("@/components/map/InteractiveMap"), 
 
 export default function PlannerScreen({ navigate, params }: ScreenProps) {
   const { user, isLoggedIn } = useAuth();
-  // Query inputs (with defaults or URL params)
-  const [from, setFrom] = useState(params.from || "الشهداء");
-  const [to, setTo] = useState(params.to || "جامعة القاهرة");
+  // Query inputs (clean by default unless provided via URL params)
+  const [from, setFrom] = useState(params.from || "");
+  const [to, setTo] = useState(params.to || "");
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [timeChoice, setTimeChoice] = useState<string>("now");
 
@@ -80,6 +81,17 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
   const [viewMode, setViewMode] = useState<"list" | "details">("list");
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [sortCriteria, setSortCriteria] = useState<"fastest" | "cheapest" | "least_walking" | "least_transfers">("fastest");
+
+  // Reset inputs and results to start fresh
+  const handleReset = () => {
+    setFrom("");
+    setTo("");
+    setRoutes([]);
+    setSelectedRoute(null);
+    setSearchError(null);
+    setSearched(false);
+    setViewMode("list");
+  };
 
   // Sorted itineraries based on rider criteria (Phase 21 Requirement)
   const sortedRoutes = useMemo(() => {
@@ -129,16 +141,14 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
     }
   }, []);
 
-  // Run search on initial mount or when params change
+  // Run search on initial mount ONLY when params are explicitly provided
   useEffect(() => {
     if (params.from && params.to) {
       setFrom(params.from);
       setTo(params.to);
       doSearch(params.from, params.to);
-    } else {
-      doSearch(from, to);
     }
-  }, []);
+  }, [params.from, params.to, doSearch]);
 
   // Swap origin and destination
   const swapPoints = () => {
@@ -164,13 +174,19 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
   // Save trip to backend API when authenticated + user-isolated storage
   const handleSaveTrip = async (routePlan: JourneyPlan) => {
     try {
-      if (isLoggedIn && mapOrigin && mapDestination) {
+      const origLat = routePlan.origin_lat ?? routePlan.legs?.[0]?.from_lat;
+      const origLng = routePlan.origin_lng ?? routePlan.legs?.[0]?.from_lng;
+      const lastLeg = routePlan.legs?.[routePlan.legs.length - 1];
+      const destLat = routePlan.dest_lat ?? lastLeg?.to_lat;
+      const destLng = routePlan.dest_lng ?? lastLeg?.to_lng;
+
+      if (isLoggedIn && origLat && origLng && destLat && destLng) {
         await saveJourney({
           searchPayload: {
-            origin_lat: mapOrigin.lat,
-            origin_lng: mapOrigin.lng,
-            destination_lat: mapDestination.lat,
-            destination_lng: mapDestination.lng,
+            origin_lat: Number(origLat),
+            origin_lng: Number(origLng),
+            destination_lat: Number(destLat),
+            destination_lng: Number(destLng),
           },
           optionIndex: routes.indexOf(routePlan) >= 0 ? routes.indexOf(routePlan) : 0,
         }).catch(() => {
@@ -178,21 +194,29 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
         });
       }
 
-      const storageKey = user?.id ? `wasel.saved_trips.${user.id}` : "wasel.saved_trips.guest";
-      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      saved.unshift({
+      const tripRecord = {
         id: Date.now(),
-        from,
-        to,
+        from: from || routePlan.legs?.[0]?.from_ar || "محطة الانطلاق",
+        to: to || routePlan.legs?.[routePlan.legs.length - 1]?.to_ar || "محطة الوصول",
         duration: routePlan.duration,
         fare: routePlan.fare,
         savedAt: new Date().toISOString(),
-      });
-      localStorage.setItem(storageKey, JSON.stringify(saved.slice(0, 30)));
+      };
+
+      const storageKey = user?.id ? `wasel.saved_trips.${user.id}` : "wasel.saved_trips.guest";
+      const savedUser = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      savedUser.unshift(tripRecord);
+      localStorage.setItem(storageKey, JSON.stringify(savedUser.slice(0, 30)));
+
+      // Also persist to global wasel.saved_trips for history compatibility
+      const savedGlobal = JSON.parse(localStorage.getItem("wasel.saved_trips") || "[]");
+      savedGlobal.unshift(tripRecord);
+      localStorage.setItem("wasel.saved_trips", JSON.stringify(savedGlobal.slice(0, 30)));
+
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      console.error("Failed to save trip:", e);
     }
   };
 
@@ -269,7 +293,7 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
 
           {/* Search Inputs Card */}
           <div className="rounded-3xl border border-bone bg-mist p-3.5 sm:p-5">
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-center">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:items-center">
               {/* Origin button/input */}
               <div
                 onClick={() => setModalTarget("from")}
@@ -280,6 +304,19 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
                   <p className="text-[10px] font-bold text-ash">نقطة الانطلاق</p>
                   <p className="truncate text-[13px] font-bold text-ink">{from || "اختر محطة…"}</p>
                 </div>
+                {from && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFrom("");
+                    }}
+                    className="flex size-6 items-center justify-center rounded-full text-ash hover:bg-mist hover:text-ink transition"
+                    title="مسح محطة الانطلاق"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
               </div>
 
               {/* Swap Button */}
@@ -302,6 +339,19 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
                   <p className="text-[10px] font-bold text-ash">الوجهة</p>
                   <p className="truncate text-[13px] font-bold text-ink">{to || "اختر محطة…"}</p>
                 </div>
+                {to && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTo("");
+                    }}
+                    className="flex size-6 items-center justify-center rounded-full text-ash hover:bg-mist hover:text-ink transition"
+                    title="مسح الوجهة"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
               </div>
 
               {/* Search Submit Button */}
@@ -309,7 +359,7 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
                 variant="brand"
                 size="lg"
                 onClick={() => doSearch(from, to)}
-                disabled={loading}
+                disabled={loading || !from || !to}
                 className="w-full sm:w-auto"
               >
                 {loading ? (
@@ -319,6 +369,20 @@ export default function PlannerScreen({ navigate, params }: ScreenProps) {
                 )}
                 <span>بحث في الشبكة</span>
               </PillButton>
+
+              {/* Reset Button */}
+              {(from || to || searched) && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  aria-label="إعادة تعيين ومسح البحث"
+                  title="مسح كل المدخلات والنتائج"
+                  className="settle-fast flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-2xl border border-bone bg-white px-4 text-[12px] font-bold text-ash hover:bg-mist hover:text-carbon transition shadow-xs"
+                >
+                  <RotateCcw className="size-3.5" />
+                  <span>مسح</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -95,6 +95,14 @@ class UserController extends Controller
         $data = $validator->validated();
         if (!$authUser->hasRole('admin')) {
             unset($data['status']);
+        } else {
+            if ($request->filled('role')) {
+                $roleName = strtolower(trim((string) $request->input('role')));
+                $role = \App\Models\Role::where('name', $roleName)->first();
+                if ($role) {
+                    $user->roles()->sync([$role->id]);
+                }
+            }
         }
 
         $user->update($data);

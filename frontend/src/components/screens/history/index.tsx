@@ -57,7 +57,17 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
     const userStorageKey = user?.id ? `wasel.saved_trips.${user.id}` : "wasel.saved_trips.guest";
     let localSaved: any[] = [];
     try {
-      localSaved = JSON.parse(localStorage.getItem(userStorageKey) || "[]");
+      const u = JSON.parse(localStorage.getItem(userStorageKey) || "[]");
+      const g = JSON.parse(localStorage.getItem("wasel.saved_trips") || "[]");
+      const merged = [...u, ...g];
+      const seen = new Set();
+      for (const item of merged) {
+        const k = `${item.from}-${item.to}-${item.savedAt || item.id}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          localSaved.push(item);
+        }
+      }
     } catch { /* ignore */ }
 
     if (isLoggedIn) {

@@ -112,7 +112,12 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
         // User management
         Route::get('users', [App\Http\Controllers\Api\V1\UserController::class, 'index']);
+        Route::put('users/{id}', [App\Http\Controllers\Api\V1\UserController::class, 'update']);
         Route::delete('users/{id}', [App\Http\Controllers\Api\V1\UserController::class, 'destroy']);
+        Route::post('system/clear-cache', function () {
+            \Illuminate\Support\Facades\Artisan::call('cache:clear');
+            return response()->json(['success' => true, 'message' => 'تم تفريغ ذاكرة التخزين المؤقت بنجاح']);
+        });
 
         // Role management
         Route::apiResource('roles', App\Http\Controllers\Api\V1\RoleController::class)->except(['show']);

@@ -7,7 +7,7 @@
  * leg-by-leg receipt.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   ArrowRight,
@@ -53,6 +53,27 @@ export default function JourneyCompletedScreen({ navigate, params }: ScreenProps
   const { toast } = useToast();
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
+
+  // Auto-record completed journey to saved trips / history
+  useEffect(() => {
+    try {
+      const trip = {
+        id: Date.now(),
+        from,
+        to,
+        duration: duration > 0 ? duration : route?.totalMinutes ?? 25,
+        fare: fare > 0 ? fare : route?.fareEGP ?? 10,
+        savedAt: new Date().toISOString(),
+      };
+      const existing = JSON.parse(localStorage.getItem("wasel.saved_trips") || "[]");
+      if (!existing.some((t: any) => t.from === from && t.to === to && Math.abs(new Date(t.savedAt).getTime() - Date.now()) < 120000)) {
+        existing.unshift(trip);
+        localStorage.setItem("wasel.saved_trips", JSON.stringify(existing.slice(0, 30)));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [from, to, duration, fare, route]);
 
   const distanceKm = route?.distanceKm ?? 12;
   const co2 = carbonSavedKg(distanceKm);

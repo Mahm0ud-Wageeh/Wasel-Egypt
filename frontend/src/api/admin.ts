@@ -118,3 +118,31 @@ export async function getAdminPermissions() {
   const response = await apiRequest(endpoints.admin.permissions)
   return (response as any)?.data ?? response
 }
+
+export const updateAdminUser = (id: number | string, body: Record<string, any>) =>
+  apiRequest(`/admin/users/${id}`, { method: 'PUT', body })
+
+export const clearSystemCache = () =>
+  apiRequest('/admin/system/clear-cache', { method: 'POST' })
+
+export const fetchAdminStops = (query?: Record<string, any>) =>
+  apiRequest<any>(endpoints.public.stops, { method: 'GET', query, auth: false })
+
+export const createAdminStop = (body: Record<string, any>) =>
+  apiRequest('/transit-stops', { method: 'POST', body })
+
+export const updateAdminStop = (id: number | string, body: Record<string, any>) =>
+  apiRequest(`/transit-stops/${id}`, { method: 'PUT', body })
+
+export const deleteAdminStop = (id: number | string) =>
+  apiRequest(`/transit-stops/${id}`, { method: 'DELETE' })
+
+export const fetchAdminAlerts = () =>
+  apiRequest<any>('/service-alerts', { method: 'GET' })
+
+export const broadcastServiceAlert = (body: Record<string, any>) =>
+  apiRequest('/service-alerts', { method: 'POST', body })
+
+export const deleteServiceAlert = (id: number | string) =>
+  apiRequest(`/service-alerts/${id}`, { method: 'DELETE' })
+
