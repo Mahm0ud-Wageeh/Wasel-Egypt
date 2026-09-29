@@ -27,14 +27,15 @@ import {
   FOOTER_COLS,
   HERO_POINTS,
   MODE_CARDS,
-  NETWORK_METRICS,
   PARTNERS,
   QUICK_DESTINATIONS,
+  type Metric,
 } from "./data";
 import { MapTeaser } from "./map-teaser";
 import { HeroPreview } from "./hero-preview";
 import { apiRequest } from "@/api/client";
 import { endpoints } from "@/api/endpoints";
+import { fetchActiveAlerts } from "@/api/network";
 
 /* ------------------------------ count-up hook ----------------------------- */
 
@@ -68,7 +69,27 @@ export default function WelcomeScreen({ navigate }: ScreenProps) {
   const [activeLine, setActiveLine] = useState<string | null>(null);
   const metricsRef = useRef<HTMLDivElement>(null);
   const metricsInView = useInView(metricsRef, { once: true, margin: "-60px" });
-  const [metrics, setMetrics] = useState(NETWORK_METRICS);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  // Latest real service alert for the announcement bar — hidden if none.
+  const [topAlert, setTopAlert] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveAlerts()
+      .then((list: any) => {
+        if (cancelled) return;
+        const arr: any[] = Array.isArray(list) ? list : (list?.data ?? []);
+        const first = arr[0];
+        const text = first?.header_text || first?.title || first?.message;
+        setTopAlert(typeof text === "string" && text.trim() ? text.trim() : null);
+      })
+      .catch(() => {
+        if (!cancelled) setTopAlert(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,17 +97,17 @@ export default function WelcomeScreen({ navigate }: ScreenProps) {
       .then((res) => {
         if (cancelled || !res) return;
         const d = res.data || res;
-        if (d.stops || d.routes) {
-          setMetrics([
-            { to: d.routes || 1018, suffix: "+", caption: "خطوط نقل مسجلة" },
-            { to: d.stops || 3041, suffix: "+", caption: "محطة عبر المحافظة" },
-            { to: d.variants_with_geometry || 1792, suffix: "", caption: "مسار موثق جغرافياً" },
-            { to: d.operators || 15, suffix: "", caption: "هيئة ومشغل نقل" },
-          ]);
-        }
+        // Real fields only — a missing field is omitted, never defaulted.
+        const rows: Metric[] = [];
+        if (d.routes != null) rows.push({ to: Number(d.routes), suffix: "+", caption: "خطوط نقل مسجلة" });
+        if (d.stops != null) rows.push({ to: Number(d.stops), suffix: "+", caption: "محطة عبر المحافظة" });
+        if (d.variants_with_geometry != null) rows.push({ to: Number(d.variants_with_geometry), suffix: "", caption: "مسار موثق جغرافياً" });
+        if (d.operators != null) rows.push({ to: Number(d.operators), suffix: "", caption: "هيئة ومشغل نقل" });
+        setMetrics(rows);
       })
       .catch(() => {
-        /* honest fallback to verified static metrics */
+        // Backend unreachable → strip stays hidden (no invented metrics).
+        setMetrics([]);
       });
     return () => {
       cancelled = true;
@@ -96,25 +117,28 @@ export default function WelcomeScreen({ navigate }: ScreenProps) {
   return (
     <div className="bg-white">
       {/* ------------------------- announcement bar ------------------------- */}
-      <div className="bg-onyx text-white">
-        <div className="mx-auto flex h-10 w-full max-w-[1200px] items-center justify-between gap-3 px-4 md:px-6">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <Megaphone className="size-3.5 shrink-0 text-mint" />
-            <p className="truncate text-[12px] font-medium text-white/85">
-              <span className="font-bold text-mint">جديد: </span>
-              الخط الرابع للمترو بدأ تداوله التجريبي بين الحرام والتجمع الخامس
-            </p>
+      {/* Real active service alert only — no invented news. Hidden when empty. */}
+      {topAlert ? (
+        <div className="bg-onyx text-white">
+          <div className="mx-auto flex h-10 w-full max-w-[1200px] items-center justify-between gap-3 px-4 md:px-6">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Megaphone className="size-3.5 shrink-0 text-mint" />
+              <p className="truncate text-[12px] font-medium text-white/85">
+                <span className="font-bold text-mint">تنبيه شبكة: </span>
+                {topAlert}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("notifications")}
+              className="settle-fast hidden shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[12px] font-bold text-white/70 outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40 sm:inline-flex"
+            >
+              كل التنبيهات
+              <ChevronLeft className="size-3.5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("metro")}
-            className="settle-fast hidden shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[12px] font-bold text-white/70 outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40 sm:inline-flex"
-          >
-            تابع الخط الرابع
-            <ChevronLeft className="size-3.5" />
-          </button>
         </div>
-      </div>
+      ) : null}
 
       {/* ------------------------------ top bar ----------------------------- */}
       <header className="glass sticky top-0 z-40">
@@ -252,29 +276,32 @@ export default function WelcomeScreen({ navigate }: ScreenProps) {
       </section>
 
       {/* --------------------------- metrics strip -------------------------- */}
-      <section className="section-gap" aria-label="أرقام الشبكة">
-        <div ref={metricsRef} className="mx-auto w-full max-w-[1200px] px-4 md:px-6">
-          <div className="mx-auto mb-12 flex max-w-2xl flex-col items-center gap-4 text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald/25 bg-emerald/10 px-3.5 py-1.5 text-[12px] font-bold text-emerald">
-              <ShieldCheck className="size-3.5" />
-              بيانات شبكة حقيقية موثقة 100%
-            </span>
-            <h2 className="font-head text-[26px] font-black leading-[1.25] text-ink md:text-[34px]">
-              أرقام شبكة القاهرة الكبرى — محدثة باستمرار
-            </h2>
+      {/* Rendered only with real backend numbers — hidden while empty. */}
+      {metrics.length > 0 ? (
+        <section className="section-gap" aria-label="أرقام الشبكة">
+          <div ref={metricsRef} className="mx-auto w-full max-w-[1200px] px-4 md:px-6">
+            <div className="mx-auto mb-12 flex max-w-2xl flex-col items-center gap-4 text-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald/25 bg-emerald/10 px-3.5 py-1.5 text-[12px] font-bold text-emerald">
+                <ShieldCheck className="size-3.5" />
+                بيانات شبكة حقيقية من قاعدة البيانات
+              </span>
+              <h2 className="font-head text-[26px] font-black leading-[1.25] text-ink md:text-[34px]">
+                أرقام شبكة القاهرة الكبرى — محدثة باستمرار
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
+              {metrics.map((metric, index) => (
+                <MetricItem
+                  key={metric.caption}
+                  metric={metric}
+                  active={metricsInView}
+                  index={index}
+                />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
-            {metrics.map((metric, index) => (
-              <MetricItem
-                key={metric.caption}
-                metric={metric}
-                active={metricsInView}
-                index={index}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* ---------------------------- map teaser ---------------------------- */}
       <section className="section-gap border-t border-bone" aria-label="معاينة الخريطة">

@@ -63,12 +63,12 @@ export interface Incident {
   bodyAr: string;
   stationAr: string;
   lineId: string;
-  minutesAgo: number;
+  minutesAgo: number | null;
   confirms: number;
   denies: number;
   status: ReportStatus;
   reporterNameAr: string;
-  reporterTrust: number;
+  reporterTrust: number | null;
   mine?: boolean;
 }
 

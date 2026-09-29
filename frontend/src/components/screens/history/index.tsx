@@ -24,13 +24,11 @@ import type { ScreenProps } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchMyJourneys } from "@/api/journeys";
 import {
-  buildStats,
   GROUP_LABEL_AR,
   groupOf,
   legsOf,
-  SAVED_ROUTES,
-  TRIPS,
   tripDateLabel,
+  type SavedRoute,
   type Trip,
 } from "./history-data";
 
@@ -43,11 +41,11 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [favs, setFavs] = useState<Set<string>>(new Set());
 
-  // Dynamic, truthful stats computed strictly from real user records
+  // Stats computed strictly from the user's own records (no invented km).
   const stats = useMemo(() => {
     const count = trips.length;
     const totalFare = trips.reduce((sum, t) => sum + (Number(t.fare) || 0), 0);
-    const km = Math.round(trips.reduce((sum, t) => sum + (Number((t as any).distanceKm) || 10), 0) * 10) / 10;
+    const km = Math.round(trips.reduce((sum, t) => sum + (Number((t as any).distanceKm) || 0), 0) * 10) / 10;
     const co2Kg = Math.round(km * 0.129 * 10) / 10;
     return { trips: count, km, co2Kg, totalFare };
   }, [trips]);
@@ -79,12 +77,12 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
             from: item.origin_name || item.from_name || "محطة الانطلاق",
             to: item.destination_name || item.to_name || "محطة الوصول",
             fare: Number(item.fare) || 0,
-            durationMin: Number(item.duration_minutes || item.duration) || 20,
+            durationMin: Number(item.duration_minutes || item.duration) || 0,
             daysAgo: item.created_at ? Math.max(0, Math.floor((Date.now() - new Date(item.created_at).getTime()) / (1000 * 60 * 60 * 24))) : 0,
             time: item.created_at ? new Date(item.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : "--:--",
             dateIso: item.created_at || new Date().toISOString(),
             favorite: false,
-            legCodes: ["L1", "L2"],
+            legCodes: Array.isArray(item.modes_used) ? item.modes_used : [],
             legsCount: 2,
           }));
 
@@ -93,12 +91,12 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
             from: s.from,
             to: s.to,
             fare: Number(s.fare) || 0,
-            durationMin: Number(s.duration) || 20,
+            durationMin: Number(s.duration) || 0,
             daysAgo: 0,
             time: "مؤخرًا",
             dateIso: s.savedAt || new Date().toISOString(),
             favorite: true,
-            legCodes: ["L1"],
+            legCodes: [],
             legsCount: 1,
           }));
 
@@ -117,7 +115,7 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
             label: idx === 0 ? "المسار اليومي" : `مسار ${idx + 1}`,
             from: t.from,
             to: t.to,
-            legCodes: t.legCodes || ["L1"],
+            legCodes: t.legCodes || [],
           }));
           setSavedRoutes(sRoutes);
         })
@@ -128,12 +126,12 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
             from: s.from,
             to: s.to,
             fare: Number(s.fare) || 0,
-            durationMin: Number(s.duration) || 20,
+            durationMin: Number(s.duration) || 0,
             daysAgo: 0,
             time: "مؤخرًا",
             dateIso: s.savedAt || new Date().toISOString(),
             favorite: true,
-            legCodes: ["L1"],
+            legCodes: [],
             legsCount: 1,
           }));
           setTrips(localMapped);
@@ -334,7 +332,7 @@ export default function HistoryScreen({ navigate }: ScreenProps) {
                           <LineBadge key={l.code} code={l.code} color={l.color} size="sm" />
                         ))}
                         <span className="num text-[10.5px] font-semibold text-ash">
-                          {t.durationMin} دقيقة
+                          {t.durationMin > 0 ? `${t.durationMin} دقيقة` : "المدة غير مسجلة"}
                         </span>
                       </div>
                     </div>

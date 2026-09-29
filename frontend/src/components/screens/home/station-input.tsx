@@ -2,14 +2,16 @@
 
 /**
  * Home — station autocomplete input.
- * Local filtering over a real Greater Cairo station list,
- * keyboard-friendly dropdown, GPS shortcut for the origin field.
+ * Suggestions come from the backend unified search (/places/search),
+ * debounced per the server's fair-use policy. Without backend results the
+ * list stays empty — no invented stations.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LocateFixed, MapPin, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { STATIONS, type StationLine } from "./data";
+import type { StationLine } from "./data";
+import { searchPlaces } from "@/api/journeys";
 
 interface Option {
   id: string;
@@ -59,20 +61,46 @@ export function StationInput({
 }) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [remoteOptions, setRemoteOptions] = useState<Option[]>([]);
+  const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const options = useMemo<Option[]>(() => {
-    const q = normalize(value);
-    if (!q) {
-      const base = STATIONS.slice(0, 8).map((s) => ({ ...s }));
-      return showGpsOption ? [GPS_OPTION, ...base] : base;
+  // Debounced backend search (600ms — matches server fair-use guidance).
+  useEffect(() => {
+    const q = value.trim();
+    if (q.length < 2) {
+      setRemoteOptions([]);
+      setSearching(false);
+      return;
     }
-    return STATIONS.filter(
-      (s) => normalize(s.name).includes(q) || normalize(s.info).includes(q)
-    )
-      .slice(0, 8)
-      .map((s) => ({ ...s }));
-  }, [value, showGpsOption]);
+    setSearching(true);
+    const ctrl = new AbortController();
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await searchPlaces(q, ctrl.signal);
+        const mapped: Option[] = (Array.isArray(res) ? res : []).slice(0, 8).map((r: any, i: number) => ({
+          id: String(r.id ?? `${r.type ?? "place"}-${i}`),
+          name: r.name_ar || r.name || r.name_en || "",
+          info: r.type === "stop" ? "محطة نقل" : r.mode ? `وسيلة: ${r.mode}` : "مكان",
+          lines: [],
+        }));
+        setRemoteOptions(mapped.filter((o) => o.name));
+      } catch {
+        setRemoteOptions([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 600);
+    return () => {
+      window.clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [value]);
+
+  const options = useMemo<Option[]>(() => {
+    if (!normalize(value)) return showGpsOption ? [GPS_OPTION] : [];
+    return remoteOptions;
+  }, [value, showGpsOption, remoteOptions]);
 
   const select = (option: Option) => {
     onChange(option.name);
@@ -164,7 +192,11 @@ export function StationInput({
         >
           {options.length === 0 ? (
             <p className="px-4 py-5 text-center text-[12.5px] text-ash">
-              لا توجد محطة بهذا الاسم — جرّب اسماً آخر من الشبكة
+              {searching
+                ? "جارٍ البحث في الشبكة…"
+                : value.trim().length < 2
+                ? "اكتب حرفين على الأقل للبحث في المحطات والأماكن"
+                : "لا توجد نتائج مطابقة — جرّب اسماً آخر"}
             </p>
           ) : (
             options.map((option, index) => (

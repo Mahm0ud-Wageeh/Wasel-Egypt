@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * StopsManager — light edition, real data only.
+ * Lists /stops from the backend; empty + error states are honest.
+ * Create/delete write through the real API — the local list only changes
+ * when the server confirms (followed by a refetch).
+ */
+
 import { useEffect, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -8,15 +15,12 @@ import {
   Search,
   Plus,
   Trash2,
-  Edit2,
   RefreshCw,
   Check,
   X,
   Accessibility,
-  Train,
 } from "lucide-react";
-import { EGYPT_STATIONS } from "@/data/egyptTransitData";
-import { fetchAdminStops, createAdminStop, updateAdminStop, deleteAdminStop } from "@/api/admin";
+import { fetchAdminStops, createAdminStop, deleteAdminStop } from "@/api/admin";
 
 interface StopItem {
   id: number | string;
@@ -32,12 +36,12 @@ interface StopItem {
 
 export function StopsManager() {
   const [stops, setStops] = useState<StopItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [search, setSearch] = useState("");
   const [lineFilter, setLineFilter] = useState("all");
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // New stop form state
   const [newAr, setNewAr] = useState("");
   const [newEn, setNewEn] = useState("");
   const [newLine, setNewLine] = useState("L1");
@@ -47,63 +51,43 @@ export function StopsManager() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadStops = async () => {
-    setLoading(true);
     try {
       const res = await fetchAdminStops();
       const list = Array.isArray(res) ? res : res?.data;
-      if (Array.isArray(list) && list.length > 0) {
-        setStops(
-          list.map((s: any) => ({
-            id: s.id,
-            name_ar: s.name_ar || s.name,
-            name_en: s.name_en || s.name,
-            line: s.line_code || "L1",
-            mode: s.mode || "metro",
-            lat: Number(s.latitude || s.lat || 30.0444),
-            lng: Number(s.longitude || s.lng || 31.2357),
-            is_transfer: s.is_transfer || false,
-            wheelchair_accessible: s.wheelchair_accessible ?? true,
-          }))
-        );
-      } else {
-        // Fallback to rich Egyptian transit network data
-        setStops(
-          EGYPT_STATIONS.map((s, idx) => ({
-            id: `station-${idx + 1}`,
-            name_ar: s.name_ar,
-            name_en: s.name_en,
-            line: s.line,
-            mode: s.mode,
-            lat: s.lat,
-            lng: s.lng,
-            is_transfer: s.is_transfer,
-            wheelchair_accessible: true,
-          }))
-        );
-      }
-    } catch {
-      // Fallback
       setStops(
-        EGYPT_STATIONS.map((s, idx) => ({
-          id: `station-${idx + 1}`,
-          name_ar: s.name_ar,
-          name_en: s.name_en,
-          line: s.line,
-          mode: s.mode,
-          lat: s.lat,
-          lng: s.lng,
-          is_transfer: s.is_transfer,
-          wheelchair_accessible: true,
-        }))
+        Array.isArray(list)
+          ? list.map((s: any) => ({
+              id: s.id,
+              name_ar: s.name_ar || s.name || "—",
+              name_en: s.name_en || s.name || "",
+              line: s.line_code || "L1",
+              mode: s.mode || "metro",
+              lat: Number(s.latitude ?? s.lat ?? 0),
+              lng: Number(s.longitude ?? s.lng ?? 0),
+              is_transfer: s.is_transfer || false,
+              wheelchair_accessible: s.wheelchair_accessible ?? true,
+            }))
+          : []
       );
+      setFailed(false);
+    } catch {
+      setFailed(true);
+      setStops([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStops();
+    void (async () => {
+      await loadStops();
+    })();
   }, []);
+
+  const refreshStops = () => {
+    setLoading(true);
+    loadStops();
+  };
 
   const filteredStops = useMemo(() => {
     return stops.filter((s) => {
@@ -135,22 +119,7 @@ export function StopsManager() {
         longitude: parseFloat(newLng),
         line_code: newLine,
         wheelchair_accessible: newAccessible,
-      }).catch(() => {
-        /* local state fallback */
       });
-
-      const addedStop: StopItem = {
-        id: Date.now(),
-        name_ar: newAr,
-        name_en: newEn || newAr,
-        line: newLine,
-        mode: newLine === "MNR" ? "monorail" : newLine === "LRT" ? "lrt" : newLine === "BRT" ? "brt" : "metro",
-        lat: parseFloat(newLat),
-        lng: parseFloat(newLng),
-        wheelchair_accessible: newAccessible,
-      };
-
-      setStops((prev) => [addedStop, ...prev]);
       toast({
         title: "تمت إضافة المحطة بنجاح",
         description: `أُضيفت محطة "${newAr}" إلى مسار الخط (${newLine}).`,
@@ -158,10 +127,11 @@ export function StopsManager() {
       setAddModalOpen(false);
       setNewAr("");
       setNewEn("");
+      await loadStops();
     } catch {
       toast({
         title: "خطأ أثناء إضافة المحطة",
-        description: "تعذر حفظ المحطة في قاعدة البيانات.",
+        description: "تعذر حفظ المحطة في قاعدة البيانات — لم يُحفظ أي شيء.",
         variant: "destructive",
       });
     } finally {
@@ -172,16 +142,14 @@ export function StopsManager() {
   const handleDelete = async (id: number | string, name: string) => {
     if (!confirm(`هل أنت متأكد من حذف محطة "${name}"؟`)) return;
     try {
-      if (typeof id === "number") {
-        await deleteAdminStop(id).catch(() => {});
-      }
+      await deleteAdminStop(id);
       setStops((prev) => prev.filter((s) => s.id !== id));
       toast({
         title: "تم حذف المحطة",
         description: `أزيلت محطة "${name}" من الشبكة.`,
       });
     } catch {
-      toast({ title: "فشل الحذف", variant: "destructive" });
+      toast({ title: "فشل الحذف — المحطة ما زالت موجودة", variant: "destructive" });
     }
   };
 
@@ -199,7 +167,7 @@ export function StopsManager() {
     return (
       <span
         className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
-        style={{ borderColor: `${info.color}40`, backgroundColor: `${info.color}15`, color: info.color }}
+        style={{ borderColor: `${info.color}40`, backgroundColor: `${info.color}12`, color: info.color }}
       >
         <span className="size-1.5 rounded-full" style={{ backgroundColor: info.color }} />
         {info.label}
@@ -207,27 +175,44 @@ export function StopsManager() {
     );
   };
 
+  if (!loading && failed) {
+    return (
+      <div className="rounded-2xl border border-dashed border-bone bg-white px-6 py-14 text-center">
+        <MapPin className="mx-auto size-8 text-ash" />
+        <p className="mt-3 font-head text-[15px] font-black text-ink">تعذر تحميل المحطات</p>
+        <p className="mt-1 text-[12.5px] text-slateink">الخادم غير متاح حالياً — لا توجد بيانات معروضة.</p>
+        <button
+          type="button"
+          onClick={loadStops}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-[12px] font-bold text-white hover:bg-carbon"
+        >
+          <RefreshCw className="size-3.5" />
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Header & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 min-w-[240px]">
-          <Search className="size-4 text-white/40" />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-bone bg-white p-4 shadow-xs">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-bone bg-mist/60 px-3 py-2 min-w-[240px]">
+          <Search className="size-4 text-ash" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="بحث عن محطة بالعربية أو الإنجليزية…"
-            className="w-full bg-transparent text-[13px] text-white placeholder-white/35 focus:outline-hidden"
+            className="w-full bg-transparent text-[13px] text-ink placeholder-ash focus:outline-hidden"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Line Filter */}
           <select
             value={lineFilter}
             onChange={(e) => setLineFilter(e.target.value)}
-            className="rounded-xl border border-white/10 bg-[#161616] px-3 py-2 text-[12px] font-bold text-white focus:outline-hidden"
+            className="rounded-xl border border-bone bg-white px-3 py-2 text-[12px] font-bold text-carbon focus:outline-hidden"
           >
             <option value="all">كل خطوط وشبكات النقل</option>
             <option value="L1">المترو — الخط الأول</option>
@@ -240,9 +225,9 @@ export function StopsManager() {
 
           <button
             type="button"
-            onClick={loadStops}
+            onClick={refreshStops}
             disabled={loading}
-            className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white"
+            className="flex size-9 items-center justify-center rounded-xl border border-bone bg-white text-slateink hover:bg-mist hover:text-ink"
             title="تحديث المحطات"
           >
             <RefreshCw className={cn("size-4", loading && "animate-spin")} />
@@ -251,7 +236,7 @@ export function StopsManager() {
           <button
             type="button"
             onClick={() => setAddModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-interactive px-3.5 py-2 text-[12px] font-bold text-white hover:bg-interactive/90 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-ink px-3.5 py-2 text-[12px] font-bold text-white hover:bg-carbon transition shadow-sm"
           >
             <Plus className="size-4" />
             إضافة محطة جديدة
@@ -260,16 +245,16 @@ export function StopsManager() {
       </div>
 
       {/* Stats summary */}
-      <div className="flex items-center justify-between text-[12px] text-white/50 px-1">
-        <span>إجمالي المحطات المعروضة: <strong className="text-white">{filteredStops.length}</strong></span>
-        <span>تحديث فوري لشبكة المسارات وجداول الرحلات</span>
+      <div className="flex items-center justify-between text-[12px] text-slateink px-1">
+        <span>إجمالي المحطات المعروضة: <strong className="text-ink">{loading ? "…" : filteredStops.length}</strong></span>
+        <span>بيانات حية من قاعدة البيانات</span>
       </div>
 
       {/* Stops Table */}
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+      <div className="overflow-x-auto rounded-2xl border border-bone bg-white shadow-xs">
         <table className="w-full border-collapse text-start text-[13px]">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.02] text-start text-[11px] font-bold text-white/40">
+            <tr className="border-b border-bone bg-mist/50 text-start text-[11px] font-bold text-ash">
               <th className="px-4 py-3 text-start">المحطة (عربي / إنجليزي)</th>
               <th className="px-4 py-3 text-start">الخط والشبكة</th>
               <th className="px-4 py-3 text-start">الإحداثيات الجغرافية (WGS84)</th>
@@ -277,24 +262,24 @@ export function StopsManager() {
               <th className="px-4 py-3 text-end">الإجراءات</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.06]">
+          <tbody className="divide-y divide-bone">
             {filteredStops.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-white/40">
-                  {loading ? "جارٍ تحميل شبكة المحطات…" : "لم يتم العثور على محطات مطابقة للبحث."}
+                <td colSpan={5} className="px-4 py-12 text-center text-ash">
+                  {loading ? "جارٍ تحميل شبكة المحطات…" : "لا توجد محطات — القائمة فارغة أو لا تطابق البحث."}
                 </td>
               </tr>
             ) : (
               filteredStops.slice(0, 100).map((s) => (
-                <tr key={s.id} className="hover:bg-white/[0.02] transition">
+                <tr key={s.id} className="hover:bg-mist/50 transition">
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex size-8 items-center justify-center rounded-lg bg-white/5 text-interactive">
+                      <span className="flex size-8 items-center justify-center rounded-lg bg-interactive/10 text-interactive">
                         <MapPin className="size-4" />
                       </span>
                       <div>
-                        <div className="font-bold text-white">{s.name_ar}</div>
-                        <div className="text-[11px] text-white/40" dir="ltr">{s.name_en}</div>
+                        <div className="font-bold text-ink">{s.name_ar}</div>
+                        <div className="text-[11px] text-ash" dir="ltr">{s.name_en}</div>
                       </div>
                     </div>
                   </td>
@@ -304,19 +289,19 @@ export function StopsManager() {
                   </td>
 
                   <td className="px-4 py-3.5">
-                    <span className="num font-mono text-[11.5px] text-white/60" dir="ltr">
-                      {s.lat.toFixed(4)}, {s.lng.toFixed(4)}
+                    <span className="num font-mono text-[11.5px] text-slateink" dir="ltr">
+                      {Number(s.lat).toFixed(4)}, {Number(s.lng).toFixed(4)}
                     </span>
                   </td>
 
                   <td className="px-4 py-3.5">
                     {s.wheelchair_accessible ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                         <Accessibility className="size-3.5" />
                         مجهزة
                       </span>
                     ) : (
-                      <span className="text-[11px] text-white/30">—</span>
+                      <span className="text-[11px] text-ash">—</span>
                     )}
                   </td>
 
@@ -324,7 +309,7 @@ export function StopsManager() {
                     <button
                       type="button"
                       onClick={() => handleDelete(s.id, s.name_ar)}
-                      className="flex size-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 ms-auto"
+                      className="flex size-8 items-center justify-center rounded-lg border border-l2/20 bg-l2/10 text-l2 hover:bg-l2/20 ms-auto"
                       title="حذف المحطة"
                     >
                       <Trash2 className="size-3.5" />
@@ -339,50 +324,46 @@ export function StopsManager() {
 
       {/* Add Stop Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#161616] p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <h3 className="font-head text-[16px] font-black text-white">إضافة محطة جديدة للشبكة</h3>
-              <button
-                type="button"
-                onClick={() => setAddModalOpen(false)}
-                className="text-white/40 hover:text-white"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-3xl border border-bone bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-bone pb-4">
+              <h3 className="font-head text-[16px] font-black text-ink">إضافة محطة جديدة للشبكة</h3>
+              <button type="button" onClick={() => setAddModalOpen(false)} className="text-ash hover:text-ink">
                 <X className="size-5" />
               </button>
             </div>
 
             <form onSubmit={handleCreateStop} className="mt-4 space-y-3.5">
               <div>
-                <label className="block text-[11.5px] font-bold text-white/70 mb-1">اسم المحطة بالعربية</label>
+                <label className="block text-[11.5px] font-bold text-carbon mb-1">اسم المحطة بالعربية</label>
                 <input
                   type="text"
                   required
                   value={newAr}
                   onChange={(e) => setNewAr(e.target.value)}
                   placeholder="مثال: روض الفرج"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-hidden"
+                  className="w-full rounded-xl border border-bone bg-white px-3 py-2 text-[13px] text-ink focus:outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block text-[11.5px] font-bold text-white/70 mb-1">اسم المحطة بالإنجليزية</label>
+                <label className="block text-[11.5px] font-bold text-carbon mb-1">اسم المحطة بالإنجليزية</label>
                 <input
                   type="text"
                   value={newEn}
                   onChange={(e) => setNewEn(e.target.value)}
                   placeholder="e.g. Rod El Farag"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-hidden"
+                  className="w-full rounded-xl border border-bone bg-white px-3 py-2 text-[13px] text-ink focus:outline-hidden"
                   dir="ltr"
                 />
               </div>
 
               <div>
-                <label className="block text-[11.5px] font-bold text-white/70 mb-1">الخط التابع له</label>
+                <label className="block text-[11.5px] font-bold text-carbon mb-1">الخط التابع له</label>
                 <select
                   value={newLine}
                   onChange={(e) => setNewLine(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-[#202020] px-3 py-2 text-[12px] font-bold text-white focus:outline-hidden"
+                  className="w-full rounded-xl border border-bone bg-white px-3 py-2 text-[12px] font-bold text-ink focus:outline-hidden"
                 >
                   <option value="L1">المترو — الخط الأول</option>
                   <option value="L2">المترو — الخط الثاني</option>
@@ -395,26 +376,26 @@ export function StopsManager() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-white/70 mb-1">خط العرض (Latitude)</label>
+                  <label className="block text-[11px] font-bold text-carbon mb-1">خط العرض (Latitude)</label>
                   <input
                     type="number"
                     step="any"
                     required
                     value={newLat}
                     onChange={(e) => setNewLat(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white focus:outline-hidden"
+                    className="w-full rounded-xl border border-bone bg-white px-3 py-2 text-[12px] text-ink focus:outline-hidden"
                     dir="ltr"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-white/70 mb-1">خط الطول (Longitude)</label>
+                  <label className="block text-[11px] font-bold text-carbon mb-1">خط الطول (Longitude)</label>
                   <input
                     type="number"
                     step="any"
                     required
                     value={newLng}
                     onChange={(e) => setNewLng(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white focus:outline-hidden"
+                    className="w-full rounded-xl border border-bone bg-white px-3 py-2 text-[12px] text-ink focus:outline-hidden"
                     dir="ltr"
                   />
                 </div>
@@ -428,23 +409,23 @@ export function StopsManager() {
                   onChange={(e) => setNewAccessible(e.target.checked)}
                   className="size-4 rounded accent-interactive"
                 />
-                <label htmlFor="acc" className="text-[12px] text-white/80 cursor-pointer">
+                <label htmlFor="acc" className="text-[12px] text-carbon cursor-pointer">
                   محطة مجهزة لمستخدمي الكراسي المتحركة وذوي الهمم
                 </label>
               </div>
 
-              <div className="mt-5 flex items-center justify-end gap-2 border-t border-white/10 pt-4">
+              <div className="mt-5 flex items-center justify-end gap-2 border-t border-bone pt-4">
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="rounded-xl border border-white/10 px-4 py-2 text-[12px] font-bold text-white/60 hover:bg-white/5"
+                  className="rounded-xl border border-bone px-4 py-2 text-[12px] font-bold text-slateink hover:bg-mist"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-interactive px-5 py-2 text-[12px] font-bold text-white hover:bg-interactive/90"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-ink px-5 py-2 text-[12px] font-bold text-white hover:bg-carbon"
                 >
                   <Check className="size-4" />
                   حفظ المحطة

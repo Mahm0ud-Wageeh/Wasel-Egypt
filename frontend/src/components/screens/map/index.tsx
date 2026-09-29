@@ -39,6 +39,7 @@ import {
 } from "@/data/egyptTransitData";
 import type { NetworkShape, TransitModeFilter } from "@/components/map/InteractiveMap";
 import { fetchPublicRoutes, fetchRouteDetail, fetchVariantGeometry } from "@/api/network";
+import { useLiveTelemetry } from "@/hooks/use-live-telemetry";
 import { cn } from "@/lib/utils";
 
 // Dynamic import: mandatory ssr:false for MapLibre GL
@@ -85,6 +86,9 @@ export default function MapScreen({ navigate }: ScreenProps) {
   const [shapes, setShapes]                   = useState<NetworkShape[]>([]);
   const [loadingShapes, setLoadingShapes]     = useState(false);
   const [apiShapesFailed, setApiShapesFailed] = useState(false);
+
+  // Live vehicles from backend telemetry (polled) — the map's "live" layer.
+  const { vehicles: liveVehicles, count: liveCount, live } = useLiveTelemetry(15000);
 
   // Build local geometry shapes from real LINE_GEOMETRIES (instant, offline-safe)
   const localShapes: NetworkShape[] = Object.entries(LINE_GEOMETRIES)
@@ -161,10 +165,16 @@ export default function MapScreen({ navigate }: ScreenProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-head text-[16px] font-black text-ink">خريطة شبكة النقل القومية</h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald/10 px-2 py-0.5 text-[10px] font-bold text-emerald border border-emerald/20">
-                  <span className="size-1.5 rounded-full bg-emerald animate-pulse" />
-                  تغطية مباشرة
-                </span>
+                {live ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald/10 px-2 py-0.5 text-[10px] font-bold text-emerald border border-emerald/20">
+                    <span className="size-1.5 rounded-full bg-emerald animate-pulse" />
+                    بث حي · <span className="num">{liveCount}</span> مركبة
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-mist px-2 py-0.5 text-[10px] font-bold text-ash border border-bone">
+                    خريطة الشبكة
+                  </span>
+                )}
               </div>
               <p className="text-[11.5px] text-slateink">
                 {EGYPT_STATIONS.length} محطة رسمية • {interchangeCount} تحويلة تبادلية
@@ -207,6 +217,7 @@ export default function MapScreen({ navigate }: ScreenProps) {
           networkShapes={displayedShapes}
           hideSchematic={true}
           modeFilter={activeMode}
+          liveVehicles={liveVehicles}
           onStationSelect={(st) => setSelectedStation(st)}
           onPlanFrom={(st) => navigate("planner", { from: st.name_ar, to: "" })}
           onPlanTo={(st) => navigate("planner", { from: "", to: st.name_ar })}
@@ -222,8 +233,8 @@ export default function MapScreen({ navigate }: ScreenProps) {
             </div>
           ) : (
             <div className="flex items-center gap-2 rounded-2xl border border-bone bg-white/95 px-3.5 py-1.5 text-[11.5px] font-bold text-carbon shadow-lg backdrop-blur-xl pointer-events-auto">
-              <span className="size-2 rounded-full bg-emerald" />
-              <span>شبكة النقل جاهزة وموثقة</span>
+              <span className={cn("size-2 rounded-full", live ? "bg-emerald" : "bg-ash")} />
+              <span>{live ? <>بث حي · <span className="num">{liveCount}</span> مركبة على الشبكة</> : "عرض الشبكة — البث الحي غير متاح"}</span>
             </div>
           )}
         </div>

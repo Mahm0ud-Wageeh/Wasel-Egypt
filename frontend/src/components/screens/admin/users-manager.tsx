@@ -1,10 +1,15 @@
 "use client";
 
+/**
+ * UsersManager — light edition, real data only.
+ * Starts empty; fills from /admin/users; on failure shows an honest error
+ * with retry (never invented users).
+ */
+
 import { useEffect, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import {
-  Users,
   Search,
   Shield,
   ShieldAlert,
@@ -14,7 +19,6 @@ import {
   RefreshCw,
   Edit2,
   Check,
-  AlertTriangle,
   Mail,
   Phone,
 } from "lucide-react";
@@ -33,7 +37,8 @@ interface UserItem {
 
 export function UsersManager() {
   const [users, setUsers] = useState<UserItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -42,33 +47,30 @@ export function UsersManager() {
   const [selectedStatus, setSelectedStatus] = useState("active");
   const [actionLoading, setActionLoading] = useState(false);
 
-  const FALLBACK_USERS: UserItem[] = [
-    { id: 1, name: "م. محمود وجيه", email: "admin@wasel-egypt.com", phone: "+201012345678", status: "active", roles: [{ name: "admin", display_name: "مدير نظام" }], trust_score: 100, created_at: "2026-01-10T12:00:00Z" },
-    { id: 2, name: "أحمد إبراهيم", email: "moderator@wasel-egypt.com", phone: "+201123456789", status: "active", roles: [{ name: "moderator", display_name: "مشرف شبكة" }], trust_score: 95, created_at: "2026-02-15T09:30:00Z" },
-    { id: 3, name: "سارة حسن", email: "sara.hassan@example.com", phone: "+201234567890", status: "active", roles: [{ name: "user", display_name: "راكب موثق" }], trust_score: 88, created_at: "2026-03-01T14:20:00Z" },
-    { id: 4, name: "كريم عبد الرحمن", email: "kareem.abdo@example.com", phone: "+201509876543", status: "suspended", roles: [{ name: "user", display_name: "راكب" }], trust_score: 42, created_at: "2026-03-12T16:45:00Z" },
-  ];
-
   const loadUsers = async () => {
-    setLoading(true);
     try {
       const res = await fetchAdminUsers();
       const list = Array.isArray(res) ? res : res?.data;
-      if (Array.isArray(list) && list.length > 0) {
-        setUsers(list);
-      } else {
-        setUsers(FALLBACK_USERS);
-      }
+      setUsers(Array.isArray(list) ? list : []);
+      setFailed(false);
     } catch {
-      setUsers(FALLBACK_USERS);
+      setFailed(true);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
+    void (async () => {
+      await loadUsers();
+    })();
   }, []);
+
+  const refreshUsers = () => {
+    setLoading(true);
+    loadUsers();
+  };
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -132,7 +134,7 @@ export function UsersManager() {
     const role = roles?.[0]?.name || "user";
     if (role === "admin") {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-purple-400/40 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-300">
+        <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-700">
           <Shield className="size-3" />
           مدير نظام
         </span>
@@ -140,41 +142,58 @@ export function UsersManager() {
     }
     if (role === "moderator") {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+        <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-700">
           <ShieldAlert className="size-3" />
           مشرف
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-white/70">
+      <span className="inline-flex items-center gap-1 rounded-full border border-bone bg-mist px-2 py-0.5 text-[10px] font-bold text-slateink">
         <UserCheck className="size-3" />
         راكب
       </span>
     );
   };
 
+  if (!loading && failed) {
+    return (
+      <div className="rounded-2xl border border-dashed border-bone bg-white px-6 py-14 text-center">
+        <UserX className="mx-auto size-8 text-ash" />
+        <p className="mt-3 font-head text-[15px] font-black text-ink">تعذر تحميل المستخدمين</p>
+        <p className="mt-1 text-[12.5px] text-slateink">الخادم غير متاح حالياً — لا توجد بيانات معروضة.</p>
+        <button
+          type="button"
+          onClick={loadUsers}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-[12px] font-bold text-white hover:bg-carbon"
+        >
+          <RefreshCw className="size-3.5" />
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Search & Filter Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 min-w-[240px]">
-          <Search className="size-4 text-white/40" />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-bone bg-white p-4 shadow-xs">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-bone bg-mist/60 px-3 py-2 min-w-[240px]">
+          <Search className="size-4 text-ash" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="بحث بالاسم، البريد، أو الهاتف…"
-            className="w-full bg-transparent text-[13px] text-white placeholder-white/35 focus:outline-hidden"
+            className="w-full bg-transparent text-[13px] text-ink placeholder-ash focus:outline-hidden"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Role Filter */}
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="rounded-xl border border-white/10 bg-[#161616] px-3 py-2 text-[12px] font-bold text-white focus:outline-hidden"
+            className="rounded-xl border border-bone bg-white px-3 py-2 text-[12px] font-bold text-carbon focus:outline-hidden"
           >
             <option value="all">كل الصلاحيات</option>
             <option value="admin">مدير نظام (Admin)</option>
@@ -182,11 +201,10 @@ export function UsersManager() {
             <option value="user">راكب (User)</option>
           </select>
 
-          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border border-white/10 bg-[#161616] px-3 py-2 text-[12px] font-bold text-white focus:outline-hidden"
+            className="rounded-xl border border-bone bg-white px-3 py-2 text-[12px] font-bold text-carbon focus:outline-hidden"
           >
             <option value="all">كل الحالات</option>
             <option value="active">نشط (Active)</option>
@@ -196,9 +214,9 @@ export function UsersManager() {
 
           <button
             type="button"
-            onClick={loadUsers}
+            onClick={refreshUsers}
             disabled={loading}
-            className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white"
+            className="flex size-9 items-center justify-center rounded-xl border border-bone bg-white text-slateink hover:bg-mist hover:text-ink"
             title="تحديث القائمة"
           >
             <RefreshCw className={cn("size-4", loading && "animate-spin")} />
@@ -207,16 +225,16 @@ export function UsersManager() {
       </div>
 
       {/* Users Count summary */}
-      <div className="flex items-center justify-between text-[12px] text-white/50 px-1">
-        <span>إجمالي المستخدمين المطابقين: <strong className="text-white">{filteredUsers.length}</strong></span>
+      <div className="flex items-center justify-between text-[12px] text-slateink px-1">
+        <span>إجمالي المستخدمين المطابقين: <strong className="text-ink">{loading ? "…" : filteredUsers.length}</strong></span>
         <span>بيانات حية مباشرة من قاعدة البيانات</span>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+      <div className="overflow-x-auto rounded-2xl border border-bone bg-white shadow-xs">
         <table className="w-full border-collapse text-start text-[13px]">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.02] text-start text-[11px] font-bold text-white/40">
+            <tr className="border-b border-bone bg-mist/50 text-start text-[11px] font-bold text-ash">
               <th className="px-4 py-3 text-start">المستخدم</th>
               <th className="px-4 py-3 text-start">الاتصال</th>
               <th className="px-4 py-3 text-start">الصلاحية</th>
@@ -225,11 +243,11 @@ export function UsersManager() {
               <th className="px-4 py-3 text-end">الإجراءات والتحكم</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.06]">
+          <tbody className="divide-y divide-bone">
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-white/40">
-                  {loading ? "جارٍ تحميل قائمة المستخدمين…" : "لم يتم العثور على مستخدمين مطابقين للبحث."}
+                <td colSpan={6} className="px-4 py-12 text-center text-ash">
+                  {loading ? "جارٍ تحميل قائمة المستخدمين…" : "لا يوجد مستخدمون — القائمة فارغة أو لا تطابق البحث."}
                 </td>
               </tr>
             ) : (
@@ -238,28 +256,28 @@ export function UsersManager() {
                 const role = u.roles?.[0]?.name || "user";
 
                 return (
-                  <tr key={u.id} className="hover:bg-white/[0.02] transition">
+                  <tr key={u.id} className="hover:bg-mist/50 transition">
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-interactive/15 text-interactive font-bold font-head text-[13px]">
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-interactive/10 text-interactive font-bold font-head text-[13px]">
                           {u.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-bold text-white">{u.name}</div>
-                          <div className="text-[11px] text-white/40">ID #{u.id}</div>
+                          <div className="font-bold text-ink">{u.name}</div>
+                          <div className="text-[11px] text-ash">ID #{u.id}</div>
                         </div>
                       </div>
                     </td>
 
                     <td className="px-4 py-3.5">
                       <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-[12px] text-white/80" dir="ltr">
-                          <Mail className="size-3 text-white/30" />
+                        <div className="flex items-center gap-1.5 text-[12px] text-carbon" dir="ltr">
+                          <Mail className="size-3 text-ash" />
                           <span>{u.email}</span>
                         </div>
                         {u.phone && (
-                          <div className="flex items-center gap-1.5 text-[11px] text-white/50" dir="ltr">
-                            <Phone className="size-3 text-white/30" />
+                          <div className="flex items-center gap-1.5 text-[11px] text-slateink" dir="ltr">
+                            <Phone className="size-3 text-ash" />
                             <span>{u.phone}</span>
                           </div>
                         )}
@@ -271,7 +289,7 @@ export function UsersManager() {
                         <select
                           value={selectedRole}
                           onChange={(e) => setSelectedRole(e.target.value)}
-                          className="rounded-lg border border-interactive/50 bg-[#1e1e1e] px-2 py-1 text-[11px] font-bold text-white focus:outline-hidden"
+                          className="rounded-lg border border-interactive/50 bg-white px-2 py-1 text-[11px] font-bold text-ink focus:outline-hidden"
                         >
                           <option value="user">راكب (User)</option>
                           <option value="moderator">مشرف (Moderator)</option>
@@ -287,7 +305,7 @@ export function UsersManager() {
                         <select
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
-                          className="rounded-lg border border-interactive/50 bg-[#1e1e1e] px-2 py-1 text-[11px] font-bold text-white focus:outline-hidden"
+                          className="rounded-lg border border-interactive/50 bg-white px-2 py-1 text-[11px] font-bold text-ink focus:outline-hidden"
                         >
                           <option value="active">نشط</option>
                           <option value="suspended">موقوف</option>
@@ -299,13 +317,13 @@ export function UsersManager() {
                             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
                             u.status === "active"
                               ? "bg-emerald/10 text-emerald border border-emerald/20"
-                              : "bg-red-500/10 text-red-400 border border-red-500/20"
+                              : "bg-l2/10 text-l2 border border-l2/20"
                           )}
                         >
                           <span
                             className={cn(
                               "size-1.5 rounded-full",
-                              u.status === "active" ? "bg-emerald animate-pulse" : "bg-red-400"
+                              u.status === "active" ? "bg-emerald animate-pulse" : "bg-l2"
                             )}
                           />
                           {u.status === "active" ? "نشط" : u.status === "suspended" ? "موقوف" : "غير نشط"}
@@ -313,7 +331,7 @@ export function UsersManager() {
                       )}
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11.5px] text-white/40">
+                    <td className="px-4 py-3.5 text-[11.5px] text-slateink">
                       {u.created_at ? new Date(u.created_at).toLocaleDateString("ar-EG") : "—"}
                     </td>
 
@@ -333,7 +351,7 @@ export function UsersManager() {
                             <button
                               type="button"
                               onClick={() => setEditingUserId(null)}
-                              className="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/60 hover:bg-white/5"
+                              className="rounded-lg border border-bone px-2 py-1 text-[11px] text-slateink hover:bg-mist"
                             >
                               إلغاء
                             </button>
@@ -347,7 +365,7 @@ export function UsersManager() {
                                 setSelectedRole(role);
                                 setSelectedStatus(u.status || "active");
                               }}
-                              className="flex size-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.08] hover:text-white"
+                              className="flex size-8 items-center justify-center rounded-lg border border-bone bg-white text-slateink hover:bg-mist hover:text-ink"
                               title="تعديل الصلاحية والحالة"
                             >
                               <Edit2 className="size-3.5" />
@@ -355,7 +373,7 @@ export function UsersManager() {
                             <button
                               type="button"
                               onClick={() => handleDelete(u.id, u.name)}
-                              className="flex size-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                              className="flex size-8 items-center justify-center rounded-lg border border-l2/20 bg-l2/10 text-l2 hover:bg-l2/20"
                               title="حذف المستخدم"
                             >
                               <Trash2 className="size-3.5" />

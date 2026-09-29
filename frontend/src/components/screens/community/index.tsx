@@ -11,24 +11,19 @@ import {
   ThumbsUp,
   ThumbsDown,
   Megaphone,
-  Medal,
   Radio,
   RotateCcw,
   Plus,
-  Users,
-  Timer,
 } from "lucide-react";
 import { PillButton, LineBadge, SectionHead, FilterChip, ScreenShell } from "@/components/kit";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { seeded } from "@/lib/transit-data";
-import { fetchCommunityReports } from "@/api/reports";
+import { fetchCommunityReports, getUserTrust } from "@/api/reports";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   REPORT_LINES,
   SEVERITY_META,
   STATUS_META,
-  TOP_CONTRIBUTORS,
-  MY_TRUST,
   kindMeta,
   lineMeta,
   timeAgoAr,
@@ -101,9 +96,11 @@ function IncidentCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h3 className="text-[14.5px] font-bold text-ink">{inc.titleAr}</h3>
-            <span className="num text-[11px] font-medium text-ash">{timeAgoAr(inc.minutesAgo)}</span>
+            {inc.minutesAgo != null ? (
+              <span className="num text-[11px] font-medium text-ash">{timeAgoAr(inc.minutesAgo)}</span>
+            ) : null}
           </div>
-          <p className="mt-1.5 text-[13px] leading-7 text-slateink">{inc.bodyAr}</p>
+          {inc.bodyAr ? <p className="mt-1.5 text-[13px] leading-7 text-slateink">{inc.bodyAr}</p> : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-bone bg-mist px-3 py-1.5 text-[11.5px] font-bold text-carbon">
@@ -125,10 +122,12 @@ function IncidentCard({
                 {initials}
               </span>
               <span className="text-[12px] font-bold text-carbon">{inc.reporterNameAr}</span>
-              <span className="num inline-flex items-center gap-1 rounded-full bg-emerald/10 px-2 py-0.5 text-[10.5px] font-bold text-emerald">
-                <ShieldCheck className="size-3" aria-hidden="true" />
-                {inc.reporterTrust}
-              </span>
+              {inc.reporterTrust != null ? (
+                <span className="num inline-flex items-center gap-1 rounded-full bg-emerald/10 px-2 py-0.5 text-[10.5px] font-bold text-emerald">
+                  <ShieldCheck className="size-3" aria-hidden="true" />
+                  {inc.reporterTrust}
+                </span>
+              ) : null}
             </span>
 
             {/* votes */}
@@ -174,12 +173,35 @@ function IncidentCard({
 /* --------------------------------- screen ---------------------------------- */
 
 export default function CommunityScreen() {
+  const { user } = useAuth();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [votes, setVotes] = useState<Record<string, Vote | null>>({});
   const [sevFilter, setSevFilter] = useState<Severity | "all">("all");
   const [lineFilter, setLineFilter] = useState<string>("all");
   const [wizardOpen, setWizardOpen] = useState(false);
   const { toast } = useToast();
+  // Real trust score of the logged-in user — badge hidden until loaded.
+  const [myTrust, setMyTrust] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setMyTrust(null);
+      return;
+    }
+    let active = true;
+    getUserTrust(user.id)
+      .then((t: any) => {
+        if (!active) return;
+        const score = t?.score ?? t?.trust_score ?? t?.data?.score;
+        setMyTrust(Number.isFinite(Number(score)) ? Number(score) : null);
+      })
+      .catch(() => {
+        if (active) setMyTrust(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     let active = true;
@@ -189,17 +211,17 @@ export default function CommunityScreen() {
         if (Array.isArray(reports)) {
           const mapped: Incident[] = reports.map((r: any) => ({
             id: `backend-${r.id}`,
-            kind: r.issue_type === "overcrowding" ? "crowd" : r.issue_type === "delay" ? "delay" : "elevator",
+            kind: (r.issue_type === "overcrowding" ? "crowd" : r.issue_type === "delay" ? "delay" : "elevator") as Incident["kind"],
             severity: r.severity || (r.status === "verified" ? "med" : "low"),
             titleAr: r.title_ar || `بلاغ مجتمعي #${r.id}`,
-            bodyAr: r.description || "بلاغ وارد من أحد الركاب على الشبكة.",
-            stationAr: r.location_name || r.station_name || "محطة بالشبكة",
+            bodyAr: r.description || "",
+            stationAr: r.location_name || r.station_name || "—",
             lineId: r.route_id ? `metro-l${r.route_id}` : "metro-l1",
-            minutesAgo: r.created_at ? Math.max(1, Math.round((Date.now() - new Date(r.created_at).getTime()) / 60000)) : 10,
-            reporterNameAr: r.user?.name || "راكب موثق",
-            reporterTrust: 95,
-            confirms: r.confirmations_count || 1,
-            denies: r.denials_count || 0,
+            minutesAgo: r.created_at ? Math.max(1, Math.round((Date.now() - new Date(r.created_at).getTime()) / 60000)) : null,
+            reporterNameAr: r.user?.name || "راكب",
+            reporterTrust: r.user?.trust_score ?? r.trust_score ?? null,
+            confirms: r.confirmations_count ?? 0,
+            denies: r.denials_count ?? 0,
             status: r.status === "resolved" ? "dismissed" : r.status === "verified" ? "verified" : "pending",
             mine: false,
           }));
@@ -261,11 +283,13 @@ export default function CommunityScreen() {
             title="رادار مجتمع الركاب"
             desc="بلاغات فورية من آلاف الركاب عن الازدحام والأعطال والتأخير — موثقة بنقاط الثقة قبل النشر."
           />
-          <span className="mb-1 inline-flex items-center gap-2 rounded-full border border-emerald/25 bg-emerald/10 px-3.5 py-1.5 text-[11.5px] font-bold text-emerald">
-            <ShieldCheck className="size-3.5" aria-hidden="true" />
-            {MY_TRUST.levelAr} — ثقة
-            <span className="num">{MY_TRUST.score}</span>/100
-          </span>
+          {myTrust != null ? (
+            <span className="mb-1 inline-flex items-center gap-2 rounded-full border border-emerald/25 bg-emerald/10 px-3.5 py-1.5 text-[11.5px] font-bold text-emerald">
+              <ShieldCheck className="size-3.5" aria-hidden="true" />
+              ثقة حسابك
+              <span className="num">{myTrust}</span>/100
+            </span>
+          ) : null}
         </div>
 
         {/* live trust strip */}
@@ -362,7 +386,7 @@ export default function CommunityScreen() {
       </section>
 
       {/* -------------------------------- feed --------------------------------- */}
-      <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <section className="mt-6 mx-auto w-full max-w-3xl">
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 font-head text-[16px] font-black text-ink">
@@ -397,44 +421,8 @@ export default function CommunityScreen() {
           )}
         </div>
 
-        {/* --------------------------- contributors --------------------------- */}
-        <aside className="card-mist rounded-3xl p-5 lg:sticky lg:top-24">
-          <h3 className="flex items-center gap-2 font-head text-[14.5px] font-black text-ink">
-            <Medal className="size-4 text-brand" aria-hidden="true" />
-            أعلى المساهمين هذا الأسبوع
-          </h3>
-          <div className="mt-4 space-y-3">
-            {TOP_CONTRIBUTORS.map((c, i) => (
-              <div
-                key={c.id}
-                className="settle-fast flex items-center gap-3 rounded-2xl border border-bone bg-white p-3 hover:border-cloud"
-              >
-                <span className="num w-4 text-center text-[13px] font-extrabold text-fog">{i + 1}</span>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-bone bg-mist text-[10.5px] font-bold text-carbon">
-                  {c.initialsAr}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-bold text-ink">{c.nameAr}</span>
-                  <span className="mt-0.5 flex items-center gap-1 text-[10.5px] font-bold text-brand">
-                    <Medal className="size-3" aria-hidden="true" />
-                    {c.badgeAr}
-                  </span>
-                </span>
-                <span className="num text-[13px] font-extrabold text-onyx">
-                  {c.points.toLocaleString("en-US")}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 flex items-start gap-2 text-[11px] leading-5 text-ash">
-            <Users className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            النقاط تُمنح لتأكيد البلاغات الصحيحة وتُخصم عند البلاغات الكاذبة.
-          </p>
-          <p className="mt-2 flex items-start gap-2 text-[11px] leading-5 text-ash">
-            <Timer className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            متوسط التحقق المجتمعي أقل من {stats.avgVerifyMin} دقائق.
-          </p>
-        </aside>
+        {/* Contributors leaderboard has no backend source — hidden entirely
+            rather than showing invented names and scores. */}
       </section>
 
       {/* ------------------------------- wizard -------------------------------- */}

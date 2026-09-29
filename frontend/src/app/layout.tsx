@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Cairo, Tajawal, Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -58,7 +59,13 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <script
+        {/* Browser-extension artifact cleanup (e.g. `bis_skin_checked`).
+            Must use next/script: raw <script> tags inside Server Components
+            are never executed on the client in Next 16 (Turbopack) and raise
+            "Encountered a script tag while rendering React component". */}
+        <Script
+          id="bis-skin-cleanup"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

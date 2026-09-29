@@ -115,6 +115,19 @@ interface Props {
   modeFilter?: 'all' | 'metro' | 'lrt' | 'monorail' | 'brt' | 'train'
   /** v2.0: enable 52° 3D pitch view */
   pitch3D?: boolean
+  /** Live vehicles from backend telemetry (/telemetry/live). Rendered as a
+   *  colored dot layer; empty array (or backend outage) draws nothing. */
+  liveVehicles?: Array<{
+    id: string
+    lat: number
+    lng: number
+    color?: string
+    line?: string
+    headsign?: string
+    speed_kmh?: number
+    next_stop?: string
+    mode?: string
+  }>
 }
 
 const STORAGE_KEY = 'wasel.map.layer'
@@ -327,6 +340,7 @@ export default function InteractiveMap({
   t,
   modeFilter: modeFilterProp = 'all',
   pitch3D: pitch3DProp = false,
+  liveVehicles = [],
 }: Props) {
   const tt = t ?? ((ar: string, _en: string) => ar)
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -937,6 +951,41 @@ export default function InteractiveMap({
         })
       }
 
+      // 5. Live vehicles from backend telemetry (colored dots, above lines).
+      // Drawn only when the backend actually returned vehicles.
+      const liveFeats: any[] = (liveVehicles ?? [])
+        .filter((v) => Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng)) && matchesMapMode(v.mode, modeFilter))
+        .map((v) => ({
+          type: 'Feature',
+          properties: {
+            id: v.id,
+            color: v.color || '#1D4ED8',
+            line: v.line || '',
+            headsign: v.headsign || '',
+            speed: v.speed_kmh ?? null,
+            next_stop: v.next_stop || '',
+          },
+          geometry: { type: 'Point', coordinates: [Number(v.lng), Number(v.lat)] },
+        }))
+      if (liveFeats.length > 0) {
+        map.addSource('live-vehicles', { type: 'geojson', data: { type: 'FeatureCollection', features: liveFeats } })
+        map.addLayer({
+          id: 'live-vehicles-halo', type: 'circle', source: 'live-vehicles',
+          paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 16, 13],
+            'circle-color': ['get', 'color'], 'circle-opacity': 0.25,
+          } as any,
+        })
+        map.addLayer({
+          id: 'live-vehicles-dot', type: 'circle', source: 'live-vehicles',
+          paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 16, 7.5],
+            'circle-color': ['get', 'color'],
+            'circle-stroke-width': 2, 'circle-stroke-color': MAP_LAYER_COLORS.white,
+          } as any,
+        })
+      }
+
       // Deviation marker (severity-colored)
       if (deviation && Number.isFinite(Number(deviation.lat)) && Number.isFinite(Number(deviation.lng))) {
         map.addSource('deviation', {
@@ -952,7 +1001,7 @@ export default function InteractiveMap({
       console.error('Map layer render error:', (e as Error)?.message)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapLoaded, itinerary, alternatives, origin, destination, stops, userLocation, deviation, currentLegIndex, highlightStop, stopsLayerOn, nearby, effectiveLayer, isDarkBase, activeRouteCoords, legOpacity, modeFilter, activeLineId, networkShapes, hideSchematic])
+  }, [mapLoaded, itinerary, alternatives, origin, destination, stops, userLocation, deviation, currentLegIndex, highlightStop, stopsLayerOn, nearby, effectiveLayer, isDarkBase, activeRouteCoords, legOpacity, modeFilter, activeLineId, networkShapes, hideSchematic, liveVehicles])
 
   // ── Camera fit: only when plotted data genuinely changes (fitKey), never on cosmetic re-renders ──
   const fitPoints = useMemo(() => {

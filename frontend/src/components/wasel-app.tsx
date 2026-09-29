@@ -6,6 +6,7 @@ import { TopHeader } from "@/components/layout/top-header";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SlimFooter } from "@/components/layout/slim-footer";
 import FloatingHub from "@/components/floating-hub";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   isScreenKey,
   type NavigateFn,
@@ -96,23 +97,33 @@ const HIDE_HEADER: ScreenKey[] = ["auth", "welcome", "admin"];
 const HIDE_FOOTER: ScreenKey[] = ["welcome", "auth", "admin", "map"];
 
 export default function WaselApp() {
-  const [currentRoute, setCurrentRoute] = useState<string>(() => {
-    if (typeof window === "undefined") return "/";
-    const hash = window.location.hash;
-    if (hash && hash !== "#" && hash !== "#/") {
-      return hash.replace(/^#\/?/, "/") + (window.location.search || "");
-    }
-    return (window.location.pathname || "/") + (window.location.search || "");
-  });
+  // Hydration-safe routing: server and the very first client render must agree.
+  // Initializing from `window.location` directly inside useState causes the
+  // server (always "/") to render a different shell (e.g. home + header) than
+  // the client (e.g. /auth without header) → "Hydration failed" + the whole
+  // tree regenerates. So start from "/" everywhere and sync after mount.
+  const [mounted, setMounted] = useState(false);
+  const [currentRoute, setCurrentRoute] = useState<string>("/");
 
   useEffect(() => {
+    const readRoute = () => {
+      const hash = window.location.hash;
+      if (hash && hash !== "#" && hash !== "#/") {
+        return hash.replace(/^#\/?/, "/") + (window.location.search || "");
+      }
+      return (window.location.pathname || "/") + (window.location.search || "");
+    };
+
     // Automatically sanitize any legacy hash '#' from the URL bar to a clean HTML5 path:
-    if (typeof window !== "undefined" && window.location.hash && window.location.hash !== "#" && window.location.hash !== "#/") {
+    if (window.location.hash && window.location.hash !== "#" && window.location.hash !== "#/") {
       const cleanPath = window.location.hash.replace(/^#\/?/, "/") || "/";
       const fullUrl = cleanPath + (window.location.search || "");
       window.history.replaceState(null, "", fullUrl);
       setCurrentRoute(fullUrl);
+    } else {
+      setCurrentRoute(readRoute());
     }
+    setMounted(true);
 
     const handlePopState = () => {
       const rawPath =
@@ -142,10 +153,41 @@ export default function WaselApp() {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
+  // ── Separate the two worlds ──
+  // Admins live only inside /admin (dedicated command center, no user chrome).
+  // Everyone else can never enter /admin. Runs after mount + auth resolve so
+  // the server/first-client render stays identical (no hydration flash).
+  const { isAdmin, isLoggedIn, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!mounted || authLoading) return;
+    if (key === "admin") {
+      if (!isLoggedIn) navigate("auth");
+      else if (!isAdmin) navigate("home");
+    } else if (isLoggedIn && isAdmin) {
+      navigate("admin");
+    }
+  }, [mounted, authLoading, isLoggedIn, isAdmin, key, navigate]);
+
   const Current = SCREEN_COMPONENTS[key] || HomeScreen;
 
+  // Until mounted, render a stable shell identical on server + client so
+  // React hydration never sees header-vs-main mismatch. Matches the loading
+  // fallback in src/app/page.tsx.
+  if (!mounted) {
+    return (
+      <div
+        suppressHydrationWarning
+        className="flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-white"
+      >
+        <span suppressHydrationWarning className="mono-tag">
+          واصل مصر — جاري الاتصال بالشبكة…
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-white" suppressHydrationWarning>
       {HIDE_HEADER.includes(key) ? null : (
         <TopHeader current={key} navigate={navigate} />
       )}

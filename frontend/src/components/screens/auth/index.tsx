@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import type { ScreenProps } from "@/lib/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchNetworkStats } from "@/api/network";
 import {
   ArrowLeft,
   ArrowRight,
@@ -104,7 +105,7 @@ type Mode = "login" | "register";
 type Step = "form" | "success";
 
 export default function AuthScreen({ navigate, params }: ScreenProps) {
-  const { login, register, isLoggedIn } = useAuth();
+  const { login, register, isLoggedIn, isAdmin } = useAuth();
   const [mode, setMode] = useState<Mode>(params.mode === "register" ? "register" : "login");
   const [step, setStep] = useState<Step>("form");
 
@@ -119,25 +120,50 @@ export default function AuthScreen({ navigate, params }: ScreenProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
 
+  // Real network counters for the visual side — hidden entirely if the
+  // backend is unreachable (never invented numbers).
+  const [netStats, setNetStats] = useState<Array<{ v: string; l: string }> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchNetworkStats()
+      .then((s: any) => {
+        if (cancelled) return;
+        const d = s?.data ?? s;
+        const rows: Array<{ v: string; l: string }> = [];
+        if (d?.routes != null) rows.push({ v: String(d.routes), l: "خط نشط" });
+        if (d?.stops != null) rows.push({ v: Number(d.stops).toLocaleString("en-US"), l: "محطة" });
+        if (d?.mode_count != null) rows.push({ v: String(d.mode_count), l: "وسائل نقل" });
+        if (d?.operators != null) rows.push({ v: String(d.operators), l: "مشغّل" });
+        setNetStats(rows.length > 0 ? rows : null);
+      })
+      .catch(() => {
+        if (!cancelled) setNetStats(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /* sync mode when deep-linked via params */
   useEffect(() => {
     if (params.mode === "register") setMode("register");
     else if (params.mode === "login") setMode("login");
   }, [params.mode]);
 
-  /* if already logged in, redirect home */
+  /* if already logged in, admins go straight to the command center,
+     regular users go home — the two worlds never mix */
   useEffect(() => {
     if (isLoggedIn && step !== "success") {
-      navigate("home");
+      navigate(isAdmin ? "admin" : "home");
     }
-  }, [isLoggedIn, navigate, step]);
+  }, [isLoggedIn, isAdmin, navigate, step]);
 
-  /* success → enter the network */
+  /* success → enter: admins land directly on the dashboard */
   useEffect(() => {
     if (step !== "success") return;
-    const t = setTimeout(() => navigate("home"), 1200);
+    const t = setTimeout(() => navigate(isAdmin ? "admin" : "home"), 1200);
     return () => clearTimeout(t);
-  }, [step, navigate]);
+  }, [step, navigate, isAdmin]);
 
   const submitLogin = async () => {
     const next: Record<string, string> = {};
@@ -262,19 +288,16 @@ export default function AuthScreen({ navigate, params }: ScreenProps) {
         </div>
 
         <div className="relative space-y-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { v: "8", l: "خطوط نشطة" },
-              { v: "94", l: "محطة مترابطة" },
-              { v: "3.9M", l: "ركاب يوميًا" },
-              { v: "94.6%", l: "انتظام الشبكة" },
-            ].map((s) => (
-              <div key={s.l}>
-                <div className="num text-[24px] font-extrabold text-white">{s.v}</div>
-                <div className="mt-1 text-[12px] font-medium text-white/45">{s.l}</div>
-              </div>
-            ))}
-          </div>
+          {netStats && netStats.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {netStats.map((s) => (
+                <div key={s.l}>
+                  <div className="num text-[24px] font-extrabold text-white">{s.v}</div>
+                  <div className="mt-1 text-[12px] font-medium text-white/45">{s.l}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[12.5px] font-bold text-white/80">
               <ShieldCheck className="size-4 text-emerald" />
@@ -510,7 +533,7 @@ export default function AuthScreen({ navigate, params }: ScreenProps) {
               </span>
               <h3 className="mt-6 font-head text-[21px] font-black text-ink">تم تسجيل الدخول بنجاح</h3>
               <p className="mt-2 text-[13.5px] leading-7 text-slateink">
-                مرحبًا بك على متن واصل مصر — جارٍ تحويلك إلى الرئيسية…
+                {isAdmin ? "مرحبًا بك في مركز القيادة — جارٍ تحويلك إلى لوحة التحكم…" : "مرحبًا بك على متن واصل مصر — جارٍ تحويلك إلى الرئيسية…"}
               </p>
             </div>
           ) : null}

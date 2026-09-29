@@ -6,20 +6,16 @@
  * pass + subscription passes + payment rails.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ShieldCheck,
   RotateCcw,
   ArrowLeftRight,
   Clock,
   Calculator,
-  GraduationCap,
-  BadgePercent,
-  CircleCheck,
   Wallet,
   CreditCard,
   Banknote,
-  Ticket,
   MapPin,
 } from "lucide-react";
 import {
@@ -39,20 +35,19 @@ import {
   FilterChip,
   ScreenShell,
 } from "@/components/kit";
-import { LINES, METRO_FARE_TIERS, formatEGP } from "@/lib/transit-data";
-import { useToast } from "@/hooks/use-toast";
+import { LINES } from "@/lib/transit-data";
 import { cn } from "@/lib/utils";
 import {
   FARE_TIERS,
   FARE_STATIONS,
-  PASS_PRODUCTS,
   PAYMENT_METHODS,
   stationsBetween,
-  tierForStations,
   rideMinutes,
   type FareStation,
 } from "./data";
 import { SmartPassCard } from "./pass-card";
+import { apiRequest } from "@/api/client";
+import { endpoints } from "@/api/endpoints";
 
 const METRO_LINES = LINES.filter((l) => l.mode === "metro");
 const lineBy = (id: string) => METRO_LINES.find((l) => l.id === id)!;
@@ -121,33 +116,65 @@ function StationItem({ station }: { station: FareStation }) {
 }
 
 /* ------------------------------- Fare result ------------------------------- */
+/* Price ALWAYS comes from the backend tariff (prop) — never static. */
 
-function FareResult({ stations }: { stations: number | null }) {
-  const tier = stations !== null ? tierForStations(stations) : null;
+function FareResult({
+  stations,
+  price,
+  bracketLabel,
+  priceStatus,
+  loading,
+}: {
+  stations: number | null;
+  price: number | null;
+  bracketLabel: string | null;
+  priceStatus: string | null;
+  loading: boolean;
+}) {
   return (
     <div className="settle-fast rounded-3xl border border-bone bg-mist p-6 md:p-7">
-      {stations === null || tier === null ? (
+      {stations === null ? (
         <div className="flex min-h-[132px] flex-col items-center justify-center gap-2 text-center">
           <Calculator className="size-6 text-fog" aria-hidden="true" />
           <p className="text-[13.5px] font-medium text-slateink">
             اختر محطتي الانطلاق والوصول لحساب الأجرة
           </p>
         </div>
+      ) : loading ? (
+        <div className="flex min-h-[132px] flex-col items-center justify-center gap-2 text-center">
+          <Calculator className="size-6 animate-pulse text-fog" aria-hidden="true" />
+          <p className="text-[13.5px] font-medium text-slateink">جارٍ جلب السعر المعتمد من الخادم…</p>
+        </div>
+      ) : price === null ? (
+        <div className="flex min-h-[132px] flex-col items-center justify-center gap-2 text-center">
+          <Calculator className="size-6 text-fog" aria-hidden="true" />
+          <p className="text-[13.5px] font-bold text-ink">تعذر حساب الأجرة</p>
+          <p className="text-[12px] font-medium text-slateink">أسعار الخادم غير متاحة حالياً — حاول لاحقاً.</p>
+        </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-5">
           <div>
             <p className="text-[11.5px] font-bold text-slateink">الأجرة المستحقة</p>
             <p className="num mt-1 text-[46px] font-extrabold leading-none tracking-tight text-onyx md:text-[56px]">
-              {tier.fare.toFixed(2)}
+              {price.toFixed(2)}
               <span className="ms-2 align-middle text-[15px] font-bold text-ash">EGP</span>
             </p>
+            {priceStatus === "real" ? (
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-emerald/30 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700">
+                سعر رسمي معتمد
+              </p>
+            ) : (
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-brt/30 bg-brt/10 px-2 py-0.5 text-[10.5px] font-bold text-brt">
+                سعر تقديري — بانتظار التوثيق
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-start gap-2.5 sm:items-end">
             <StatusPill tone="info">
               <MapPin aria-hidden="true" />
               <span className="num">{stations}</span> محطة مقطوعة
             </StatusPill>
-            <span className="text-[12.5px] font-medium text-slateink">{tier.labelAr}</span>
+            {bracketLabel ? <span className="text-[12.5px] font-medium text-slateink">{bracketLabel}</span> : null}
             <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-carbon">
               <Clock className="size-3.5 text-interactive" aria-hidden="true" />
               زمن تقريبي
@@ -166,14 +193,42 @@ function FareResult({ stations }: { stations: number | null }) {
 export default function FaresScreen() {
   const [fromId, setFromId] = useState(DEFAULT_FROM);
   const [toId, setToId] = useState(DEFAULT_TO);
-  const { toast } = useToast();
+
+  // Backend tariff — the ONLY price source. Static tiers supply bracket
+  // boundaries (structure), never amounts.
+  const [backendFares, setBackendFares] = useState<any[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    apiRequest<any>(endpoints.public.fares, { method: "GET", auth: false })
+      .then((res) => {
+        if (cancelled) return;
+        const list = res?.data ?? res;
+        setBackendFares(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!cancelled) setBackendFares([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const metroFares = useMemo(
+    () =>
+      (backendFares ?? [])
+        .filter((f: any) => f?.transit_mode?.name === "metro" || f?.mode_name === "مترو الأنفاق")
+        .sort((a: any, b: any) => Number(a.amount) - Number(b.amount)),
+    [backendFares]
+  );
+  const faresLoading = backendFares === null;
 
   const stations = useMemo(() => stationsBetween(fromId, toId), [fromId, toId]);
-  const activeTierId = stations !== null ? tierForStations(stations).id : null;
+  const bracketIndex = stations !== null ? FARE_TIERS.findIndex((t) => stations >= t.min && stations <= t.max) : -1;
   const fromStation = useMemo(() => FARE_STATIONS.find((s) => s.id === fromId), [fromId]);
   const toStation = useMemo(() => FARE_STATIONS.find((s) => s.id === toId), [toId]);
-  const tier = stations !== null ? tierForStations(stations) : null;
-  const fare = tier ? tier.fare : 8;
+  const backendRow = bracketIndex >= 0 && bracketIndex < metroFares.length ? metroFares[bracketIndex] : null;
+  const fare: number | null = backendRow ? Number(backendRow.amount) : null;
+  const fareStatus: string | null = backendRow?.data_status ?? null;
 
   const swap = () => {
     setFromId(toId);
@@ -183,13 +238,6 @@ export default function FaresScreen() {
   const reset = () => {
     setFromId(DEFAULT_FROM);
     setToId(DEFAULT_TO);
-  };
-
-  const subscribe = (nameAr: string, price: number) => {
-    toast({
-      title: `تم اختيار ${nameAr}`,
-      description: `القيمة ${price} ج.م — أكمل الدفع من كارت واصل أو المحفظة الإلكترونية.`,
-    });
   };
 
   return (
@@ -204,7 +252,11 @@ export default function FaresScreen() {
           />
           <StatusPill tone="ontime" className="mb-1">
             <ShieldCheck aria-hidden="true" />
-            مصدر: مصلحة أنفاق القاهرة الكبرى — مصفوفة أكتوبر 2024
+            {faresLoading
+              ? "جارٍ جلب التعريفة المعتمدة…"
+              : metroFares.length > 0
+              ? `الأسعار المعتمدة بالخادم · ${metroFares.length} شريحة`
+              : "لا توجد أسعار معتمدة بالخادم حالياً"}
           </StatusPill>
         </div>
       </section>
@@ -246,104 +298,116 @@ export default function FaresScreen() {
           </div>
 
           <div className="mt-5">
-            <FareResult stations={stations} />
+            <FareResult
+              stations={stations}
+              price={fare}
+              bracketLabel={backendRow?.label ?? (bracketIndex >= 0 ? FARE_TIERS[bracketIndex].labelAr : null)}
+              priceStatus={fareStatus}
+              loading={faresLoading}
+            />
           </div>
 
           <p className="mt-4 flex items-start gap-2 text-[11.5px] leading-5 text-ash">
             <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            الحساب يعتمد على أقصر مسار بين المحطتين مع احتساب التبادل بين الخطوط — تسعيرة أكتوبر
-            2024 الرسمية المعتمدة.
+            الحساب يعتمد على أقصر مسار بين المحطتين — والسعر من التعريفة المعتمدة بالخادم لحظة الحساب.
           </p>
         </div>
       </section>
 
       {/* --------------------------- Official matrix -------------------------- */}
-      <section className="mt-14 md:mt-20">
-        <SectionHead
-          tag="FARE BRACKETS"
-          title="مصفوفة أجور المترو الرسمية"
-          desc="أربع شرائح مسافة تغطي كل خطوط المترو الثلاثة — تُخصم الأجرة تلقائياً عند العبور بكارت واصل."
-        />
+      {/* Backend tariff rows only — hidden when the server has none. */}
+      {faresLoading ? (
+        <section className="mt-14 md:mt-20" aria-label="مصفوفة الأجور">
+          <SectionHead
+            tag="FARE BRACKETS"
+            title="مصفوفة أجور المترو المعتمدة"
+            desc="جارٍ جلب التعريفة المعتمدة من الخادم…"
+          />
+          <div className="mt-7 animate-pulse rounded-3xl border border-bone bg-mist/50 h-48" />
+        </section>
+      ) : metroFares.length > 0 ? (
+        <section className="mt-14 md:mt-20">
+          <SectionHead
+            tag="FARE BRACKETS"
+            title="مصفوفة أجور المترو المعتمدة"
+            desc="الأسعار المعتمدة بالخادم — أي تعديل إداري ينعكس هنا فوراً."
+          />
 
-        <div className="mt-7 overflow-hidden rounded-3xl border border-bone">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse text-start">
-              <thead>
-                <tr className="bg-mist text-[11.5px] font-bold text-slateink">
-                  <th className="px-5 py-3.5 text-start font-bold">شريحة المحطات</th>
-                  <th className="px-5 py-3.5 text-start font-bold">الأجرة للرحلة الواحدة</th>
-                  <th className="px-5 py-3.5 text-start font-bold">نطاق الاستخدام</th>
-                </tr>
-              </thead>
-              <tbody>
-                {FARE_TIERS.map((t, i) => {
-                  const active = t.id === activeTierId;
-                  return (
-                    <tr
-                      key={t.id}
-                      className={cn(
-                        "settle-fast border-t border-bone transition-colors",
-                        active ? "bg-interactive/[0.07]" : "bg-white hover:bg-mist/60"
-                      )}
-                    >
-                      <td className="px-5 py-4">
-                        <span className="flex items-center gap-2.5">
-                          <span
-                            className={cn(
-                              "num flex size-7 items-center justify-center rounded-full text-[11px] font-bold",
-                              active ? "bg-interactive text-white" : "bg-mist text-carbon border border-bone"
-                            )}
-                          >
-                            {i + 1}
-                          </span>
-                          <span className="flex flex-col">
+          <div className="mt-7 overflow-hidden rounded-3xl border border-bone">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-start">
+                <thead>
+                  <tr className="bg-mist text-[11.5px] font-bold text-slateink">
+                    <th className="px-5 py-3.5 text-start font-bold">الشريحة</th>
+                    <th className="px-5 py-3.5 text-start font-bold">الأجرة للرحلة الواحدة</th>
+                    <th className="px-5 py-3.5 text-start font-bold">حالة الاعتماد</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metroFares.map((f: any, i: number) => {
+                    const active = bracketIndex === i;
+                    const real = f.data_status === "real" || f.data_status === "verified";
+                    return (
+                      <tr
+                        key={f.id ?? i}
+                        className={cn(
+                          "settle-fast border-t border-bone transition-colors",
+                          active ? "bg-interactive/[0.07]" : "bg-white hover:bg-mist/60"
+                        )}
+                      >
+                        <td className="px-5 py-4">
+                          <span className="flex items-center gap-2.5">
+                            <span
+                              className={cn(
+                                "num flex size-7 items-center justify-center rounded-full text-[11px] font-bold",
+                                active ? "bg-interactive text-white" : "bg-mist text-carbon border border-bone"
+                              )}
+                            >
+                              {i + 1}
+                            </span>
                             <span className={cn("text-[13.5px] font-bold", active ? "text-interactive" : "text-ink")}>
-                              {t.labelAr}
+                              {f.label || `شريحة ${i + 1}`}
                             </span>
-                            <span className="num text-[10.5px] font-medium text-ash">
-                              {METRO_FARE_TIERS[i].stations} stations
-                            </span>
+                            {active ? (
+                              <span className="rounded-full bg-interactive px-2 py-0.5 text-[10px] font-bold text-white">
+                                شريحتك
+                              </span>
+                            ) : null}
                           </span>
-                          {active ? (
-                            <span className="rounded-full bg-interactive px-2 py-0.5 text-[10px] font-bold text-white">
-                              شريحتك
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={cn("num text-[17px] font-extrabold", active ? "text-interactive" : "text-onyx")}>
+                            {Number(f.amount).toFixed(2)}
+                          </span>
+                          <span className="ms-1 text-[11px] font-bold text-ash">ج.م</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          {real ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald/30 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700">
+                              رسمي معتمد
                             </span>
-                          ) : null}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={cn("num text-[17px] font-extrabold", active ? "text-interactive" : "text-onyx")}>
-                          {t.fare.toFixed(2)}
-                        </span>
-                        <span className="ms-1 text-[11px] font-bold text-ash">ج.م</span>
-                      </td>
-                      <td className="px-5 py-4 text-[12.5px] font-medium text-slateink">{t.scopeAr}</td>
-                    </tr>
-                  );
-                })}
-                <tr className="border-t border-bone bg-mist/70">
-                  <td colSpan={3} className="px-5 py-3.5">
-                    <span className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11.5px] font-medium text-slateink">
-                      <span className="inline-flex items-center gap-1.5">
-                        <GraduationCap className="size-3.5 text-brand" aria-hidden="true" />
-                        طلاب المدارس والجامعات: خصم 50% على الاشتراكات
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <BadgePercent className="size-3.5 text-emerald" aria-hidden="true" />
-                        ذوو الهمم: إعفاء مجاني وفق السياسات الرسمية
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Ticket className="size-3.5 text-ash" aria-hidden="true" />
-                        LRT والمونوريل: تعريفة مناطق مستقلة عن مصفوفة المترو
-                      </span>
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-brt/30 bg-brt/10 px-2 py-0.5 text-[10.5px] font-bold text-brt">
+                              تقديرية — بانتظار التوثيق
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="mt-14 md:mt-20" aria-label="مصفوفة الأجور">
+          <div className="rounded-3xl border border-dashed border-bone bg-white px-6 py-10 text-center">
+            <p className="text-[13.5px] font-bold text-ink">لا توجد أسعار معتمدة بالخادم حالياً</p>
+            <p className="mt-1 text-[12px] text-slateink">لن تُعرض أي أسعار غير موثقة — حاول لاحقاً.</p>
+          </div>
+        </section>
+      )}
 
       {/* ------------------------------ Smart pass ---------------------------- */}
       <section className="mt-14 md:mt-20">
@@ -356,51 +420,13 @@ export default function FaresScreen() {
           <SmartPassCard
             calculatedOrigin={fromStation?.nameAr}
             calculatedDest={toStation?.nameAr}
-            calculatedFare={fare}
+            calculatedFare={fare ?? undefined}
           />
         </div>
       </section>
 
-      {/* ----------------------------- Passes grid ---------------------------- */}
-      <section className="mt-14 md:mt-20">
-        <SectionHead
-          tag="SUBSCRIPTIONS"
-          title="الاشتراكات والبطاقات الدورية"
-          desc="اشتراك بلا حدود بين المحطات أرخص من تذكرة لكل رحلة — اختر ما يناسب إيقاع يومك."
-        />
-        <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {PASS_PRODUCTS.map((p) => (
-            <article key={p.id} className="card-flat settle-fast relative flex flex-col rounded-3xl p-6 hover:border-cloud">
-              {p.badgeAr ? (
-                <span className="absolute end-5 top-5 rounded-full bg-brand/10 px-2.5 py-1 text-[10.5px] font-bold text-brand">
-                  {p.badgeAr}
-                </span>
-              ) : null}
-              <h3 className="font-head text-[16px] font-black text-ink">{p.nameAr}</h3>
-              <p className="mt-1 text-[11.5px] font-medium text-ash">{p.periodAr}</p>
-              <p className="num mt-4 text-[34px] font-extrabold leading-none tracking-tight text-onyx">
-                {p.price}
-                <span className="ms-1.5 align-middle text-[12px] font-bold text-ash">ج.م</span>
-              </p>
-              <ul className="mt-4 flex-1 space-y-2.5">
-                {p.perksAr.map((perk) => (
-                  <li key={perk} className="flex items-start gap-2 text-[12.5px] leading-6 text-carbon">
-                    <CircleCheck className="mt-1 size-3.5 shrink-0 text-emerald" aria-hidden="true" />
-                    {perk}
-                  </li>
-                ))}
-              </ul>
-              <PillButton
-                variant={p.id === "monthly" ? "dark" : "mist"}
-                className="mt-5 w-full"
-                onClick={() => subscribe(p.nameAr, p.price)}
-              >
-                اشترِ الآن
-              </PillButton>
-            </article>
-          ))}
-        </div>
-      </section>
+      {/* Subscription products have no backend source — hidden entirely
+          rather than showing invented prices. */}
 
       {/* ---------------------------- Payment rails --------------------------- */}
       <section className="mt-14 md:mt-20">

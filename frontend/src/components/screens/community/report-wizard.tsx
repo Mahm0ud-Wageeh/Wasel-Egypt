@@ -103,7 +103,7 @@ function WizardFlow({
       denies: 0,
       status: "pending",
       reporterNameAr: "أنت",
-      reporterTrust: 98,
+      reporterTrust: null,
       mine: true,
     };
     onSubmit(draft);
@@ -115,12 +115,20 @@ function WizardFlow({
       latitude: 30.0444,
       longitude: 31.2357,
       station_name: stationAr,
-    }).catch(() => {});
-
-    toast({
-      title: "تم إرسال بلاغك بنجاح",
-      description: "سيظهر في الصف قيد التحقق حتى يؤكده ركاب آخرون. شكراً لمساهمتك.",
-    });
+    })
+      .then(() => {
+        toast({
+          title: "تم إرسال بلاغك بنجاح",
+          description: "سيظهر في الصف قيد التحقق حتى يؤكده ركاب آخرون. شكراً لمساهمتك.",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "تعذر إرسال البلاغ للخادم",
+          description: "تحقق من الاتصال وحاول مجدداً — البلاغ الحالي معروض محلياً فقط.",
+          variant: "destructive",
+        });
+      });
   };
 
   return (

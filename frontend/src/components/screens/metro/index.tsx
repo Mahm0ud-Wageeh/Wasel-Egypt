@@ -101,14 +101,6 @@ const METRO_LINES: MetroLine[] = [
   },
 ];
 
-/** fare bands per station count (official Oct-2024) */
-const FARE_BANDS_AR = [
-  "1 – 9 محطات: 8 ج.م",
-  "10 – 16 محطة: 10 ج.م",
-  "17 – 23 محطة: 15 ج.م",
-  "24 محطة وأكثر: 20 ج.م",
-];
-
 /* ------------------------------ tube diagram ------------------------------ */
 
 function TubeDiagram({ line }: { line: MetroLine }) {
@@ -376,25 +368,17 @@ export default function MetroScreen({ navigate }: ScreenProps) {
                 <span>تردد ما بعد الذروة</span>
                 <span className="num text-ink">{active.headwayOff > 0 ? `كل ${active.headwayOff} دقائق` : "—"}</span>
               </li>
-              <li className="flex items-center justify-between">
-                <span>طاقة استيعابية/قطار</span>
-                <span className="num text-ink">1,200 راكب</span>
-              </li>
             </ul>
           </div>
           <div className="card-mist p-5">
             <div className="mb-3 flex items-center gap-2">
               <Coins className="size-4 text-ash" />
-              <h3 className="font-head text-[14px] font-black text-ink">شرائح الأجرة الرسمية</h3>
+              <h3 className="font-head text-[14px] font-black text-ink">شرائح الأجرة المعتمدة</h3>
             </div>
-            <ul className="space-y-2 text-[12.5px] font-semibold text-carbon">
-              {FARE_BANDS_AR.map((b) => (
-                <li key={b} className="flex items-center gap-2">
-                  <span className="size-1.5 rounded-full" style={{ backgroundColor: active.color }} />
-                  {b}
-                </li>
-              ))}
-            </ul>
+            {/* Prices live in the backend tariff — never hardcoded here. */}
+            <p className="text-[12.5px] leading-6 text-slateink">
+              الأسعار المعتمدة بالخادم محدثة لحظياً من إدارة التعريفة — احسب أجرتك بالمحطات من الحاسبة الرسمية.
+            </p>
             <PillButton variant="mist" size="sm" className="mt-4" onClick={() => navigate("fares")}>
               حاسبة الأجرة الكاملة
               <ArrowLeft className="size-3.5" />

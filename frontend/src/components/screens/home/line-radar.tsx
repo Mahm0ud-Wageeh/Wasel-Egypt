@@ -2,14 +2,14 @@
 
 /**
  * Home — live line status radar.
- * Fetches real service alerts from /service-alerts/active.
- * Falls back to static RADAR_LINES when API unavailable.
+ * Line identities are static reference; every STATUS comes from real
+ * /service-alerts/active data. No invented headways or sparklines.
  */
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, RefreshCw } from "lucide-react";
 import { LineBadge, StatusPill } from "@/components/kit";
-import { LINE_STATUS_LABEL, seeded, type LineStatus } from "@/lib/transit-data";
+import { LINE_STATUS_LABEL, type LineStatus } from "@/lib/transit-data";
 import type { ScreenKey } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { RADAR_LINES } from "./data";
@@ -31,28 +31,6 @@ function statusTone(status: LineStatus): "ontime" | "delay" | "info" {
   return "info";
 }
 
-function Sparkline({ seedBase, color }: { seedBase: number; color: string }) {
-  const points = Array.from({ length: 8 }, (_, i) => {
-    const v = seeded(seedBase + i * 13);
-    const x = i * (72 / 7);
-    const y = 20.5 - v * 16.5;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
-  return (
-    <svg viewBox="0 0 72 24" className="h-6 w-14 shrink-0" aria-hidden="true">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.85"
-      />
-    </svg>
-  );
-}
-
 /** Map backend alert severity/type → line status */
 function alertToStatus(alert: any): LineStatus {
   const sev = (alert.severity ?? alert.level ?? "").toLowerCase();
@@ -69,9 +47,9 @@ export function LineRadar({
   onNavigate: (key: ScreenKey) => void;
   className?: string;
 }) {
-  const [seed, setSeed] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   /** Overlay real alert statuses on the static radar lines */
   const radarLines = RADAR_LINES.map((line) => {
@@ -89,6 +67,7 @@ export function LineRadar({
   const loadAlerts = async () => {
     const data = await fetchActiveAlerts();
     setAlerts(data);
+    setLoaded(true);
   };
 
   // Load on mount
@@ -100,7 +79,6 @@ export function LineRadar({
     if (refreshing) return;
     setRefreshing(true);
     loadAlerts().finally(() => {
-      setSeed((s) => s + 1);
       window.setTimeout(() => setRefreshing(false), 500);
     });
   };
@@ -138,9 +116,11 @@ export function LineRadar({
                 <div className="h-6 w-24 animate-pulse rounded-full bg-mercury" />
               </div>
             ))
-          : radarLines.map((line, index) => {
-              const jitter = Math.floor(seeded(seed * 17 + index * 131) * 3);
-              const headway = line.baseHeadway + jitter;
+          : radarLines.map((line) => {
+              const affecting = alerts.find((alert) => {
+                const routeCode = (alert.route?.short_name ?? alert.route_code ?? "").toUpperCase();
+                return routeCode === line.code || alert.line_code === line.code;
+              });
               return (
                 <button
                   key={line.id}
@@ -154,10 +134,13 @@ export function LineRadar({
                       {line.nameAr}
                     </span>
                     <span className="block text-[10.5px] text-ash">
-                      كل <span className="num font-bold">{headway}</span> د
+                      {affecting
+                        ? affecting.header_text || affecting.title || "تنبيه نشط على الخط"
+                        : loaded
+                        ? "يعمل بدون تنبيهات معلنة"
+                        : "جارٍ فحص الحالة…"}
                     </span>
                   </span>
-                  <Sparkline seedBase={seed * 100 + index * 17} color={line.color} />
                   <StatusPill tone={statusTone(line.status)} className="shrink-0">
                     <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                     {LINE_STATUS_LABEL[line.status]}
