@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const frontendRoot = path.resolve(here, '..')
-const laravelPublicRoot = path.resolve(frontendRoot, '..', 'public')
+const laravelPublicRoot = path.resolve(frontendRoot, '..', 'backend', 'public')
 const require = createRequire(path.join(frontendRoot, 'package.json'))
 const distDir = path.dirname(require.resolve('maplibre-gl/package.json')) + '/dist'
 

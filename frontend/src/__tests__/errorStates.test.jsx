@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import { JourneySearchPage } from '../legacy-pages/JourneySearch'
+import { JourneySearchPage } from '../features/journey/JourneySearch'
 import { ApiError } from '../api/client'
 import * as journeyApi from '../api/journeys'
 import * as placesApi from '../api/places'
@@ -102,7 +102,7 @@ describe('Journey Error States', () => {
   })
 
   it('renders honest empty state with adjust search action on JourneyResults', async () => {
-    const { JourneyResultsPage } = await import('../legacy-pages/JourneyResults')
+    const { JourneyResultsPage } = await import('../features/journey/JourneyResults')
     renderWithProviders(<JourneyResultsPage />, {
       route: '/journeys/results',
       journeyState: {
@@ -138,7 +138,7 @@ describe('Journey Error States', () => {
     vi.spyOn(activeApi, 'getJourneyDeviations').mockResolvedValue([])
     vi.spyOn(activeApi, 'listRecoveryOptions').mockResolvedValue({ data: [] })
 
-    const { default: Deviation } = await import('../legacy-pages/Deviation')
+    const { default: Deviation } = await import('../features/journey/Deviation')
     renderWithProviders(<Deviation />, {
       route: '/active-journeys/99/deviation',
       authState: { isAuthenticated: true, user: { id: 1 } },

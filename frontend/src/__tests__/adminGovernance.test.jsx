@@ -1,9 +1,9 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import AdminData from '../legacy-pages/AdminData'
-import AdminStopTimes from '../legacy-pages/AdminStopTimes'
-import AdminGeometry from '../legacy-pages/AdminGeometry'
+import AdminData from '../features/admin/pages/AdminDataPage'
+import AdminStopTimes from '../features/admin/pages/AdminStopTimesPage'
+import AdminGeometry from '../features/admin/pages/AdminGeometryPage'
 import * as client from '../api/client'
 import { renderWithProviders } from '../test/test-utils'
 

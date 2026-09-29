@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const outDir = path.resolve(__dirname, '../out')
-const laravelPublicDir = path.resolve(__dirname, '../../public')
+const laravelPublicDir = path.resolve(__dirname, '../../backend/public')
 
 if (!fs.existsSync(outDir)) {
   console.error('[publish] out/ folder does not exist. Run next build first.')

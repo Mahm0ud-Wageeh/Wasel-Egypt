@@ -55,3 +55,34 @@ gui-test-screenshots/
 fronttest/.env*
 old-front/
 backups/
+
+# TypeScript build info (local artifact)
+*.tsbuildinfo
+
+# Backend lives in backend/ — dependencies regenerate via composer install
+backend/vendor/
+backend/.phpunit.result.cache
+
+# Backend storage: OSRM dataset (2.7GB), GTFS download cache, logs,
+# sessions, compiled views — never commit; regenerated / re-downloaded
+backend/storage/app/osrm/
+backend/storage/app/gtfs-sources/
+backend/storage/app/osm-sources/
+backend/storage/app/private/
+backend/storage/logs/*
+!backend/storage/logs/.gitignore
+backend/storage/framework/cache/*
+!backend/storage/framework/cache/.gitignore
+backend/storage/framework/sessions/*
+!backend/storage/framework/sessions/.gitignore
+backend/storage/framework/views/*
+!backend/storage/framework/views/.gitignore
+backend/storage/framework/testing/*
+
+# Published static frontend (regenerate: frontend build + publish:laravel)
+# Keep only Laravel's entry files.
+backend/public/*
+!backend/public/index.php
+!backend/public/.htaccess
+!backend/public/robots.txt
+!backend/public/favicon.ico
