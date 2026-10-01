@@ -45,11 +45,21 @@ export interface ApiDeparture {
   color?: string
 }
 
-export async function fetchStops(params?: { limit?: number; page?: number; area_id?: number }): Promise<{ data: ApiStop[]; meta?: any }> {
+export async function fetchStops(params?: {
+  limit?: number
+  page?: number
+  area_id?: number
+  lat?: number
+  lng?: number
+  radius?: number
+}): Promise<{ data: ApiStop[]; meta?: any }> {
   const query = new URLSearchParams()
   if (params?.limit) query.set('per_page', String(params.limit))
   if (params?.page) query.set('page', String(params.page))
   if (params?.area_id) query.set('area_id', String(params.area_id))
+  if (Number.isFinite(params?.lat)) query.set('lat', String(params.lat))
+  if (Number.isFinite(params?.lng)) query.set('lng', String(params.lng))
+  if (Number.isFinite(params?.radius)) query.set('radius', String(params.radius))
   
   const url = `${endpoints.stops.list}?${query.toString()}`
   return apiRequest<{ data: ApiStop[]; meta?: any }>(url, { auth: false })

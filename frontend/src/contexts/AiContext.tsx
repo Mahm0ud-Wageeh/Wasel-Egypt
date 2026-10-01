@@ -2,11 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { apiRequest } from '../api/client'
 import { endpoints } from '../api/endpoints'
 import { useAuth } from './AuthContext'
+import { buildAiChatPayload } from '../ai/aiPayload'
+import { ensureJourneyAction, normalizeAiAction } from '../ai/aiActions'
+import { isScreenKey } from '../lib/navigation'
 export type Lang = 'ar' | 'en'
 export type Screen = string
 
 export interface AiAction {
-  action: string
+  type?: string
+  action?: string
   params?: Record<string, any>
   label_ar?: string
   label_en?: string
@@ -40,7 +44,8 @@ interface AiContextType {
   createNewSession: (initialTitle?: string) => string
   switchSession: (sessionId: string) => void
   deleteSession: (sessionId: string) => void
-  sendMessage: (text: string, lang: Lang, coords?: { lat: number; lng: number }) => Promise<void>
+  sendMessage: (text: string, lang: Lang, coords?: { lat: number; lng: number }) => Promise<AiAction[]>
+  resendLastMessage: (lang: Lang, coords?: { lat: number; lng: number }) => Promise<void>
   clearCurrentChat: () => void
   executeAction: (action: AiAction, nav: (s: Screen) => void) => void
 }
@@ -170,8 +175,11 @@ export const AiProvider: React.FC<{
   }, [activeSessionId])
 
   // Server-validated client action executor
-  const executeAction = useCallback((action: AiAction, nav: (s: Screen) => void) => {
-    if (action.screen) {
+  const executeAction = useCallback((rawAction: AiAction, nav: (s: Screen, params?: Record<string, string>) => void) => {
+    const action = normalizeAiAction(rawAction)
+    if (!action) return
+
+    if (action.screen && isScreenKey(action.screen)) {
       nav(action.screen)
     }
 
@@ -182,7 +190,10 @@ export const AiProvider: React.FC<{
         if (onPrefillPlanner && (from || to)) {
           onPrefillPlanner(from, to)
         }
-        nav('planner')
+        nav('planner', {
+          ...(from ? { from: String(from) } : {}),
+          ...(to ? { to: String(to) } : {}),
+        })
         break
       }
       case 'set_origin':
@@ -192,9 +203,34 @@ export const AiProvider: React.FC<{
           if (action.action === 'set_origin') onPrefillPlanner(name, '')
           else onPrefillPlanner('', name)
         }
-        nav('planner')
+        nav('planner', action.action === 'set_origin' ? { from: String(name) } : { to: String(name) })
         break
       }
+      case 'set_departure_time': {
+        const iso = action.params?.iso
+        nav('planner', iso ? { departure_time: String(iso) } : undefined)
+        break
+      }
+      case 'search_routes':
+        nav('planner', action.params?.query ? { query: String(action.params.query) } : undefined)
+        break
+      case 'open_route':
+      case 'open_stop':
+      case 'show_nearby_transit':
+      case 'show_nearby_stops':
+      case 'get_live_eta':
+      case 'get_next_stop':
+        nav('map')
+        break
+      case 'open_active_journey':
+        nav('journey-active')
+        break
+      case 'show_saved_journeys':
+        nav('history')
+        break
+      case 'open_notifications':
+        nav('notifications')
+        break
       case 'focus_map_location': {
         const { latitude, longitude, zoom } = action.params || {}
         if (latitude && longitude) {
@@ -204,7 +240,7 @@ export const AiProvider: React.FC<{
             })
           )
         }
-        nav('network')
+        nav('map')
         break
       }
       case 'switch_map_layer': {
@@ -220,17 +256,17 @@ export const AiProvider: React.FC<{
       }
       case 'toggle_3d': {
         window.dispatchEvent(new CustomEvent('wasel:map-command', { detail: { type: 'toggle_3d' } }))
-        nav('network')
+        nav('map')
         break
       }
       case 'show_nearby_stops': {
         window.dispatchEvent(new CustomEvent('wasel:map-command', { detail: { type: 'nearby_on' } }))
-        nav('network')
+        nav('map')
         break
       }
       case 'locate_me': {
         window.dispatchEvent(new CustomEvent('wasel:map-command', { detail: { type: 'locate_me' } }))
-        nav('network')
+        nav('map')
         break
       }
       case 'show_route_on_map': {
@@ -243,7 +279,7 @@ export const AiProvider: React.FC<{
             })
           )
         }
-        nav('network')
+        nav('map')
         break
       }
       case 'open_metro':
@@ -254,7 +290,7 @@ export const AiProvider: React.FC<{
         nav('fares')
         break
       case 'open_network':
-        nav('network')
+        nav('map')
         break
       case 'show_alerts':
         nav('notifications')
@@ -275,7 +311,7 @@ export const AiProvider: React.FC<{
     lang: Lang,
     coords?: { lat: number; lng: number }
   ) => {
-    if (!text.trim()) return
+    if (!text.trim()) return []
 
     const userMsg: ChatMessage = {
       id: `msg_${Date.now()}_u`,
@@ -283,6 +319,10 @@ export const AiProvider: React.FC<{
       content: text,
       timestamp: Date.now(),
     }
+
+    const conversationMessages = [...(activeSession?.messages || []), userMsg]
+      .filter((message): message is ChatMessage & { role: 'user' | 'assistant' } => message.role !== 'system')
+      .slice(-12)
 
     // Append user message & update title if first message
     setSessions(prev =>
@@ -304,15 +344,6 @@ export const AiProvider: React.FC<{
 
     try {
       // 1. Send to Laravel AI Backend with Geolocation Context
-      const payload: Record<string, any> = {
-        message: text,
-        lang,
-      }
-      if (coords?.lat && coords?.lng) {
-        payload.latitude = coords.lat
-        payload.longitude = coords.lng
-      }
-
       const res = await apiRequest<{
         reply?: string
         message?: string
@@ -320,16 +351,17 @@ export const AiProvider: React.FC<{
         data?: any
       }>(endpoints.ai.chat, {
         method: 'POST',
-        body: payload,
+        body: buildAiChatPayload(conversationMessages, lang, coords),
         auth: false,
       })
 
+      const responseActions = ensureJourneyAction(res.actions || [], text)
       const replyContent = res.reply || res.message || ''
       const assistantMsg: ChatMessage = {
         id: `msg_${Date.now()}_a`,
         role: 'assistant',
         content: replyContent,
-        actions: res.actions || [],
+        actions: responseActions,
         structuredData: res.data,
         timestamp: Date.now(),
       }
@@ -342,6 +374,7 @@ export const AiProvider: React.FC<{
         )
       )
       setStatus('online')
+      return responseActions
     } catch {
       // Backend unreachable: be honest — never invent routes, fares, or
       // network facts. The user can retry when connectivity returns.
@@ -365,8 +398,16 @@ export const AiProvider: React.FC<{
             : s
         )
       )
+      return []
     } finally {
       setIsTyping(false)
+    }
+  }
+
+  const resendLastMessage = async (lang: Lang, coords?: { lat: number; lng: number }) => {
+    const lastUserMessage = [...messages].reverse().find((message) => message.role === 'user')
+    if (lastUserMessage) {
+      await sendMessage(lastUserMessage.content, lang, coords)
     }
   }
 
@@ -382,6 +423,7 @@ export const AiProvider: React.FC<{
         switchSession,
         deleteSession,
         sendMessage,
+        resendLastMessage,
         clearCurrentChat,
         executeAction,
       }}

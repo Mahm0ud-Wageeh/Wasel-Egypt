@@ -7,10 +7,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Sparkles, X, Route, MapPin, Bell, Ticket, Headset, Loader2, Send, Mic, MicOff } from "lucide-react";
+import { Sparkles, X, Route, MapPin, Bell, Ticket, Headset, Loader2, Send, Mic, MicOff, Plus, Trash2, RotateCcw } from "lucide-react";
 import type { NavigateFn, ScreenKey } from "@/lib/navigation";
 import { useAi } from "@/contexts/AiContext";
 import { toast } from "@/hooks/use-toast";
+import { useUIStore } from "@/store/useUIStore";
 
 export default function FloatingHub({
   navigate,
@@ -20,16 +21,20 @@ export default function FloatingHub({
   current: ScreenKey;
 }) {
   const [open, setOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const chatDrawerState = useUIStore((s) => s.drawers.chat.state);
+  const openDrawer = useUIStore((s) => s.openDrawer);
+  const closeDrawer = useUIStore((s) => s.closeDrawer);
+  const chatOpen = chatDrawerState === "open" || chatDrawerState === "opening";
+
   const [message, setMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  const { messages, isTyping, sendMessage, executeAction } = useAi();
+  const { messages, isTyping, sendMessage, resendLastMessage, createNewSession, clearCurrentChat, executeAction } = useAi();
 
   const ACTIONS: { label: string; icon: typeof Route; onClick: () => void }[] = [
-    { label: "المساعد الذكي", icon: Sparkles, onClick: () => setChatOpen(true) },
+    { label: "المساعد الذكي", icon: Sparkles, onClick: () => openDrawer("chat") },
     { label: "خطط رحلة", icon: Route, onClick: () => navigate("planner") },
     { label: "أقرب محطة", icon: MapPin, onClick: () => navigate("map") },
     { label: "التنبيهات", icon: Bell, onClick: () => navigate("notifications") },
@@ -41,7 +46,11 @@ export default function FloatingHub({
     const text = message.trim();
     if (!text || isTyping) return;
     setMessage("");
-    await sendMessage(text, "ar");
+    const actions = await sendMessage(text, "ar");
+    const journeyAction = actions.find((action) => action.type === "plan_journey" || action.action === "plan_journey");
+    const openPlannerAction = actions.find((action) => action.type === "open_planner" || action.action === "open_planner");
+    if (journeyAction) executeAction(journeyAction, navigate);
+    else if (openPlannerAction) executeAction(openPlannerAction, navigate);
   };
 
   const toggleVoice = () => {
@@ -81,7 +90,10 @@ export default function FloatingHub({
         const transcript = event.results[0][0].transcript;
         if (transcript) {
           setMessage(transcript);
-          sendMessage(transcript, "ar");
+          sendMessage(transcript, "ar").then((actions) => {
+            const journeyAction = actions.find((action) => action.type === "plan_journey" || action.action === "plan_journey");
+            if (journeyAction) executeAction(journeyAction, navigate);
+          });
         }
         setIsListening(false);
       };
@@ -122,13 +134,17 @@ export default function FloatingHub({
                 <div className="text-[10px] text-white/60">ذكاء اصطناعي صوتي ونصي لشبكة النقل</div>
               </div>
             </div>
-            <button
-              onClick={() => setChatOpen(false)}
-              className="cursor-pointer rounded-full p-1.5 hover:bg-white/10"
-              aria-label="إغلاق المساعد"
-            >
-              <X className="size-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => createNewSession()} className="cursor-pointer rounded-full p-1.5 hover:bg-white/10" aria-label="محادثة جديدة" title="محادثة جديدة">
+                <Plus className="size-4" />
+              </button>
+              <button onClick={clearCurrentChat} disabled={!messages.length || isTyping} className="cursor-pointer rounded-full p-1.5 hover:bg-white/10 disabled:opacity-40" aria-label="مسح المحادثة" title="مسح المحادثة">
+                <Trash2 className="size-4" />
+              </button>
+              <button onClick={() => closeDrawer("chat")} className="cursor-pointer rounded-full p-1.5 hover:bg-white/10" aria-label="إغلاق المساعد">
+                <X className="size-4" />
+              </button>
+            </div>
           </div>
 
           {/* messages container */}
@@ -160,7 +176,7 @@ export default function FloatingHub({
                         onClick={() => executeAction(act, navigate)}
                         className="rounded-full bg-interactive/10 px-2.5 py-1 text-[11px] font-bold text-interactive hover:bg-interactive/20"
                       >
-                        {act.label_ar || act.action}
+                        {act.label_ar || act.label_en || act.action || act.type}
                       </button>
                     ))}
                   </div>
@@ -178,6 +194,18 @@ export default function FloatingHub({
 
           {/* input bar with voice button */}
           <div className="flex items-center gap-2 border-t border-bone bg-white p-3">
+            {messages.some((entry) => entry.role === "user") ? (
+              <button
+                type="button"
+                onClick={() => resendLastMessage("ar")}
+                disabled={isTyping}
+                className="flex size-10 cursor-pointer items-center justify-center rounded-full bg-mist text-slateink hover:bg-bone hover:text-ink disabled:opacity-40"
+                title="إعادة إرسال آخر رسالة"
+                aria-label="إعادة إرسال آخر رسالة"
+              >
+                <RotateCcw className="size-4" />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={toggleVoice}

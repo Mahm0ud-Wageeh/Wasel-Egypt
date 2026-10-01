@@ -15,14 +15,29 @@ import { cn } from "@/lib/utils";
 
 export function DeparturesBoard({ className }: { className?: string }) {
   const [stopName, setStopName] = useState<string | null>(null);
-  const [rows, setRows] = useState<ApiDeparture[] | null>(null);
+  const [rows, setRows] = useState<ApiDeparture[]>([]);
+  const [state, setState] = useState<"loading" | "ready" | "empty" | "unavailable">("loading");
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
+      setState("loading");
       try {
-        const stopsRes = await fetchStops({ limit: 10 });
+        const position = await new Promise<GeolocationPosition | null>((resolve) => {
+          if (!navigator.geolocation) return resolve(null);
+          navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
+            enableHighAccuracy: false,
+            maximumAge: 300000,
+            timeout: 2500,
+          });
+        });
+        const stopsRes = await fetchStops(position ? {
+          limit: 30,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          radius: 2000,
+        } : { limit: 50 });
         const stops = Array.isArray(stopsRes?.data) ? stopsRes.data : [];
         for (const s of stops) {
           try {
@@ -36,15 +51,22 @@ export function DeparturesBoard({ className }: { className?: string }) {
               if (cancelled) return;
               setStopName(getStopDisplayName(s));
               setRows(list.slice(0, 4));
+              setState("ready");
               return;
             }
           } catch {
             /* try next stop */
           }
         }
-        if (!cancelled) setRows([]);
+        if (!cancelled) {
+          setRows([]);
+          setState("empty");
+        }
       } catch {
-        if (!cancelled) setRows(null);
+        if (!cancelled) {
+          setRows([]);
+          setState("unavailable");
+        }
       }
     };
 
@@ -55,10 +77,6 @@ export function DeparturesBoard({ className }: { className?: string }) {
       window.clearInterval(iv);
     };
   }, []);
-
-  // Loading → skeleton shimmer; failed/empty → hide the board completely.
-  if (rows === null) return null;
-  if (rows.length === 0) return null;
 
   return (
     <div className={cn("glass overflow-hidden rounded-3xl", className)}>
@@ -71,8 +89,21 @@ export function DeparturesBoard({ className }: { className?: string }) {
         <p className="mt-0.5 text-[11.5px] text-ash">من {stopName ?? "محطة الشبكة"}</p>
       </div>
 
-      <div className="divide-y divide-bone">
-        {rows.map((row, index) => (
+      {state === "loading" ? (
+        <div className="px-5 py-8 text-center text-[12px] text-ash" role="status">
+          جارٍ تحميل أقرب المغادرات…
+        </div>
+      ) : state === "unavailable" ? (
+        <div className="px-5 py-8 text-center text-[12px] text-ash" role="status">
+          تعذر الاتصال ببيانات المغادرات الآن.
+        </div>
+      ) : state === "empty" ? (
+        <div className="px-5 py-8 text-center text-[12px] text-ash" role="status">
+          لا توجد مغادرات قادمة في المحطات القريبة حاليًا.
+        </div>
+      ) : (
+        <div className="divide-y divide-bone">
+          {rows.map((row, index) => (
           <div key={`${row.route_short_name}-${row.headsign}-${index}`} className="flex items-center gap-3 px-5 py-3">
             <LineBadge code={row.route_short_name ?? "—"} color={row.color ?? "#1D4ED8"} size="sm" />
             <p className="min-w-0 flex-1 truncate text-[12.5px] font-bold text-carbon">
@@ -96,8 +127,9 @@ export function DeparturesBoard({ className }: { className?: string }) {
               )}
             </span>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <p className="border-t border-bone bg-white/60 px-5 py-2.5 text-[10.5px] text-ash">
         مواعيد حية من جداول التشغيل بالخادم
