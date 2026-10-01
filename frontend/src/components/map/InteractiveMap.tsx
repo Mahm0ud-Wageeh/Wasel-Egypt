@@ -10,7 +10,7 @@ import { ModeIcon, MAP_LAYER_COLORS } from '../icons'
 import StopPanel from './StopPanel'
 
 export type BasemapType = 'streets' | 'satellite' | 'dark'
-export type TransitModeFilter = 'all' | 'metro' | 'lrt' | 'monorail' | 'train' | 'brt'
+export type TransitModeFilter = 'all' | 'metro' | 'lrt' | 'monorail' | 'train' | 'brt' | 'bus' | 'microbus'
 
 /** Satellite reference tiles include dense place and road labels, so only draw
  * them when the rider explicitly asks for that level of detail. */
@@ -70,6 +70,7 @@ export interface NetworkShape {
   color: string
   mode?: string
   name?: string
+  lineId?: string
 }
 
 interface Props {
@@ -347,6 +348,8 @@ export default function InteractiveMap({
   const mapRef = useRef<MapLibreMap | null>(null)
   const userMarkerRef = useRef<Marker | null>(null)
   const userMarkerElRef = useRef<HTMLDivElement | null>(null)
+  const puckFrameRef = useRef<number | null>(null)
+  const puckPositionRef = useRef<{ lat: number; lng: number } | null>(null)
   const stationMarkersRef = useRef<Marker[]>([])
 
   // v2.0: When darkMode=true (MapScreen v2), default to dark basemap
@@ -492,13 +495,40 @@ export default function InteractiveMap({
 
     const onMapReady = () => {
       if (disposed) return
-      setMapLoaded(true)
       try {
+        try {
+          if (!map.getSource('openfreemap')) {
+            map.addSource('openfreemap', {
+              type: 'vector',
+              tiles: ['https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf'],
+              minzoom: 0,
+              maxzoom: 14,
+            } as any)
+          }
+          if (!map.getLayer('3d-buildings')) {
+            map.addLayer({
+              id: '3d-buildings',
+              type: 'fill-extrusion',
+              source: 'openfreemap',
+              'source-layer': 'building',
+              minzoom: 15.5,
+              paint: {
+                'fill-extrusion-color': '#8094a1',
+                'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
+                'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+                'fill-extrusion-opacity': 0.46,
+                'fill-extrusion-vertical-gradient': true,
+              },
+            } as any)
+          }
+        } catch { /* optional vector buildings must never block the base map */ }
         setZoomLevel(Math.round(map.getZoom()))
         map.resize()
+        setMapLoaded(true)
       } catch { /* ignore */ }
     }
     map.on('load', onMapReady)
+    map.on('style.load', onMapReady)
     if (map.loaded() || map.isStyleLoaded()) {
       onMapReady()
     }
@@ -652,12 +682,12 @@ export default function InteractiveMap({
     const clearDynamic = () => {
       try {
         const style = map.getStyle()
-        const keep = ['background', 'bm-satellite-layer', 'bm-sat-labels-layer', 'bm-sat-roads-layer', 'bm-streets-layer', 'bm-dark-layer']
+        const keep = ['background', 'bm-satellite-layer', 'bm-sat-labels-layer', 'bm-sat-roads-layer', 'bm-streets-layer', 'bm-dark-layer', '3d-buildings']
         ;(style?.layers ?? [])
           .filter((l: any) => !keep.includes(l.id))
           .forEach((l: any) => { if (map.getLayer(l.id)) map.removeLayer(l.id) })
         Object.keys(style?.sources ?? {})
-          .filter((id) => !['bm-satellite', 'bm-sat-labels', 'bm-sat-roads', 'bm-streets', 'bm-dark'].includes(id))
+          .filter((id) => !['openfreemap', 'bm-satellite', 'bm-sat-labels', 'bm-sat-roads', 'bm-streets', 'bm-dark'].includes(id))
           .forEach((id) => { try { if (map.getSource(id)) map.removeSource(id) } catch { /* ignore */ } })
       } catch { /* ignore */ }
     }
@@ -702,6 +732,23 @@ export default function InteractiveMap({
         paint: { 'line-color': MAP_LAYER_COLORS.white, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 7, 16, 11], 'line-opacity': 0.85 } as any,
         filter: ['all', ['==', ['get', 'legType'], 'transit'], ['!=', ['get', 'isEstimated'], true]],
       })
+      if (kind === 'selected') {
+        map.addLayer({
+          id: `${sourceId}-glow`, type: 'line', source: sourceId,
+          layout: { 'line-join': 'round', 'line-cap': 'round' } as any,
+          paint: {
+            'line-color': ['match', ['get', 'mode'],
+              'metro', modeColors.metro, 'bus', modeColors.bus, 'minibus', modeColors.minibus,
+              'microbus', modeColors.microbus, 'rail', modeColors.rail, 'train', modeColors.train,
+              'lrt', modeColors.lrt, 'monorail', modeColors.monorail, 'brt', modeColors.brt,
+              modeColors.bus],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 10, 16, 16],
+            'line-opacity': 0.24,
+            'line-blur': 3,
+          } as any,
+          filter: ['all', ['==', ['get', 'legType'], 'transit'], ['!=', ['get', 'isEstimated'], true]],
+        })
+      }
       map.addLayer({
         id: `${sourceId}-transit`, type: 'line', source: sourceId,
         layout: { 'line-join': 'round', 'line-cap': 'round' } as any,
@@ -1101,6 +1148,12 @@ export default function InteractiveMap({
       return
     }
 
+    const target = { lat: Number(userLocation.lat), lng: Number(userLocation.lng) }
+    if (!Number.isFinite(target.lat) || !Number.isFinite(target.lng)) return
+    const start = puckPositionRef.current ?? target
+    const startedAt = performance.now()
+    if (puckFrameRef.current) cancelAnimationFrame(puckFrameRef.current)
+
     if (!userMarkerRef.current) {
       const wrapper = document.createElement('div')
       wrapper.className = 'navigation-puck-wrapper pointer-events-none'
@@ -1108,17 +1161,32 @@ export default function InteractiveMap({
       userMarkerElRef.current = wrapper
       try {
         userMarkerRef.current = new Marker({ element: wrapper })
-          .setLngLat([Number(userLocation.lng), Number(userLocation.lat)])
+          .setLngLat([target.lng, target.lat])
           .addTo(map)
       } catch { /* ignore */ }
-    } else {
-      try { userMarkerRef.current.setLngLat([Number(userLocation.lng), Number(userLocation.lat)]) } catch { /* ignore */ }
     }
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / (navigationMode ? 650 : 400))
+      const eased = 1 - ((1 - progress) ** 3)
+      const position = {
+        lat: start.lat + ((target.lat - start.lat) * eased),
+        lng: start.lng + ((target.lng - start.lng) * eased),
+      }
+      puckPositionRef.current = position
+      try { userMarkerRef.current?.setLngLat([position.lng, position.lat]) } catch { /* ignore */ }
+      if (progress < 1) puckFrameRef.current = requestAnimationFrame(tick)
+    }
+    puckFrameRef.current = requestAnimationFrame(tick)
 
     if (userMarkerElRef.current && userHeading != null && Number.isFinite(Number(userHeading))) {
       userMarkerElRef.current.style.transform = `rotate(${Number(userHeading)}deg)`
     }
-  }, [userLocation, userHeading, mapLoaded])
+    return () => {
+      if (puckFrameRef.current) cancelAnimationFrame(puckFrameRef.current)
+      puckFrameRef.current = null
+    }
+  }, [userLocation, userHeading, mapLoaded, navigationMode])
 
   // ── Follow-me ──
   useEffect(() => {
@@ -1133,7 +1201,7 @@ export default function InteractiveMap({
       if (navigationMode) {
         if (!hasInitialFitRef.current) {
           hasInitialFitRef.current = true
-          map.flyTo({ center: [uLng, uLat], zoom: 16.5, duration: 900 })
+          map.flyTo({ center: [uLng, uLat], zoom: 17.5, pitch: 55, bearing: Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0, offset: [0, 120], duration: 1200 })
           return
         }
         const offsetDist = Number(userSpeed) > 6 ? 45 : 24
@@ -1141,7 +1209,7 @@ export default function InteractiveMap({
         map.easeTo({
           center: [fLng, fLat],
           bearing: headingUp && Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0,
-          pitch: pitch3D ? 38 : 0,
+          pitch: pitch3D || navigationMode ? 55 : 0,
           zoom: Number(userSpeed) > 10 ? 15.2 : Number(userSpeed) > 2.5 ? 16.4 : 17.4,
           duration: 800,
         })
@@ -1229,6 +1297,17 @@ export default function InteractiveMap({
     } catch { /* ignore */ }
   }, [userLocation, origin, navigationMode, userHeading, userSpeed, headingUp, pitch3D, fitPoints])
 
+  const routeOverview = useCallback(() => {
+    const map = mapRef.current
+    if (!map || fitPoints.length === 0) return
+    try {
+      const bounds = new LngLatBounds()
+      fitPoints.forEach((point) => bounds.extend(point))
+      map.fitBounds(bounds, { padding: 72, maxZoom: 15.5, pitch: 0, bearing: 0, duration: 850 })
+      setDisplaced(true)
+    } catch { /* ignore an interrupted overview animation */ }
+  }, [fitPoints])
+
   if (mapFailed) {
     return (
       <div className={`relative overflow-hidden flex items-center justify-center bg-neutral-200 ${className}`} role="img" aria-label={tt('الخريطة غير متاحة', 'Map unavailable')}>
@@ -1309,6 +1388,17 @@ export default function InteractiveMap({
               }`}
             >
               <Info size={18} />
+            </button>
+          )}
+
+          {hasRouteData && (
+            <button
+              onClick={routeOverview}
+              title={tt('نظرة عامة على المسار', 'Route overview')}
+              aria-label={tt('نظرة عامة على المسار', 'Route overview')}
+              className="w-10 h-10 bg-white/95 hover:bg-white text-neutral-800 rounded-2xl shadow-md flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            >
+              <MapIcon size={18} />
             </button>
           )}
 

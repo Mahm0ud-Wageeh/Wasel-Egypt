@@ -300,3 +300,47 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Journey cockpit: the map stays dominant while navigation information
+   remains legible over bright satellite imagery and narrow screens. */
+.app-shell__page--cockpit { min-height: 100dvh; padding: 0; }
+.cockpit { position: relative; min-height: 100dvh; overflow: hidden; background: #101418; }
+.cockpit__map { position: absolute; inset: 0; }
+.cockpit__map .map-panel { height: 100% !important; border-radius: 0 !important; }
+.cockpit__topbar, .cockpit__chips, .cockpit__nav-overlay, .cockpit__deviation-chip { position: absolute; z-index: 5; }
+.cockpit__topbar { inset: 16px 16px auto; display: flex; align-items: center; gap: 10px; color: #fff; pointer-events: none; }
+.cockpit__topbar > * { pointer-events: auto; }
+.cockpit__back, .cockpit__panel-close { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; background: rgba(16,20,24,.78); color: #fff; backdrop-filter: blur(12px); }
+.cockpit__title { min-width: 0; padding: 8px 12px; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; background: rgba(16,20,24,.78); backdrop-filter: blur(12px); }
+.cockpit__title .t-caption { color: #9fe3cf; }
+.cockpit__title h1 { margin: 0; color: #fff; font-size: 14px; }
+.cockpit__chips { inset: 70px 16px auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.cockpit__chips .chip, .cockpit__deviation-chip { border: 1px solid rgba(255,255,255,.2); background: rgba(16,20,24,.76); color: #fff; backdrop-filter: blur(10px); }
+.cockpit__nav-overlay { inset: 122px 16px auto; display: grid; gap: 8px; pointer-events: none; }
+.nav-hud-card { display: flex; align-items: center; gap: 12px; max-width: 430px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.16); border-radius: 16px; background: #123d35; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.22); }
+.nav-hud-card__icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: #35d6a5; color: #062b24; }
+.nav-hud-card__content { min-width: 0; }
+.nav-hud-card__dist { display: block; color: #a7f3d0; font: 700 13px var(--font-mono); }
+.nav-hud-card__instruction { margin: 2px 0 0; font-size: 16px; font-weight: 800; }
+.nav-hud-card__sub { display: block; margin-top: 3px; color: #c7ded8; font-size: 12px; }
+.nav-hud-card__preview { display: block; margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,.14); color: #d8f5ec; font-size: 11px; }
+.nav-offroute-alert { pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 430px; padding: 8px 12px; border-radius: 10px; background: #6d3b14; color: #fff; }
+.cockpit__panel { position: absolute; z-index: 6; inset: auto 16px 16px auto; width: min(390px, calc(100% - 32px)); max-height: min(78dvh, 720px); overflow: hidden; border: 1px solid rgba(255,255,255,.18); border-radius: 20px; background: rgba(255,255,255,.96); box-shadow: 0 20px 50px rgba(0,0,0,.24); }
+.cockpit__panel--hidden { display: none; }
+.cockpit__sheet-toggle { display: flex; align-items: center; gap: 8px; padding: 7px 10px 0; }
+.cockpit__sheet-toggle__main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; background: transparent; border: 0; color: var(--foreground); }
+.cockpit__sheet-bar { width: 34px; height: 4px; border-radius: 99px; background: #b7c2c7; }
+.cockpit__summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 8px 12px 10px; border-top: 1px solid #e8eef0; border-bottom: 1px solid #e8eef0; background: #f7fafb; }
+.cockpit__summary-item { min-width: 0; display: grid; gap: 2px; }
+.cockpit__summary-item span { overflow: hidden; color: #65747b; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.cockpit__summary-item strong { overflow: hidden; color: #1d2b31; font: 700 12px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.cockpit__summary-item--primary strong { color: #087f62; }
+.cockpit__quick-actions { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #e8eef0; }
+.cockpit__quick-action { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 0 10px; border: 1px solid #dce5e8; border-radius: 10px; background: #fff; color: #3a4b52; font-size: 10px; font-weight: 800; }
+.cockpit__quick-action:hover { background: #f0f6f7; }
+.cockpit__quick-action--sos { border-color: #f0b7aa; color: #a93824; background: #fff8f6; }
+.cockpit__scroll { max-height: calc(min(78dvh, 720px) - 46px); overflow: auto; padding: 0 12px 14px; }
+.cockpit__scroll--half { max-height: 270px; }
+.cockpit__reopen { position: absolute; z-index: 7; inset: auto 16px 16px auto; }
+@media (max-width: 899px) { .cockpit__panel { inset: auto 8px 8px; width: auto; max-height: 48dvh; } .cockpit__scroll { max-height: calc(48dvh - 46px); } .cockpit--panel-expanded .cockpit__panel { max-height: 70dvh; } .cockpit--panel-expanded .cockpit__scroll { max-height: calc(70dvh - 46px); } .cockpit__summary { gap: 4px; padding-inline: 10px; } .cockpit__summary-item strong { font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .gps-pulse, .dash-flow { animation: none; } }

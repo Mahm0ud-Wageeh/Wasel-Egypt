@@ -236,6 +236,8 @@ Route::prefix('v1')->group(function () {
     // below upstream load while autocomplete never starves mid-word.
     Route::get('places/search', [App\Http\Controllers\Api\V1\PlaceController::class, 'search'])
         ->middleware('throttle:30,1');
+    Route::post('search/understand', [App\Http\Controllers\Api\V1\QueryUnderstandingController::class, 'understand'])
+        ->middleware('throttle:30,1');
     Route::get('stops/{id}', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicShow']);
     Route::get('stops/{id}/departures', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'publicDepartures']);
     Route::get('stops/{id}/live', [App\Http\Controllers\Api\V1\Transit\TransitStopController::class, 'liveCrowd'])

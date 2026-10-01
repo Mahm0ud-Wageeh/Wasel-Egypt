@@ -1,0 +1,6 @@
+interface:
+  display_name: "Push Workflow"
+  short_description: "Fast, safe BrightPath commit and push flow."
+  default_prompt: "Use $push-workflow to reuse fresh checks, commit, and push my BrightPath changes quickly."
+policy:
+  allow_implicit_invocation: true

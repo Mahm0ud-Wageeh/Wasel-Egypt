@@ -63,6 +63,7 @@ function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
   const clean = loc.replace(/^#\/?/, "").replace(/^\//, "");
   const [rawPath, qs] = clean.split("?");
   const path = (rawPath || "").replace(/\/$/, "");
+  const segments = path.split("/").filter(Boolean);
 
   let key: ScreenKey = "home";
   if (path && isScreenKey(path)) {
@@ -71,7 +72,7 @@ function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
     key = "home";
   } else if (path === "welcome" || path === "landing") {
     key = "welcome";
-  } else if (path === "journey/active" || path === "active-journey") {
+  } else if (path === "journey/active" || path === "active-journey" || segments[0] === "active-journeys") {
     key = "journey-active";
   } else if (path === "journey/completed" || path === "completed-journey") {
     key = "journey-completed";
@@ -86,6 +87,9 @@ function parseLocation(loc: string): { key: ScreenKey; params: ScreenParams } {
     for (const [k, v] of new URLSearchParams(qs).entries()) {
       params[k] = v;
     }
+  }
+  if (segments[0] === "active-journeys" && segments[1]) {
+    params.id = segments[1];
   }
   return { key, params };
 }

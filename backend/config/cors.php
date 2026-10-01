@@ -26,7 +26,7 @@ return [
         env('CORS_EXTRA_ORIGIN_2'),
     ])),
     'allowed_origins_patterns' => [],
-    'allowed_headers' => ['Accept', 'Content-Type', 'Authorization', 'X-Requested-With'],
+    'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 3600,
     'supports_credentials' => false,

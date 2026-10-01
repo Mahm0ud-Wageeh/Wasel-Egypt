@@ -15,7 +15,7 @@ export interface PlaceSearchResult {
 }
 
 export interface JourneyLeg {
-  type: 'walking' | 'metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus' | 'transfer'
+  type: 'walking' | 'metro' | 'train' | 'lrt' | 'monorail' | 'brt' | 'bus' | 'microbus' | 'transfer' | string
   leg_type?: 'transit' | 'walk'
   mode?: string
   transit_mode_id?: number | null
@@ -68,6 +68,9 @@ export interface JourneyPlan {
   dest_lat?: number
   dest_lng?: number
   legs: JourneyLeg[]
+  summary_ar?: string | null
+  data_quality?: 'verified' | 'estimated'
+  multimodal_fare?: any
 }
 
 /** My saved/planned journeys (auth required). Returns [] when logged out. */
@@ -227,8 +230,8 @@ function mapBackendOption(
     duration: durationMin,
     departure: requestedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     arrival: arrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    fare: fare ? Math.round(Number(fare.total_egp ?? fare.total ?? fare)) : 0,
-    fareStatus: fare?.is_official ? 'official' : 'estimated',
+    fare: fare ? Math.round(Number(fare.total_egp ?? fare.total ?? fare.amount ?? fare)) : (opt.multimodal_fare?.amount ? Math.round(opt.multimodal_fare.amount) : 0),
+    fareStatus: (fare?.is_official || opt.data_quality === 'verified') ? 'official' : 'estimated',
     changes: opt.total_transfers ?? 0,
     walking: totalWalkMin,
     origin_name: originName,
@@ -238,6 +241,9 @@ function mapBackendOption(
     dest_lat: destLat,
     dest_lng: destLng,
     legs,
+    summary_ar: opt.summary_ar ?? null,
+    data_quality: opt.data_quality ?? (legs.some(l => l.mode === 'microbus') ? 'estimated' : 'verified'),
+    multimodal_fare: opt.multimodal_fare ?? null,
   }
 }
 

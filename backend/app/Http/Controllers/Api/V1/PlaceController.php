@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  */
 class PlaceController extends Controller
 {
-    public function search(Request $request, PlaceGeocoderService $geocoder): JsonResponse
+    public function search(Request $request, PlaceGeocoderService $geocoder, \App\Services\Search\PlaceSearchManager $placeSearchManager): JsonResponse
     {
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'min:2', 'max:100'],
@@ -179,8 +179,8 @@ class PlaceController extends Controller
             ->values()
             ->all();
 
-        // 2. Geocoded places (Photon/OSM, Arabic-capable, cached).
-        $places = $geocoder->search($query, $biasLat, $biasLng, 6);
+        // 2. Geocoded places (Tiered: Local Verified POIs -> Google Places -> Photon/OSM).
+        $places = $placeSearchManager->search($query, $biasLat, $biasLng, 6);
 
         return response()->json([
             'success' => true,

@@ -17,6 +17,7 @@ export function generateStaticParams() {
     { slug: ["profile"] },
     { slug: ["notifications"] },
     { slug: ["community"] },
+    { slug: ["active-journeys", "55"] },
     { slug: ["fares"] },
     { slug: ["metro"] },
     { slug: ["lrt"] },

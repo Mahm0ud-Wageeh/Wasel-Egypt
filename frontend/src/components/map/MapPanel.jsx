@@ -91,6 +91,16 @@ const MODE_COLORS_DARK = { ...MODE_COLORS, ...DARK_MODE_COLORS }
 
 const lng = (p) => [p.lng ?? p[1], p.lat ?? p[0]]
 
+const lerp = (from, to, amount) => from + (to - from) * amount
+
+function interpolateLocation(from, to, amount) {
+  return {
+    ...to,
+    lat: lerp(Number(from.lat), Number(to.lat), amount),
+    lng: lerp(Number(from.lng), Number(to.lng), amount),
+  }
+}
+
 /** Draw the Google Maps-grade live navigation puck with radiant forward beam. */
 function makeNavigationArrow(color) {
   const size = 96
@@ -187,6 +197,64 @@ function itineraryToFeatures(itinerary, kind) {
   return features
 }
 
+function nearestPointOnLine(coords, point) {
+  let best = null
+  let bestDistance = Infinity
+  for (let index = 0; index < coords.length - 1; index += 1) {
+    const start = coords[index]
+    const end = coords[index + 1]
+    const dx = end[0] - start[0]
+    const dy = end[1] - start[1]
+    const lengthSquared = (dx * dx) + (dy * dy)
+    const ratio = lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, (((point[0] - start[0]) * dx) + ((point[1] - start[1]) * dy)) / lengthSquared))
+    const candidate = [start[0] + (dx * ratio), start[1] + (dy * ratio)]
+    const distance = ((candidate[0] - point[0]) ** 2) + ((candidate[1] - point[1]) ** 2)
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = { index, point: candidate }
+    }
+  }
+  return best ?? { index: 0, point: coords[0] }
+}
+
+/** Split route geometry at the closest live position for progress styling. */
+export function splitRouteAtLocation(itinerary, userLocation, currentLegIndex = 0) {
+  const features = itineraryToFeatures(itinerary, 'selected')
+  const traveled = []
+  const upcoming = []
+  const livePoint = validPin(userLocation) ? [Number(userLocation.lng), Number(userLocation.lat)] : null
+
+  features.forEach((feature, index) => {
+    const coordinates = feature.geometry.coordinates
+    if (index < currentLegIndex) {
+      traveled.push({ ...feature, properties: { ...feature.properties, progress: 'traveled' } })
+      return
+    }
+    if (index > currentLegIndex || !livePoint) {
+      upcoming.push({ ...feature, properties: { ...feature.properties, progress: 'upcoming' } })
+      return
+    }
+
+    const nearest = nearestPointOnLine(coordinates, livePoint)
+    const prefix = [...coordinates.slice(0, nearest.index + 1), nearest.point]
+    const suffix = [nearest.point, ...coordinates.slice(nearest.index + 1)]
+    traveled.push({
+      ...feature,
+      properties: { ...feature.properties, progress: 'traveled' },
+      geometry: { type: 'LineString', coordinates: prefix },
+    })
+    upcoming.push({
+      ...feature,
+      properties: { ...feature.properties, progress: 'upcoming' },
+      geometry: { type: 'LineString', coordinates: suffix },
+    })
+  })
+
+  return { traveled, upcoming }
+}
+
 /** Deduplicate stops by id/position for the network layer. */
 function normalizeStops(stops) {
   const seen = new Set()
@@ -263,6 +331,8 @@ export function MapPanel({
   const [tileFallback, setTileFallback] = useState(false)
   const tileErrorCountRef = useRef(0)
   const tileFallbackRef = useRef(false)
+  const animatedLocationRef = useRef(null)
+  const locationFrameRef = useRef(null)
 
   const activeLayer = tileFallback && layerId === 'satellite' ? BASEMAPS.streets : BASEMAPS[layerId]
   const palette = activeLayer.dark ? C_SAT : C
@@ -317,6 +387,14 @@ export function MapPanel({
           style: {
             version: 8,
             sources: {
+              // OpenFreeMap provides OSM vector tiles without an API key.
+              // Raster basemaps remain the fallback if the vector source is unavailable.
+              openfreemap: {
+                type: 'vector',
+                tiles: ['https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf'],
+                minzoom: 0,
+                maxzoom: 14,
+              },
               'bm-satellite': {
                 type: 'raster',
                 tiles: [BASEMAPS.satellite.url],
@@ -348,6 +426,20 @@ export function MapPanel({
               { id: 'bm-satellite-layer', type: 'raster', source: 'bm-satellite', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('satellite') } },
               { id: 'bm-streets-layer', type: 'raster', source: 'bm-streets', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('streets') } },
               { id: 'bm-dark-layer', type: 'raster', source: 'bm-dark', minzoom: 0, maxzoom: 24, layout: { visibility: visibility('dark') } },
+              {
+                id: '3d-buildings',
+                type: 'fill-extrusion',
+                source: 'openfreemap',
+                'source-layer': 'building',
+                minzoom: 15,
+                paint: {
+                  'fill-extrusion-color': '#8094a1',
+                  'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 8],
+                  'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+                  'fill-extrusion-opacity': 0.46,
+                  'fill-extrusion-vertical-gradient': true,
+                },
+              },
             ],
           },
           center: [31.2357, 30.0444], // Cairo
@@ -504,6 +596,38 @@ export function MapPanel({
     }
   }, [navigationMode])
 
+  // GPS fixes arrive in bursts. Keep the puck fed by a short interpolation
+  // window so a valid fix never appears to jump across the map.
+  useEffect(() => {
+    if (!userLocation || !validPin(userLocation)) return undefined
+    const target = { ...userLocation, lat: Number(userLocation.lat), lng: Number(userLocation.lng) }
+    const start = animatedLocationRef.current ?? target
+    const startedAt = performance.now()
+    const duration = navigationMode ? 650 : 400
+
+    if (locationFrameRef.current) cancelAnimationFrame(locationFrameRef.current)
+    const tick = (now) => {
+      const progress = Math.min(1, (now - startedAt) / duration)
+      const eased = 1 - ((1 - progress) ** 3)
+      animatedLocationRef.current = interpolateLocation(start, target, eased)
+      const source = mapRef.current?.getSource?.('user')
+      if (source?.setData) {
+        const current = animatedLocationRef.current
+        source.setData({
+          type: 'Feature',
+          properties: { heading: userHeading != null ? Number(userHeading) : null },
+          geometry: { type: 'Point', coordinates: [current.lng, current.lat] },
+        })
+      }
+      if (progress < 1) locationFrameRef.current = requestAnimationFrame(tick)
+    }
+    locationFrameRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (locationFrameRef.current) cancelAnimationFrame(locationFrameRef.current)
+      locationFrameRef.current = null
+    }
+  }, [userLocation, navigationMode, userHeading])
+
   useEffect(() => {
     const map = mapRef.current
     if (!follow || !map || !ready || !userLocation) return
@@ -518,8 +642,11 @@ export function MapPanel({
         firstFixSnappedRef.current = true
         map.flyTo({
           center: [uLng, uLat],
-          zoom: 16.5,
-          duration: 900,
+          zoom: 17.5,
+          pitch: 55,
+          bearing: Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0,
+          offset: [0, 120],
+          duration: 1200,
         })
         return
       }
@@ -528,7 +655,7 @@ export function MapPanel({
       const [fLat, fLng] = forwardOffsetLocation(uLat, uLng, userHeading ?? 0, offsetDist)
       const targetCenter = [fLng, fLat]
       const targetBearing = headingUp && Number.isFinite(Number(userHeading)) ? Number(userHeading) : 0
-      const targetPitch = pitch3D ? 38 : 0
+      const targetPitch = pitch3D || navigationMode ? 55 : 0
       const targetZoom = Number(userSpeed) > 10 ? 15.2 : Number(userSpeed) > 2.5 ? 16.4 : 17.4
 
       map.easeTo({
@@ -573,10 +700,10 @@ export function MapPanel({
   const clearDynamic = useCallback((map) => {
     const style = map.getStyle()
     ;(style?.layers ?? [])
-      .filter((l) => !['background', 'bm-satellite-layer', 'bm-streets-layer', 'bm-dark-layer'].includes(l.id))
+      .filter((l) => !['background', 'bm-satellite-layer', 'bm-streets-layer', 'bm-dark-layer', '3d-buildings'].includes(l.id))
       .forEach((l) => map.getLayer(l.id) && map.removeLayer(l.id))
     Object.keys(style?.sources ?? {})
-      .filter((id) => !['bm-satellite', 'bm-streets', 'bm-dark'].includes(id))
+      .filter((id) => !['openfreemap', 'bm-satellite', 'bm-streets', 'bm-dark'].includes(id))
       .forEach((id) => map.getSource(id) && map.removeSource(id))
   }, [])
 
@@ -687,6 +814,29 @@ export function MapPanel({
         filter: ['==', ['get', 'legType'], 'transit'],
       })
 
+      map.addLayer({
+        id: 'selected-glow',
+        type: 'line',
+        source: 'selected-route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'mode'],
+            'metro', modeColors.metro,
+            'bus', modeColors.bus,
+            'minibus', modeColors.minibus,
+            'microbus', modeColors.microbus,
+            'rail', modeColors.rail,
+            modeColors.bus,
+          ],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 10, 16, 16],
+          'line-opacity': 0.22,
+          'line-blur': 3,
+        },
+        filter: ['==', ['get', 'legType'], 'transit'],
+      })
+
       // Transit segments: solid, mode-colored.
       map.addLayer({
         id: 'selected-transit',
@@ -709,6 +859,51 @@ export function MapPanel({
         filter: ['==', ['get', 'legType'], 'transit'],
       })
       map.moveLayer('selected-casing', 'selected-transit')
+      map.moveLayer('selected-glow', 'selected-casing')
+
+      const progress = splitRouteAtLocation(itinerary, userLocation, currentLegIndex ?? 0)
+      if (progress.traveled.length || progress.upcoming.length) {
+        map.addSource('selected-progress', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [...progress.traveled, ...progress.upcoming],
+          },
+        })
+        map.addLayer({
+          id: 'selected-traveled',
+          type: 'line',
+          source: 'selected-progress',
+          filter: ['==', ['get', 'progress'], 'traveled'],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#667783', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4, 16, 7], 'line-opacity': 0.55 },
+        })
+        map.addLayer({
+          id: 'selected-upcoming-glow',
+          type: 'line',
+          source: 'selected-progress',
+          filter: ['==', ['get', 'progress'], 'upcoming'],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': ['match', ['get', 'mode'], 'metro', modeColors.metro, 'bus', modeColors.bus, 'minibus', modeColors.minibus, 'microbus', modeColors.microbus, 'rail', modeColors.rail, modeColors.bus],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 9, 16, 14],
+            'line-opacity': 0.3,
+            'line-blur': 3,
+          },
+        })
+        map.addLayer({
+          id: 'selected-upcoming',
+          type: 'line',
+          source: 'selected-progress',
+          filter: ['==', ['get', 'progress'], 'upcoming'],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': ['match', ['get', 'mode'], 'metro', modeColors.metro, 'bus', modeColors.bus, 'minibus', modeColors.minibus, 'microbus', modeColors.microbus, 'rail', modeColors.rail, modeColors.bus],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 11, 3.5, 16, 6],
+            'line-opacity': 0.92,
+          },
+        })
+      }
     }
 
     // -- route stop markers (interactive) --

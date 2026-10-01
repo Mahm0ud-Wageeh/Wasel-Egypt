@@ -1,6 +1,6 @@
 import { it, expect, vi, beforeEach } from 'vitest'
 import { screen, act } from '@testing-library/react'
-import { MapPanel } from '../components/map/MapPanel'
+import { MapPanel, splitRouteAtLocation } from '../components/map/MapPanel'
 import { renderWithProviders } from '../test/test-utils'
 
 /**
@@ -106,6 +106,15 @@ const OTHER_LINE = {
     },
   ],
 }
+
+it('splits the active route at the live position into traveled and upcoming geometry', () => {
+  const split = splitRouteAtLocation(LINE, { lat: 30.0444, lng: 31.2357 }, 0)
+
+  expect(split.traveled).toHaveLength(1)
+  expect(split.upcoming).toHaveLength(1)
+  expect(split.traveled[0].geometry.coordinates.at(-1)).toEqual([31.2357, 30.0444])
+  expect(split.upcoming[0].geometry.coordinates[0]).toEqual([31.2357, 30.0444])
+})
 
 async function mountMap(itinerary, props = {}) {
   const utils = renderWithProviders(<MapPanel itinerary={itinerary} height={300} {...props} />)
@@ -280,7 +289,7 @@ describe('route geometry rendering composition', () => {
 })
 
 describe('camera machine: ROUTE_FIT -> SNAP_TO_USER -> FOLLOW -> USER_CONTROLLED', () => {
-  it('snaps to user at zoom 16.5 on first fix in navigationMode', async () => {
+  it('snaps to user into the 3D navigation frame on first fix', async () => {
     const userPos = { lat: 30.0444, lng: 31.2357, accuracy: 12 }
     const { map } = await mountMap(LINE, {
       navigationMode: true,
@@ -288,11 +297,13 @@ describe('camera machine: ROUTE_FIT -> SNAP_TO_USER -> FOLLOW -> USER_CONTROLLED
       userLocation: userPos,
     })
 
-    // First fix snaps to user at zoom 16.5
+    // First fix enters the 3D navigation frame with room for the HUD.
     expect(map.flyTo).toHaveBeenCalledWith(
       expect.objectContaining({
         center: [31.2357, 30.0444],
-        zoom: 16.5,
+        zoom: 17.5,
+        pitch: 55,
+        offset: [0, 120],
       })
     )
   })

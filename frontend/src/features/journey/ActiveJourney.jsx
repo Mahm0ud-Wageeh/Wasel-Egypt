@@ -106,6 +106,7 @@ export default function ActiveJourney() {
       return 'expanded'
     }
   })
+  const [sheetDepth, setSheetDepth] = useState('full')
 
   useEffect(() => {
     try { sessionStorage.setItem(PANEL_STORAGE_KEY, panelMode) } catch { /* private mode */ }
@@ -430,6 +431,13 @@ export default function ActiveJourney() {
     return total > 0 ? Math.max(1, Math.round(total / 60)) : null
   }, [legs, currentLegIndex, isDone])
 
+  const remainingDistance = useMemo(() => {
+    const meters = legs
+      .slice(currentLegIndex)
+      .reduce((sum, leg) => sum + (Number(leg.distance_meters) || 0), 0)
+    return meters > 0 ? formatDistance(meters) : '—'
+  }, [legs, currentLegIndex])
+
   const lastLeg = legs[legs.length - 1]
 
   // The live user position: the latest progress ping (recorded locations).
@@ -567,7 +575,22 @@ export default function ActiveJourney() {
 
   // Navigation HUD data
   const navManeuver = navEngine.routeMatch?.nextManeuver ?? null
+  const navNextManeuver = navEngine.routeMatch?.nextNextManeuver ?? null
   const navOffRoute = navEngine.isOffRoute
+
+  const handleShareJourney = async () => {
+    const shareText = language === 'ar'
+      ? `رحلتي مع واصل مصر: ${lastLeg?.to_stop?.name ?? t('results.destination')}`
+      : `My Wasel Egypt trip to ${lastLeg?.to_stop?.name ?? 'my destination'}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Wasel Egypt', text: shareText })
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareText)
+        setActionSuccess(language === 'ar' ? 'تم نسخ تفاصيل الرحلة' : 'Journey details copied')
+      }
+    } catch { /* sharing was dismissed */ }
+  }
 
   return (
     <div className="app-shell__page app-shell__page--cockpit">
@@ -615,6 +638,11 @@ export default function ActiveJourney() {
                     {navManeuver.targetStop && (
                       <span className="nav-hud-card__sub">
                         → {navManeuver.targetStop}
+                      </span>
+                    )}
+                    {navNextManeuver && (
+                      <span className="nav-hud-card__preview">
+                        ثم {navNextManeuver.instruction || navNextManeuver.targetStop || 'تابع على المسار'}
                       </span>
                     )}
                   </div>
@@ -752,7 +780,47 @@ export default function ActiveJourney() {
             )}
           </div>
 
-          <div className="cockpit__scroll">
+          <div className="cockpit__summary" aria-label={language === 'ar' ? 'ملخص الرحلة' : 'Journey summary'}>
+            <div className="cockpit__summary-item cockpit__summary-item--primary">
+              <span>{language === 'ar' ? 'متبقي' : 'Remaining'}</span>
+              <strong>{remainingMin != null ? `${remainingMin} min` : '—'}</strong>
+            </div>
+            <div className="cockpit__summary-item">
+              <span>{language === 'ar' ? 'المسافة' : 'Distance'}</span>
+              <strong>{remainingDistance}</strong>
+            </div>
+            <div className="cockpit__summary-item">
+              <span>{language === 'ar' ? 'الوصول' : 'Arrive'}</span>
+              <strong>{formatTime(lastLeg?.arrival_time)}</strong>
+            </div>
+            <div className="cockpit__summary-item">
+              <span>{language === 'ar' ? 'السرعة' : 'Speed'}</span>
+              <strong>{userSpeed > 0 ? `${Math.round(userSpeed * 3.6)} km/h` : '—'}</strong>
+            </div>
+          </div>
+
+          <div className="cockpit__quick-actions">
+            <button type="button" className="cockpit__quick-action" onClick={handleShareJourney} aria-label={language === 'ar' ? 'مشاركة الرحلة' : 'Share journey'}>
+              <Icon name="send" size={14} aria-hidden="true" />
+              {language === 'ar' ? 'مشاركة' : 'Share'}
+            </button>
+            <button type="button" className="cockpit__quick-action cockpit__quick-action--sos" onClick={() => { window.location.href = 'tel:123' }} aria-label={language === 'ar' ? 'طوارئ' : 'SOS'}>
+              <Icon name="detect" size={14} aria-hidden="true" />
+              SOS
+            </button>
+            <button
+              type="button"
+              className="cockpit__quick-action"
+              onClick={() => setSheetDepth((depth) => depth === 'half' ? 'full' : 'half')}
+              aria-pressed={sheetDepth === 'half'}
+              aria-label={language === 'ar' ? 'المحطات القادمة' : 'Upcoming stops'}
+            >
+              <Icon name="chevronDown" size={14} aria-hidden="true" />
+              {sheetDepth === 'half' ? (language === 'ar' ? 'التفاصيل' : 'Details') : (language === 'ar' ? 'المحطات' : 'Stops')}
+            </button>
+          </div>
+
+          <div className={`cockpit__scroll cockpit__scroll--${sheetDepth}`}>
             {actionSuccess && <Alert severity="success" title="Success">{actionSuccess}</Alert>}
             {error && <Alert severity="error" title="Tracking Notice">{error}</Alert>}
 

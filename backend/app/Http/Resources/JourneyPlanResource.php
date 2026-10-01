@@ -22,12 +22,15 @@ class JourneyPlanResource extends JsonResource
             'score' => $this->resource['score'],
             'reliability' => $this->resource['reliability'] ?? null,
             'fare' => $this->resource['fare'] ?? null,
+            'multimodal_fare' => $this->resource['multimodal_fare'] ?? null,
             'matches_saved' => $this->resource['matches_saved'] ?? null,
             // Single-recommendation contract: exactly the top-ranked plan is
             // flagged recommended; the initial planner UI surfaces only it.
             'recommended' => (bool) ($this->resource['recommended'] ?? false),
             'disrupted' => $this->resource['disrupted'] ?? false,
             'alerts' => $this->resource['alerts'] ?? [],
+            'summary_ar' => $this->resource['summary_ar'] ?? null,
+            'data_quality' => $this->resource['data_quality'] ?? 'verified',
             'legs' => collect($this->resource['legs'])->map(fn (array $leg) => [
                 'type' => $leg['type'],
                 'leg_type' => $leg['leg_type'] ?? $leg['type'],
@@ -54,6 +57,8 @@ class JourneyPlanResource extends JsonResource
                 'distance_m' => $leg['distance_m'] ?? $leg['distance_meters'],
                 'distance_meters' => $leg['distance_meters'] ?? $leg['distance_m'] ?? null,
                 'fare' => $leg['fare'] ?? 0.0,
+                'fare_status' => $leg['fare_status'] ?? 'official',
+                'data_source' => $leg['data_source'] ?? 'verified',
                 // Road-following walking geometry ([lat,lng] polyline) when
                 // OSRM is reachable; null when the straight-line fallback
                 // produced this leg (walk_source='estimate').
@@ -76,3 +81,4 @@ class JourneyPlanResource extends JsonResource
         ];
     }
 }
+
